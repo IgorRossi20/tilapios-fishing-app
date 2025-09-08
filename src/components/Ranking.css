@@ -1,0 +1,542 @@
+.ranking {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1rem 0;
+  overflow-x: hidden; /* Previne scroll horizontal */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ranking .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ranking .header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  padding: 0 1rem;
+  color: white;
+}
+
+.ranking .header h1 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.ranking .header p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.ranking .controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0 1rem;
+  flex-wrap: wrap;
+}
+
+.ranking .control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 200px;
+}
+
+.ranking .control-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.ranking .control-select {
+  padding: 0.75rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  backdrop-filter: blur(10px);
+  min-height: 44px;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.ranking .control-select:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.ranking .control-select option {
+  background: #374151;
+  color: white;
+}
+
+.ranking .ranking-type-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ranking .ranking-type-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(10px);
+}
+
+.ranking .ranking-type-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.ranking .ranking-type-btn.active {
+  background: white;
+  color: #667eea;
+  border-color: white;
+}
+
+.ranking .tournament-info {
+  background: white;
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 0 1rem 1.5rem 1rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.ranking .tournament-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.ranking .tournament-header h2 {
+  color: #374151;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.ranking .status-badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.ranking .status-badge.upcoming {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.ranking .status-badge.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.ranking .status-badge.finished {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.ranking .tournament-details {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.ranking .detail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.ranking .ranking-content {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  margin: 0 1rem;
+}
+
+.ranking .loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  gap: 1rem;
+}
+
+.ranking .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.ranking .ranking-header {
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.ranking .ranking-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.ranking .ranking-table {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-x: auto; /* Permite rolagem horizontal em telas pequenas */
+}
+
+.ranking .table-header {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 120px 140px 100px;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 800px; /* Garante largura mínima para conteúdo */
+}
+
+.ranking .table-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 100px 120px 140px 100px;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  transition: all 0.2s;
+  align-items: center;
+  min-width: 800px; /* Garante largura mínima para conteúdo */
+}
+
+.ranking .table-row:hover {
+  background: #f9fafb;
+}
+
+.ranking .table-row.podium {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+.ranking .col-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ranking .rank-icon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+
+.ranking .rank-icon.gold {
+  color: #fbbf24;
+}
+
+.ranking .rank-icon.silver {
+  color: #9ca3af;
+}
+
+.ranking .rank-icon.bronze {
+  color: #d97706;
+}
+
+.ranking .rank-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: #e5e7eb;
+  border-radius: 50%;
+  font-weight: 700;
+  color: #374151;
+}
+
+.ranking .participant-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ranking .participant-name {
+  font-weight: 600;
+  color: #374151;
+}
+
+.ranking .participant-email {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.ranking .stat-value {
+  font-weight: 700;
+  color: #374151;
+  font-size: 1.1rem;
+}
+
+.ranking .stat-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-left: 0.25rem;
+}
+
+.ranking .fish-species {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.ranking .score-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #667eea;
+}
+
+.ranking .no-data {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.ranking .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  text-align: center;
+  gap: 1rem;
+}
+
+.ranking .empty-icon {
+  color: #d1d5db;
+  margin-bottom: 1rem;
+}
+
+.ranking .empty-state h3 {
+  color: #374151;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.ranking .empty-state p {
+  color: #6b7280;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.ranking .text-primary {
+  color: #667eea;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .ranking .table-header,
+  .ranking .table-row {
+    grid-template-columns: 60px 1fr 80px 100px 120px 80px;
+    font-size: 0.875rem;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 768px) {
+  .ranking {
+    padding: 1.5rem 0;
+  }
+  
+  .ranking .header {
+    margin-bottom: 2rem;
+    padding: 0 2rem;
+  }
+  
+  .ranking .header h1 {
+    font-size: 2.25rem;
+  }
+  
+  .ranking .controls {
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: 2rem;
+    padding: 0 2rem;
+  }
+  
+  .ranking .control-select {
+    width: auto;
+    min-width: 200px;
+  }
+  
+  .ranking .tournament-info {
+    padding: 1.5rem;
+    margin: 0 2rem 2rem 2rem;
+  }
+  
+  .ranking .tournament-details {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .ranking .ranking-content {
+    margin: 0 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .ranking .controls {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .ranking .control-group {
+    min-width: auto;
+  }
+  
+  .ranking .tournament-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .ranking .tournament-details {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .ranking .table-header {
+    display: none;
+  }
+  
+  .ranking .table-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .ranking .table-row:last-child {
+    margin-bottom: 0;
+  }
+  
+  .ranking .col-rank {
+    justify-content: flex-start;
+  }
+  
+  .ranking .participant-info {
+    margin-bottom: 0.5rem;
+  }
+  
+  .ranking .mobile-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1024px) {
+  .ranking {
+    padding: 2rem 0;
+  }
+  
+  .ranking .header {
+    padding: 0;
+  }
+  
+  .ranking .header h1 {
+    font-size: 2.5rem;
+  }
+  
+  .ranking .controls {
+    padding: 0;
+  }
+  
+  .ranking .tournament-info {
+    margin: 0 0 2rem 0;
+  }
+  
+  .ranking .tournament-details {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+  
+  .ranking .ranking-content {
+    margin: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .ranking {
+    padding: 1rem 0;
+  }
+  
+  .ranking .container {
+    padding: 0 0.5rem;
+  }
+  
+  .ranking .header h1 {
+    font-size: 2rem;
+  }
+  
+  .ranking .ranking-type-buttons {
+    flex-direction: column;
+  }
+  
+  .ranking .tournament-info {
+    padding: 1rem;
+  }
+}
