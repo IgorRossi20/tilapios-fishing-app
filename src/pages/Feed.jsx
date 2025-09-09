@@ -301,187 +301,169 @@ const Feed = () => {
       )}
 
       {/* Lista de Posts */}
-      <div>
+      <div className="posts-container">
         {posts.map(post => (
-          <div key={post.id} className="card mb-3">
-            {/* Header do Post */}
-            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
-              <div style={{ 
-                width: '50px', 
-                height: '50px', 
-                borderRadius: '50%', 
-                background: '#f0f0f0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '24px',
-                marginRight: '15px'
-              }}>
+          <div key={post.id} className="post-card">
+            {/* Header do Post - Estilo Instagram */}
+            <div className="post-header">
+              <div className="post-avatar">
                 {post.authorAvatar || '👤'}
               </div>
-              <div style={{ flex: 1 }}>
-                <h3 style={{ margin: 0, fontSize: '16px', color: '#333' }}>{post.authorName}</h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span className="badge badge-success" style={{ fontSize: '12px' }}>Pescador</span>
-                  <span style={{ fontSize: '12px', color: '#666', display: 'flex', alignItems: 'center' }}>
-                    <Clock size={12} style={{ marginRight: '4px' }} />
-                    {formatTimeAgo(post.createdAt)}
-                  </span>
+              <div className="post-user-info">
+                <h3 className="post-user-name">{post.authorName}</h3>
+                <div className="post-timestamp">
+                  <Clock size={12} />
+                  {formatTimeAgo(post.createdAt)}
                 </div>
+              </div>
+              <div className="post-user-level">
+                Pescador
               </div>
             </div>
 
             {/* Conteúdo do Post */}
-            <div style={{ marginBottom: '15px' }}>
-              <p style={{ color: '#333', marginBottom: '15px', lineHeight: '1.5' }}>
+            <div className="post-content">
+              <p className="post-description">
                 {post.description}
               </p>
               
               {/* Informações do Peixe */}
-              <div style={{ 
-                background: '#f8f9fa', 
-                padding: '15px', 
-                borderRadius: '8px',
-                marginBottom: '15px'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Fish size={16} style={{ marginRight: '8px', color: '#2196F3' }} />
-                    <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{post.fishSpecies}</span>
+              <div className="post-details">
+                <div className="post-detail">
+                  <Fish size={16} />
+                  <div>
+                    <div className="detail-value">{post.fishSpecies}</div>
+                    <div className="detail-label">Espécie</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <Trophy size={16} style={{ marginRight: '8px', color: '#FF9800' }} />
-                    <span style={{ fontSize: '14px', fontWeight: 'bold' }}>{post.weight}kg</span>
+                </div>
+                <div className="post-detail">
+                  <Trophy size={16} />
+                  <div>
+                    <div className="detail-value">{post.weight}kg</div>
+                    <div className="detail-label">Peso</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <MapPin size={16} style={{ marginRight: '8px', color: '#4CAF50' }} />
-                    <span style={{ fontSize: '14px' }}>{post.location}</span>
+                </div>
+                <div className="post-detail">
+                  <MapPin size={16} />
+                  <div>
+                    <div className="detail-value">{post.location}</div>
+                    <div className="detail-label">Local</div>
                   </div>
                 </div>
               </div>
               
-              {/* Imagem do Peixe */}
+              {/* Imagem do Peixe - Estilo Instagram */}
               <div style={{ 
-                textAlign: 'center', 
-                padding: '40px',
-                background: '#f0f8ff',
+                width: '100%',
+                aspectRatio: '1/1',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 borderRadius: '8px',
-                border: '2px dashed #2196F3'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                position: 'relative',
+                overflow: 'hidden',
+                marginBottom: '8px'
               }}>
-                <div style={{ fontSize: '48px', marginBottom: '10px' }}>{post.image}</div>
-                <p style={{ color: '#666', margin: 0 }}>Foto da captura</p>
+                <div style={{ 
+                  fontSize: '64px', 
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
+                  animation: 'float 3s ease-in-out infinite'
+                }}>
+                  {post.image}
+                </div>
+                <div style={{
+                  position: 'absolute',
+                  bottom: '12px',
+                  right: '12px',
+                  background: 'rgba(0,0,0,0.7)',
+                  color: 'white',
+                  padding: '4px 8px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: '600'
+                }}>
+                  📸 Captura
+                </div>
               </div>
             </div>
 
             {/* Ações do Post - Estilo Instagram */}
-            <div style={{ 
-              padding: '10px 0',
-              borderTop: '1px solid #eee',
-              marginTop: '15px'
-            }}>
+            <div className="post-actions">
               {/* Botões de ação principais */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-                <div style={{ display: 'flex', gap: '15px' }}>
-                  <button 
-                    onClick={() => handleLike(post.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '5px',
-                      transition: 'transform 0.1s ease'
-                    }}
-                    onMouseDown={(e) => e.target.style.transform = 'scale(0.9)'}
-                    onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
-                  >
-                    <Heart 
-                      size={24} 
-                      fill={(post.likes || []).includes(user?.uid) ? '#e74c3c' : 'none'}
-                      color={(post.likes || []).includes(user?.uid) ? '#e74c3c' : '#262626'}
-                    />
-                  </button>
-                  
-                  <button 
-                    onClick={() => toggleComments(post.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '5px'
-                    }}
-                  >
-                    <MessageCircle size={24} color="#262626" />
-                  </button>
-                  
-                  <button 
-                    onClick={() => handleShare(post.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: '5px'
-                    }}
-                  >
-                    <Send size={24} color="#262626" />
-                  </button>
-                </div>
+              <div className="action-buttons">
+                <button 
+                  onClick={() => handleLike(post.id)}
+                  className={`action-btn like-btn ${(post.likes || []).includes(user?.uid) ? 'liked' : ''}`}
+                >
+                  <Heart 
+                    size={24} 
+                    fill={(post.likes || []).includes(user?.uid) ? '#ed4956' : 'none'}
+                    color={(post.likes || []).includes(user?.uid) ? '#ed4956' : '#262626'}
+                  />
+                </button>
+                
+                <button 
+                  onClick={() => toggleComments(post.id)}
+                  className="action-btn"
+                >
+                  <MessageCircle size={24} color="#262626" />
+                </button>
+                
+                <button 
+                  onClick={() => handleShare(post.id)}
+                  className="action-btn"
+                >
+                  <Send size={24} color="#262626" />
+                </button>
               </div>
               
-              {/* Contador de curtidas */}
-              {(post.likes || []).length > 0 && (
-                <div style={{ 
-                  fontSize: '14px', 
-                  fontWeight: '600', 
-                  color: '#262626',
-                  marginBottom: '8px'
-                }}>
-                  {(post.likes || []).length} curtida{(post.likes || []).length !== 1 ? 's' : ''}
+              {/* Contadores de interação - Estilo Instagram */}
+              <div className="interaction-counts">
+                {/* Contador de curtidas */}
+                <div className="likes-count">
+                  {(post.likes || []).length > 0 ? (
+                    `${(post.likes || []).length} curtida${(post.likes || []).length !== 1 ? 's' : ''}`
+                  ) : (
+                    '0 curtidas'
+                  )}
                 </div>
-              )}
+                
+                {/* Contador de compartilhamentos */}
+                {(post.shares || 0) > 0 && (
+                  <div className="shares-count">
+                    {post.shares} compartilhamento{post.shares !== 1 ? 's' : ''}
+                  </div>
+                )}
+              </div>
               
               {/* Link para ver comentários */}
-              {(post.comments || []).length > 0 && (
-                <button
-                  onClick={() => toggleComments(post.id)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#8e8e8e',
-                    fontSize: '14px',
-                    cursor: 'pointer',
-                    padding: '0',
-                    marginBottom: '8px'
-                  }}
-                >
-                  Ver todos os {(post.comments || []).length} comentário{(post.comments || []).length !== 1 ? 's' : ''}
-                </button>
-              )}
+              <button
+                onClick={() => toggleComments(post.id)}
+                className="comments-toggle"
+              >
+                {(post.comments || []).length > 0 ? (
+                  `Ver todos os ${(post.comments || []).length} comentário${(post.comments || []).length !== 1 ? 's' : ''}`
+                ) : (
+                  '0 comentários'
+                )}
+              </button>
               
               {/* Seção de comentários */}
               {showComments[post.id] && (
-                <div style={{ marginTop: '15px' }}>
+                <div className="comments-section">
                   {/* Lista de comentários */}
-                  <div style={{ marginBottom: '15px' }}>
+                  <div style={{ marginBottom: '12px' }}>
                     {(post.comments || []).map((comment, index) => (
-                      <div key={index} style={{ 
-                        marginBottom: '8px',
-                        fontSize: '14px',
-                        color: '#262626',
-                        lineHeight: '1.4'
-                      }}>
-                        <strong>{comment.authorName}</strong> {comment.text}
+                      <div key={index} className="comment-item">
+                        <span className="comment-author">{comment.authorName}</span>
+                        {comment.text}
                       </div>
                     ))}
                   </div>
                   
                   {/* Campo para novo comentário */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center',
-                    gap: '10px',
-                    borderTop: '1px solid #eee',
-                    paddingTop: '10px'
-                  }}>
+                  <div className="comment-input-container">
                     <input
                       type="text"
                       placeholder="Adicione um comentário..."
@@ -490,13 +472,7 @@ const Feed = () => {
                         ...newComment,
                         [post.id]: e.target.value
                       })}
-                      style={{
-                        flex: 1,
-                        border: 'none',
-                        outline: 'none',
-                        fontSize: '14px',
-                        padding: '8px 0'
-                      }}
+                      className="comment-input"
                       onKeyPress={(e) => {
                         if (e.key === 'Enter') {
                           handleComment(post.id)
@@ -506,15 +482,7 @@ const Feed = () => {
                     <button
                       onClick={() => handleComment(post.id)}
                       disabled={!newComment[post.id]?.trim()}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: newComment[post.id]?.trim() ? '#0095f6' : '#c7c7c7',
-                        fontSize: '14px',
-                        fontWeight: '600',
-                        cursor: newComment[post.id]?.trim() ? 'pointer' : 'default',
-                        padding: '0'
-                      }}
+                      className="comment-submit"
                     >
                       Publicar
                     </button>

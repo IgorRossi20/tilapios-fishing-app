@@ -20,13 +20,15 @@ const Home = () => {
   const [monthlyKing, setMonthlyKing] = useState(null)
   const [loading, setLoading] = useState(true)
   const [feedPosts, setFeedPosts] = useState([])
+  const [postInteractions, setPostInteractions] = useState({})
   const [showCreatePost, setShowCreatePost] = useState(false)
 
   useEffect(() => {
     if (user) {
       loadDashboardData()
-      loadFeedPosts()
     }
+    // Carregar feed sempre, independente do usuário
+    loadFeedPosts()
   }, [user, userCatches])
 
   // Monitorar dados pendentes
@@ -53,10 +55,100 @@ const Home = () => {
   }, [getFromLocalStorage])
 
   // Carregar posts do feed social
+  // Funções de interação com posts
+  const handleLike = (postId) => {
+    setPostInteractions(prev => ({
+      ...prev,
+      [postId]: {
+        ...prev[postId],
+        liked: !prev[postId]?.liked,
+        likes: prev[postId]?.liked 
+          ? (prev[postId]?.likes || 0) - 1 
+          : (prev[postId]?.likes || 0) + 1
+      }
+    }))
+  }
+
+  const handleComment = (postId) => {
+    const comment = prompt('Digite seu comentário:')
+    if (comment && comment.trim()) {
+      setPostInteractions(prev => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          comments: (prev[postId]?.comments || 0) + 1,
+          commentsList: [...(prev[postId]?.commentsList || []), {
+            id: Date.now(),
+            text: comment.trim(),
+            user: user?.displayName || 'Anônimo',
+            timestamp: new Date().toISOString()
+          }]
+        }
+      }))
+    }
+  }
+
+  const handleShare = (postId, postContent) => {
+    if (navigator.share) {
+      navigator.share({
+        title: 'Captura de Pesca',
+        text: `Confira esta captura: ${postContent.species} de ${postContent.weight}kg em ${postContent.location}!`,
+        url: window.location.href
+      })
+    } else {
+      // Fallback para navegadores que não suportam Web Share API
+      const shareText = `Confira esta captura: ${postContent.species} de ${postContent.weight}kg em ${postContent.location}! ${window.location.href}`
+      navigator.clipboard.writeText(shareText).then(() => {
+        alert('Link copiado para a área de transferência!')
+      })
+    }
+    
+    setPostInteractions(prev => ({
+      ...prev,
+      [postId]: {
+        ...prev[postId],
+        shares: (prev[postId]?.shares || 0) + 1
+      }
+    }))
+  }
+
   const loadFeedPosts = async () => {
     try {
       // Converter capturas em posts sociais
-      const allCatches = JSON.parse(localStorage.getItem('fishing_catches') || '[]')
+      let allCatches = JSON.parse(localStorage.getItem('fishing_catches') || '[]')
+      
+      // Se não há capturas, adicionar dados de exemplo
+      if (allCatches.length === 0) {
+        allCatches = [
+          {
+            id: 'demo_1',
+            species: 'Dourado',
+            weight: 4.5,
+            location: 'Rio Paraná',
+            userName: 'João Silva',
+            registeredAt: new Date().toISOString(),
+            photo: null
+          },
+          {
+            id: 'demo_2',
+            species: 'Pintado', 
+            weight: 8.2,
+            location: 'Rio Tietê',
+            userName: 'Maria Santos',
+            registeredAt: new Date(Date.now() - 3600000).toISOString(),
+            photo: null
+          },
+          {
+            id: 'demo_3',
+            species: 'Pacu',
+            weight: 2.1,
+            location: 'Lago dos Patos',
+            userName: 'Pedro Costa',
+            registeredAt: new Date(Date.now() - 7200000).toISOString(),
+            photo: null
+          }
+        ]
+      }
       
       const posts = allCatches
         .sort((a, b) => new Date(b.registeredAt || b.date) - new Date(a.registeredAt || a.date))
@@ -283,8 +375,10 @@ const Home = () => {
              {/* Posts do Feed */}
              <div className="d-flex flex-column gap-4">
                {feedPosts.length > 0 ? (
-                 feedPosts.map(post => (
-                   <div key={post.id} className="card hover:shadow-lg transition-all">
+                 feedPosts.map((post, index) => {
+                   const postKey = post.id || `feed-post-${index}-${post.timestamp || Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                   return (
+                   <div key={postKey} className="card hover:shadow-lg transition-all">
                      {/* Header do Post */}
                      <div className="d-flex align-center gap-3 mb-4">
                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 d-flex align-center justify-center text-white font-bold text-lg">
@@ -341,22 +435,64 @@ const Home = () => {
                        </div>
                      </div>
 
+                     {/* Comentários */}
+                     {postInteractions[post.id]?.commentsList?.length > 0 && (
+                       <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                         <h5 className="text-sm font-semibold text-gray-700 mb-2">Comentários:</h5>
+                         {postInteractions[post.id].commentsList.slice(-3).map((comment) => (
+                           <div key={comment.id} className="mb-2 last:mb-0">
+                             <div className="text-sm">
+                               <span className="font-semibold text-blue-600">{comment.user}:</span>
+                               <span className="ml-2 text-gray-800">{comment.text}</span>
+                             </div>
+                             <div className="text-xs text-gray-500 mt-1">
+                               {new Date(comment.timestamp).toLocaleString('pt-BR')}
+                             </div>
+                           </div>
+                         ))}
+                         {postInteractions[post.id].commentsList.length > 3 && (
+                           <div className="text-xs text-gray-500 mt-2">
+                             +{postInteractions[post.id].commentsList.length - 3} comentários anteriores
+                           </div>
+                         )}
+                       </div>
+                     )}
+
                      {/* Ações do Post */}
                      <div className="d-flex justify-between align-center pt-3 border-t border-gray-200">
                        <div className="d-flex gap-6">
-                         <button className="d-flex align-center gap-2 text-gray-600 hover:text-red-500 transition-colors">
-                           <Heart size={16} />
-                           <span className="text-sm">{post.likes}</span>
+                         <button 
+                           onClick={() => handleLike(post.id)}
+                           className={`d-flex align-center gap-2 transition-colors ${
+                             postInteractions[post.id]?.liked 
+                               ? 'text-red-500' 
+                               : 'text-gray-600 hover:text-red-500'
+                           }`}
+                         >
+                           <Heart size={16} fill={postInteractions[post.id]?.liked ? 'currentColor' : 'none'} />
+                           <span className="text-sm">
+                             {(post.likes || 0) + (postInteractions[post.id]?.likes || 0)}
+                           </span>
                          </button>
                          
-                         <button className="d-flex align-center gap-2 text-gray-600 hover:text-blue-500 transition-colors">
+                         <button 
+                           onClick={() => handleComment(post.id)}
+                           className="d-flex align-center gap-2 text-gray-600 hover:text-blue-500 transition-colors"
+                         >
                            <MessageCircle size={16} />
-                           <span className="text-sm">{post.comments}</span>
+                           <span className="text-sm">
+                             {(post.comments || 0) + (postInteractions[post.id]?.comments || 0)}
+                           </span>
                          </button>
                          
-                         <button className="d-flex align-center gap-2 text-gray-600 hover:text-green-500 transition-colors">
+                         <button 
+                           onClick={() => handleShare(post.id, post.content)}
+                           className="d-flex align-center gap-2 text-gray-600 hover:text-green-500 transition-colors"
+                         >
                            <Share2 size={16} />
-                           <span className="text-sm">{post.shares}</span>
+                           <span className="text-sm">
+                             {(post.shares || 0) + (postInteractions[post.id]?.shares || 0)}
+                           </span>
                          </button>
                        </div>
                        
@@ -365,7 +501,8 @@ const Home = () => {
                        </div>
                      </div>
                    </div>
-                 ))
+                 )
+                 })
                ) : (
                  <div className="card text-center p-8">
                    <div className="text-gray-400 mb-4">
@@ -448,9 +585,9 @@ const Home = () => {
           {recentCatches.length > 0 ? (
             <div>
               {recentCatches.map((catch_, index) => {
-                const fallbackKey = `unique-${index}-${catch_.species || 'unknown'}-${catch_.weight || 0}-${catch_.registeredAt || catch_.timestamp || Date.now()}`
+                const uniqueKey = catch_.id || `recent-catch-${index}-${catch_.species || 'unknown'}-${catch_.weight || 0}-${catch_.registeredAt || catch_.timestamp || Date.now()}-${Math.random().toString(36).substr(2, 9)}`
                 return (
-                <div key={`recent-catch-${catch_.id || fallbackKey}`} style={{ 
+                <div key={uniqueKey} style={{ 
                   padding: '15px', 
                   border: '1px solid #eee', 
                   borderRadius: '8px', 

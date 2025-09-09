@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Feed</title>
+</head>
+<body>
+    <h1>Teste do Feed</h1>
+    <button onclick="addTestData()">Adicionar Dados de Teste</button>
+    <button onclick="checkData()">Verificar Dados</button>
+    <div id="output"></div>
+
+    <script>
+        function addTestData() {
+            const testCatches = [
+                {
+                    id: 'test_1',
+                    species: 'Dourado',
+                    weight: 4.5,
+                    location: 'Rio Paraná',
+                    userName: 'João Silva',
+                    registeredAt: new Date().toISOString(),
+                    photo: null
+                },
+                {
+                    id: 'test_2', 
+                    species: 'Pintado',
+                    weight: 8.2,
+                    location: 'Rio Tietê',
+                    userName: 'Maria Santos',
+                    registeredAt: new Date(Date.now() - 3600000).toISOString(),
+                    photo: null
+                },
+                {
+                    id: 'test_3',
+                    species: 'Pacu',
+                    weight: 2.1,
+                    location: 'Lago dos Patos',
+                    userName: 'Pedro Costa',
+                    registeredAt: new Date(Date.now() - 7200000).toISOString(),
+                    photo: null
+                }
+            ];
+            
+            localStorage.setItem('fishing_catches', JSON.stringify(testCatches));
+            document.getElementById('output').innerHTML = '✅ Dados de teste adicionados!';
+        }
+        
+        function checkData() {
+            const data = JSON.parse(localStorage.getItem('fishing_catches') || '[]');
+            document.getElementById('output').innerHTML = `📊 Total de capturas: ${data.length}<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
+        }
+    </script>
+</body>
+</html>

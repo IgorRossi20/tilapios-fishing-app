@@ -10,16 +10,37 @@
 
 .tournaments .header {
   margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+  border-radius: 20px;
+  color: white;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.tournaments .header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+  pointer-events: none;
 }
 
 .tournaments .header h1 {
   display: flex;
   align-items: center;
-  color: #2c3e50;
+  color: white;
   font-size: 1.75rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.5rem;
   line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  position: relative;
+  z-index: 1;
 }
 
 .tournaments .header h1 svg {
@@ -28,10 +49,13 @@
 }
 
 .tournaments .header p {
-  color: #7f8c8d;
+  color: rgba(255,255,255,0.9);
   font-size: 1rem;
   margin: 0;
   line-height: 1.4;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  position: relative;
+  z-index: 1;
 }
 
 .tournaments .create-btn {
@@ -328,10 +352,34 @@
   line-height: 1.4;
 }
 
+/* Mobile styles for header */
+@media (max-width: 767px) {
+  .tournaments .header {
+    padding: 1.5rem;
+    border-radius: 16px;
+    margin-bottom: 1rem;
+  }
+  
+  .tournaments .header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .tournaments .header h1 svg {
+    margin-right: 0.5rem;
+    width: 28px;
+    height: 28px;
+  }
+}
+
 /* Tablet styles */
 @media (min-width: 768px) {
   .tournaments {
     padding: 1.5rem;
+  }
+  
+  .tournaments .header {
+    padding: 2.5rem;
+    border-radius: 24px;
   }
   
   .tournaments .header h1 {
@@ -396,8 +444,24 @@
     padding: 2rem;
   }
   
+  .tournaments .header {
+    padding: 3rem;
+    border-radius: 28px;
+    margin-bottom: 2rem;
+  }
+  
   .tournaments .header h1 {
     font-size: 2.5rem;
+  }
+  
+  .tournaments .header h1 svg {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .tournaments .header p {
+    font-size: 1.25rem;
+    margin-top: 0.75rem;
   }
   
   .tournaments .form-card {

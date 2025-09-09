@@ -196,14 +196,76 @@ const Ranking = () => {
                 </div>
               </div>
               
-              <div className="ranking-table">
-                <div className="table-header">
-                  <div className="col-rank">Posição</div>
-                  <div className="col-name">Pescador</div>
-                  <div className="col-catches">Pescas</div>
-                  <div className="col-weight">Peso Total</div>
-                  <div className="col-biggest">Maior Peixe</div>
-                  <div className="col-score">Pontuação</div>
+              {/* Pódio dos Top 3 */}
+              {ranking.length >= 3 && (
+                <div className="podium-container">
+                  <div className="podium-title">
+                    <Trophy size={24} className="text-yellow-600" />
+                    <h3>🏆 Pódio dos Campeões</h3>
+                  </div>
+                  
+                  <div className="podium">
+                    {/* 2º Lugar */}
+                    <div className="podium-position second-place">
+                      <div className="podium-rank">2º</div>
+                      <div className="podium-avatar silver">
+                        {ranking[1]?.userName?.charAt(0)?.toUpperCase() || 'P'}
+                      </div>
+                      <div className="podium-name">{ranking[1]?.userName || 'Pescador'}</div>
+                      <div className="podium-score">
+                        {rankingType === 'weight' 
+                          ? `${ranking[1]?.totalWeight?.toFixed(1)}kg`
+                          : ranking[1]?.totalCatches
+                        }
+                      </div>
+                      <div className="podium-medal">🥈</div>
+                      <div className="podium-base silver-base"></div>
+                    </div>
+                    
+                    {/* 1º Lugar */}
+                    <div className="podium-position first-place">
+                      <div className="crown">👑</div>
+                      <div className="podium-rank champion">1º</div>
+                      <div className="podium-avatar gold">
+                        {ranking[0]?.userName?.charAt(0)?.toUpperCase() || 'P'}
+                      </div>
+                      <div className="podium-name champion-name">{ranking[0]?.userName || 'Pescador'}</div>
+                      <div className="podium-score champion-score">
+                        {rankingType === 'weight' 
+                          ? `${ranking[0]?.totalWeight?.toFixed(1)}kg`
+                          : ranking[0]?.totalCatches
+                        }
+                      </div>
+                      <div className="podium-medal">🏆</div>
+                      <div className="podium-base gold-base"></div>
+                      <div className="champion-glow"></div>
+                    </div>
+                    
+                    {/* 3º Lugar */}
+                    <div className="podium-position third-place">
+                      <div className="podium-rank">3º</div>
+                      <div className="podium-avatar bronze">
+                        {ranking[2]?.userName?.charAt(0)?.toUpperCase() || 'P'}
+                      </div>
+                      <div className="podium-name">{ranking[2]?.userName || 'Pescador'}</div>
+                      <div className="podium-score">
+                        {rankingType === 'weight' 
+                          ? `${ranking[2]?.totalWeight?.toFixed(1)}kg`
+                          : ranking[2]?.totalCatches
+                        }
+                      </div>
+                      <div className="podium-medal">🥉</div>
+                      <div className="podium-base bronze-base"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Lista completa do ranking */}
+              <div className="ranking-list">
+                <div className="ranking-list-header">
+                  <h3>📊 Ranking Completo</h3>
+                  <span className="ranking-count">{ranking.length} pescadores</span>
                 </div>
                 
                 {ranking.map((participant, index) => {
@@ -215,120 +277,114 @@ const Ranking = () => {
                   return (
                     <div 
                       key={participant.userId} 
-                      className={`position-relative p-6 rounded-xl transition-all duration-300 ${
-                        isFirst 
-                          ? 'bg-gradient-to-r from-yellow-100 via-yellow-50 to-amber-100 border-2 border-yellow-400 shadow-lg transform hover:scale-105'
-                          : isSecond
-                          ? 'bg-gradient-to-r from-gray-100 via-gray-50 to-slate-100 border-2 border-gray-400 shadow-md transform hover:scale-102'
-                          : isThird
-                          ? 'bg-gradient-to-r from-orange-100 via-orange-50 to-amber-100 border-2 border-orange-400 shadow-md transform hover:scale-102'
-                          : 'bg-white border-2 border-gray-200 hover:border-gray-300 hover:shadow-md'
+                      className={`ranking-card ${
+                        isFirst ? 'champion-card'
+                        : isSecond ? 'silver-card'
+                        : isThird ? 'bronze-card'
+                        : 'regular-card'
                       }`}
-                      style={{
-                        boxShadow: isPodium ? '0 8px 25px rgba(0,0,0,0.15)' : undefined
-                      }}
                     >
                       {/* Badge de posição */}
-                      <div className={`absolute -top-3 -left-3 w-12 h-12 rounded-full d-flex align-center justify-center font-bold text-white shadow-lg ${
-                        isFirst ? 'bg-gradient-to-br from-yellow-400 to-yellow-600'
-                        : isSecond ? 'bg-gradient-to-br from-gray-400 to-gray-600'
-                        : isThird ? 'bg-gradient-to-br from-orange-400 to-orange-600'
-                        : 'bg-gradient-to-br from-blue-400 to-blue-600'
+                      <div className={`position-badge ${
+                        isFirst ? 'gold-badge'
+                        : isSecond ? 'silver-badge'
+                        : isThird ? 'bronze-badge'
+                        : 'regular-badge'
                       }`}>
                         #{index + 1}
                       </div>
                       
-                      <div className="d-flex align-center gap-6">
-                        {/* Avatar e ícone de ranking */}
-                        <div className="d-flex align-center gap-4">
-                          <div className={`w-16 h-16 rounded-full d-flex align-center justify-center text-2xl font-bold text-white ${
-                            isFirst ? 'bg-gradient-to-br from-yellow-500 to-amber-600'
-                            : isSecond ? 'bg-gradient-to-br from-gray-500 to-slate-600'
-                            : isThird ? 'bg-gradient-to-br from-orange-500 to-red-600'
-                            : 'bg-gradient-to-br from-blue-500 to-indigo-600'
+                      {/* Conteúdo principal */}
+                      <div className="ranking-card-content">
+                        {/* Avatar e informações básicas */}
+                        <div className="player-section">
+                          <div className={`player-avatar ${
+                            isFirst ? 'gold-avatar'
+                            : isSecond ? 'silver-avatar'
+                            : isThird ? 'bronze-avatar'
+                            : 'regular-avatar'
                           }`}>
                             {participant.userName?.charAt(0)?.toUpperCase() || 'P'}
                           </div>
                           
-                          <div className="d-flex align-center gap-2">
-                            {getRankIcon(index + 1)}
-                            {isPodium && (
-                              <span className="text-2xl">
-                                {isFirst ? '👑' : isSecond ? '🥈' : '🥉'}
-                              </span>
-                            )}
+                          <div className="player-info">
+                            <div className={`player-name ${
+                              isFirst ? 'champion-name'
+                              : isPodium ? 'podium-name'
+                              : 'regular-name'
+                            }`}>
+                              {participant.userName || 'Pescador'}
+                              {isFirst && <span className="champion-title">👑 CAMPEÃO</span>}
+                            </div>
+                            
+                            {/* Ícones de ranking */}
+                            <div className="ranking-icons">
+                              {getRankIcon(index + 1)}
+                              {isPodium && (
+                                <span className="medal-emoji">
+                                  {isFirst ? '🏆' : isSecond ? '🥈' : '🥉'}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         
-                        {/* Informações do pescador */}
-                        <div className="flex-1">
-                          <div className={`font-bold mb-2 ${
-                            isFirst ? 'text-2xl text-yellow-800'
-                            : isPodium ? 'text-xl text-gray-800'
-                            : 'text-lg text-gray-900'
+                        {/* Estatísticas */}
+                        <div className="stats-section">
+                          <div className={`stat-item ${
+                            isPodium ? 'podium-stat' : 'regular-stat'
                           }`}>
-                            {participant.userName || 'Pescador'}
-                            {isFirst && <span className="ml-2 text-yellow-600">🏆 CAMPEÃO</span>}
+                            <Fish size={16} className="stat-icon" />
+                            <div className="stat-content">
+                              <div className="stat-value">{participant.totalCatches}</div>
+                              <div className="stat-label">capturas</div>
+                            </div>
                           </div>
                           
-                          <div className="grid grid-3 gap-4 text-sm">
-                            <div className={`d-flex align-center gap-2 p-2 rounded-lg ${
-                              isPodium ? 'bg-white bg-opacity-70' : 'bg-gray-50'
-                            }`}>
-                              <Fish size={16} className="text-blue-600" />
-                              <div>
-                                <div className="font-semibold text-gray-900">{participant.totalCatches}</div>
-                                <div className="text-xs text-gray-600">capturas</div>
-                              </div>
+                          <div className={`stat-item ${
+                            isPodium ? 'podium-stat' : 'regular-stat'
+                          }`}>
+                            <Weight size={16} className="stat-icon" />
+                            <div className="stat-content">
+                              <div className="stat-value">{participant.totalWeight.toFixed(1)}kg</div>
+                              <div className="stat-label">peso total</div>
                             </div>
-                            
-                            <div className={`d-flex align-center gap-2 p-2 rounded-lg ${
-                              isPodium ? 'bg-white bg-opacity-70' : 'bg-gray-50'
-                            }`}>
-                              <Weight size={16} className="text-green-600" />
-                              <div>
-                                <div className="font-semibold text-gray-900">{participant.totalWeight.toFixed(1)}kg</div>
-                                <div className="text-xs text-gray-600">peso total</div>
-                              </div>
-                            </div>
-                            
-                            {participant.biggestFish && participant.biggestFish.weight > 0 && (
-                              <div className={`d-flex align-center gap-2 p-2 rounded-lg ${
-                                isPodium ? 'bg-white bg-opacity-70' : 'bg-gray-50'
-                              }`}>
-                                <Trophy size={16} className="text-amber-600" />
-                                <div>
-                                  <div className="font-semibold text-gray-900">{participant.biggestFish.weight.toFixed(1)}kg</div>
-                                  <div className="text-xs text-gray-600">maior peixe</div>
-                                </div>
-                              </div>
-                            )}
                           </div>
+                          
+                          {participant.biggestFish && participant.biggestFish.weight > 0 && (
+                            <div className={`stat-item ${
+                              isPodium ? 'podium-stat' : 'regular-stat'
+                            }`}>
+                              <Trophy size={16} className="stat-icon" />
+                              <div className="stat-content">
+                                <div className="stat-value">{participant.biggestFish.weight.toFixed(1)}kg</div>
+                                <div className="stat-label">maior peixe</div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                         
                         {/* Pontuação principal */}
-                        <div className="text-right">
-                          <div className={`font-bold mb-1 ${
-                            isFirst ? 'text-4xl text-yellow-700'
-                            : isPodium ? 'text-3xl text-gray-700'
-                            : 'text-2xl text-primary'
+                        <div className="score-section">
+                          <div className={`main-score ${
+                            isFirst ? 'champion-score'
+                            : isPodium ? 'podium-score'
+                            : 'regular-score'
                           }`}>
                             {rankingType === 'weight' 
                               ? `${participant.totalWeight.toFixed(1)}kg`
                               : participant.totalCatches
                             }
                           </div>
-                          <div className={`text-xs font-medium ${
-                            isPodium ? 'text-gray-600' : 'text-gray-500'
-                          }`}>
+                          <div className="score-label">
                             {rankingType === 'weight' ? 'PESO TOTAL' : 'CAPTURAS'}
                           </div>
                           
                           {isPodium && (
-                            <div className={`mt-2 px-3 py-1 rounded-full text-xs font-bold ${
-                              isFirst ? 'bg-yellow-200 text-yellow-800'
-                              : isSecond ? 'bg-gray-200 text-gray-800'
-                              : 'bg-orange-200 text-orange-800'
+                            <div className={`medal-badge ${
+                              isFirst ? 'gold-medal'
+                              : isSecond ? 'silver-medal'
+                              : 'bronze-medal'
                             }`}>
                               {isFirst ? 'OURO' : isSecond ? 'PRATA' : 'BRONZE'}
                             </div>
@@ -336,15 +392,15 @@ const Ranking = () => {
                         </div>
                       </div>
                       
-                      {/* Barra de progresso para o primeiro lugar */}
+                      {/* Barra de progresso para o campeão */}
                       {isFirst && (
-                        <div className="mt-4 pt-4 border-t border-yellow-300">
-                          <div className="d-flex justify-between text-xs text-yellow-700 mb-1">
+                        <div className="champion-progress">
+                          <div className="progress-info">
                             <span>Liderança consolidada</span>
                             <span>100%</span>
                           </div>
-                          <div className="w-full bg-yellow-200 rounded-full h-2">
-                            <div className="bg-gradient-to-r from-yellow-400 to-amber-500 h-2 rounded-full" style={{width: '100%'}}></div>
+                          <div className="progress-bar">
+                            <div className="progress-fill"></div>
                           </div>
                         </div>
                       )}

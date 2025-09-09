@@ -2755,20 +2755,105 @@ p {
   .page-header {
     text-align: center;
     margin-bottom: var(--spacing-6);
-    padding: var(--spacing-4);
+    padding: var(--spacing-6) var(--spacing-4);
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+    border-radius: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.1) 100%);
+    pointer-events: none;
   }
   
   .page-title {
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
     margin-bottom: var(--spacing-2);
-    color: var(--primary-600);
+    color: white;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+  }
+  
+  .page-title svg {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    animation: trophy-glow 2s ease-in-out infinite alternate;
+  }
+  
+  @keyframes trophy-glow {
+    from {
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 10px rgba(255,215,0,0.3));
+    }
+    to {
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)) drop-shadow(0 0 20px rgba(255,215,0,0.6));
+    }
   }
   
   .page-subtitle {
-    color: var(--gray-600);
-    font-size: var(--font-size-sm);
+    color: rgba(255,255,255,0.9);
+    font-size: var(--font-size-base);
     line-height: 1.5;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    position: relative;
+    z-index: 1;
+  }
+  
+  /* Responsive page header styles */
+  @media (min-width: 768px) {
+    .page-header {
+      padding: var(--spacing-8) var(--spacing-6);
+      border-radius: 24px;
+    }
+    
+    .page-title {
+      font-size: var(--font-size-4xl);
+      gap: 1rem;
+    }
+    
+    .page-title svg {
+      width: 40px;
+      height: 40px;
+    }
+    
+    .page-subtitle {
+      font-size: var(--font-size-lg);
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .page-header {
+      padding: var(--spacing-10) var(--spacing-8);
+      border-radius: 28px;
+    }
+    
+    .page-title {
+      font-size: var(--font-size-5xl);
+    }
+    
+    .page-title svg {
+      width: 48px;
+      height: 48px;
+    }
+    
+    .page-subtitle {
+      font-size: var(--font-size-xl);
+      margin-top: var(--spacing-2);
+    }
   }
   
   /* Touch-friendly interactions */

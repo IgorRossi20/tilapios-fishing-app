@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/Header'
 import Home from './pages/Home'
@@ -9,6 +9,7 @@ import Login from './pages/Login'
 import CaptureForm from './pages/CaptureForm'
 import CatchRegistration from './components/CatchRegistration'
 import Ranking from './components/Ranking'
+import LoadingSpinner from './components/LoadingSpinner'
 import { AuthProvider } from './contexts/AuthContext'
 import { FishingProvider } from './contexts/FishingContext'
 import { useAuth } from './hooks/useAuth'
@@ -18,14 +19,7 @@ function AppRoutes() {
   const { user, loading } = useAuth()
 
   if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p className="loading-text">Carregando...</p>
-        </div>
-      </div>
-    )
+    return <LoadingSpinner />
   }
 
   return (
@@ -77,6 +71,21 @@ function AppRoutes() {
 }
 
 function App() {
+  const [isInitialLoading, setIsInitialLoading] = useState(true)
+
+  useEffect(() => {
+    // Simula o carregamento inicial do site
+    const timer = setTimeout(() => {
+      setIsInitialLoading(false)
+    }, 2000) // 2 segundos de loading
+
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (isInitialLoading) {
+    return <LoadingSpinner />
+  }
+
   return (
     <FirebaseProvider>
       <AuthProvider>

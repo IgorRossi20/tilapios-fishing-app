@@ -190,6 +190,262 @@
   margin: 0 1rem;
 }
 
+/* Pódio dos Campeões */
+.ranking .podium-container {
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
+  border-radius: 20px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 15px 35px rgba(255, 215, 0, 0.3);
+  border: 2px solid #ffd700;
+  position: relative;
+  overflow: hidden;
+}
+
+.ranking .podium-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.ranking .podium-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.ranking .podium-title h3 {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #b8860b;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  margin: 0;
+}
+
+.ranking .podium {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.ranking .podium-position {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  transition: transform 0.3s ease;
+}
+
+.ranking .podium-position:hover {
+  transform: translateY(-5px);
+}
+
+.ranking .first-place {
+  order: 2;
+  z-index: 3;
+}
+
+.ranking .second-place {
+  order: 1;
+  z-index: 2;
+}
+
+.ranking .third-place {
+  order: 3;
+  z-index: 1;
+}
+
+.ranking .crown {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-10px); }
+  60% { transform: translateY(-5px); }
+}
+
+.ranking .podium-rank {
+  background: linear-gradient(135deg, #4a5568, #2d3748);
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.ranking .podium-rank.champion {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #b8860b;
+  width: 50px;
+  height: 50px;
+  font-size: 1.2rem;
+  border: 3px solid #b8860b;
+}
+
+.ranking .podium-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: bold;
+  color: white;
+  margin-bottom: 1rem;
+  border: 4px solid;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.ranking .podium-avatar.gold {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  border-color: #b8860b;
+  width: 100px;
+  height: 100px;
+  font-size: 2.5rem;
+}
+
+.ranking .podium-avatar.silver {
+  background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
+  border-color: #a0a0a0;
+}
+
+.ranking .podium-avatar.bronze {
+  background: linear-gradient(135deg, #cd7f32, #daa520);
+  border-color: #8b4513;
+}
+
+.ranking .podium-name {
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  color: #2d3748;
+}
+
+.ranking .champion-name {
+  font-size: 1.2rem;
+  color: #b8860b;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.ranking .podium-score {
+  font-size: 1.1rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #4a5568;
+}
+
+.ranking .champion-score {
+  font-size: 1.4rem;
+  color: #b8860b;
+}
+
+.ranking .podium-medal {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.ranking .podium-base {
+  width: 120px;
+  border-radius: 8px 8px 0 0;
+  position: relative;
+}
+
+.ranking .gold-base {
+  height: 100px;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  border: 3px solid #b8860b;
+}
+
+.ranking .silver-base {
+  height: 80px;
+  background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
+  border: 3px solid #a0a0a0;
+}
+
+.ranking .bronze-base {
+  height: 60px;
+  background: linear-gradient(135deg, #cd7f32, #daa520);
+  border: 3px solid #8b4513;
+}
+
+.ranking .champion-glow {
+  position: absolute;
+  top: -20px;
+  left: -20px;
+  right: -20px;
+  bottom: -20px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: glow 2s ease-in-out infinite alternate;
+  z-index: -1;
+}
+
+@keyframes glow {
+  from { opacity: 0.5; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+
+/* Lista completa do ranking */
+.ranking .ranking-list {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 1.5rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.ranking .ranking-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
+}
+
+.ranking .ranking-list-header h3 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.ranking .ranking-count {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 .ranking .loading {
   display: flex;
   flex-direction: column;
@@ -382,12 +638,394 @@
   color: #667eea;
 }
 
+/* Cards do ranking */
+.ranking-card {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 16px;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  border: 2px solid;
+  backdrop-filter: blur(10px);
+}
+
+.champion-card {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 237, 78, 0.1) 100%);
+  border-color: #ffd700;
+  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.3);
+  transform: scale(1.02);
+}
+
+.champion-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0 15px 40px rgba(255, 215, 0, 0.4);
+}
+
+.silver-card {
+  background: linear-gradient(135deg, rgba(192, 192, 192, 0.15) 0%, rgba(229, 229, 229, 0.1) 100%);
+  border-color: #c0c0c0;
+  box-shadow: 0 8px 25px rgba(192, 192, 192, 0.3);
+}
+
+.silver-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(192, 192, 192, 0.4);
+}
+
+.bronze-card {
+  background: linear-gradient(135deg, rgba(205, 127, 50, 0.15) 0%, rgba(218, 165, 32, 0.1) 100%);
+  border-color: #cd7f32;
+  box-shadow: 0 8px 25px rgba(205, 127, 50, 0.3);
+}
+
+.bronze-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 35px rgba(205, 127, 50, 0.4);
+}
+
+.regular-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.regular-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e0;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Badge de posição */
+.position-badge {
+  position: absolute;
+  top: -12px;
+  left: -12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  color: white;
+  font-size: 1.1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.gold-badge {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  border: 3px solid #b8860b;
+  animation: pulse-gold 2s infinite;
+}
+
+.silver-badge {
+  background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
+  border: 3px solid #a0a0a0;
+}
+
+.bronze-badge {
+  background: linear-gradient(135deg, #cd7f32, #daa520);
+  border: 3px solid #8b4513;
+}
+
+.regular-badge {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  border: 3px solid #2b6cb0;
+}
+
+@keyframes pulse-gold {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Conteúdo do card */
+.ranking-card-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Seção do jogador */
+.player-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.player-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  border: 3px solid;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.gold-avatar {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  border-color: #b8860b;
+  width: 80px;
+  height: 80px;
+  font-size: 2rem;
+}
+
+.silver-avatar {
+  background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
+  border-color: #a0a0a0;
+}
+
+.bronze-avatar {
+  background: linear-gradient(135deg, #cd7f32, #daa520);
+  border-color: #8b4513;
+}
+
+.regular-avatar {
+  background: linear-gradient(135deg, #4299e1, #3182ce);
+  border-color: #2b6cb0;
+}
+
+.player-info {
+  flex: 1;
+}
+
+.player-name {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.champion-name {
+  font-size: 1.4rem;
+  color: #b8860b;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.podium-name {
+  font-size: 1.2rem;
+  color: #2d3748;
+}
+
+.regular-name {
+  font-size: 1.1rem;
+  color: #2d3748;
+}
+
+.champion-title {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #b8860b;
+  padding: 0.2rem 0.6rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  border: 1px solid #b8860b;
+}
+
+.ranking-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.medal-emoji {
+  font-size: 1.5rem;
+}
+
+/* Seção de estatísticas */
+.stats-section {
+  display: flex;
+  gap: 1rem;
+  flex: 2;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  border-radius: 12px;
+  min-width: 120px;
+}
+
+.podium-stat {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.regular-stat {
+  background: rgba(247, 250, 252, 0.8);
+  border: 1px solid #e2e8f0;
+}
+
+.stat-icon {
+  color: #4299e1;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #2d3748;
+  margin-bottom: 0.2rem;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Seção de pontuação */
+.score-section {
+  text-align: center;
+  min-width: 120px;
+}
+
+.main-score {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.champion-score {
+  font-size: 2.5rem;
+  color: #b8860b;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.podium-score {
+  font-size: 2rem;
+  color: #4a5568;
+}
+
+.regular-score {
+  font-size: 1.8rem;
+  color: #2d3748;
+}
+
+.score-label {
+  font-size: 0.8rem;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.medal-badge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.gold-medal {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #b8860b;
+  border: 1px solid #b8860b;
+}
+
+.silver-medal {
+  background: linear-gradient(135deg, #c0c0c0, #e5e5e5);
+  color: #4a5568;
+  border: 1px solid #a0a0a0;
+}
+
+.bronze-medal {
+  background: linear-gradient(135deg, #cd7f32, #daa520);
+  color: #8b4513;
+  border: 1px solid #8b4513;
+}
+
+/* Barra de progresso do campeão */
+.champion-progress {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.progress-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #b8860b;
+  font-weight: 600;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 215, 0, 0.2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #ffd700, #ffed4e, #ffd700);
+  border-radius: 4px;
+  animation: progress-shine 2s infinite;
+}
+
+@keyframes progress-shine {
+  0% { background-position: -100% 0; }
+  100% { background-position: 100% 0; }
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .ranking .table-header,
   .ranking .table-row {
     grid-template-columns: 60px 1fr 80px 100px 120px 80px;
     font-size: 0.875rem;
+  }
+  
+  .ranking .podium {
+    gap: 0.5rem;
+  }
+  
+  .ranking .podium-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+  
+  .ranking .podium-avatar.gold {
+    width: 80px;
+    height: 80px;
+    font-size: 2rem;
+  }
+  
+  .ranking .podium-base {
+    width: 100px;
+  }
+  
+  .ranking-card-content {
+    gap: 1rem;
+  }
+  
+  .stats-section {
+    gap: 0.5rem;
+  }
+  
+  .stat-item {
+    min-width: 100px;
+    padding: 0.6rem;
   }
 }
 
@@ -486,6 +1124,80 @@
     gap: 1rem;
     margin-top: 1rem;
   }
+  
+  .ranking .podium-container {
+    padding: 1.5rem;
+  }
+  
+  .ranking .podium {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .ranking .podium-position {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .ranking .first-place {
+    order: 1;
+  }
+  
+  .ranking .second-place {
+    order: 2;
+  }
+  
+  .ranking .third-place {
+    order: 3;
+  }
+  
+  .ranking .podium-base {
+    width: 100%;
+    height: 60px !important;
+  }
+  
+  .ranking-card {
+    padding: 1rem;
+  }
+  
+  .ranking-card-content {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .player-section {
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .stats-section {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .stat-item {
+    min-width: 80px;
+    flex-direction: column;
+    text-align: center;
+    padding: 0.5rem;
+  }
+  
+  .score-section {
+    min-width: auto;
+  }
+  
+  .champion-score {
+    font-size: 2rem;
+  }
+  
+  .podium-score {
+    font-size: 1.5rem;
+  }
+  
+  .regular-score {
+    font-size: 1.3rem;
+  }
 }
 
 /* Desktop styles */
@@ -538,5 +1250,120 @@
   
   .ranking .tournament-info {
     padding: 1rem;
+  }
+  
+  .ranking .podium-container {
+    padding: 1rem;
+  }
+  
+  .ranking .podium-title h3 {
+    font-size: 1.4rem;
+  }
+  
+  .ranking .podium-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+  
+  .ranking .podium-avatar.gold {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+  
+  .ranking .podium-rank {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+  
+  .ranking .podium-rank.champion {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+  
+  .ranking .crown {
+    font-size: 1.5rem;
+  }
+  
+  .ranking-card {
+    padding: 0.8rem;
+  }
+  
+  .position-badge {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+    top: -8px;
+    left: -8px;
+  }
+  
+  .player-avatar {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
+  
+  .gold-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 1.5rem;
+  }
+  
+  .champion-name {
+    font-size: 1.1rem;
+  }
+  
+  .podium-name {
+    font-size: 1rem;
+  }
+  
+  .regular-name {
+    font-size: 0.9rem;
+  }
+  
+  .champion-title {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.4rem;
+  }
+  
+  .stats-section {
+    gap: 0.3rem;
+  }
+  
+  .stat-item {
+    min-width: 70px;
+    padding: 0.4rem;
+  }
+  
+  .stat-value {
+    font-size: 0.9rem;
+  }
+  
+  .stat-label {
+    font-size: 0.7rem;
+  }
+  
+  .champion-score {
+    font-size: 1.8rem;
+  }
+  
+  .podium-score {
+    font-size: 1.3rem;
+  }
+  
+  .regular-score {
+    font-size: 1.1rem;
+  }
+  
+  .score-label {
+    font-size: 0.7rem;
+  }
+  
+  .medal-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
   }
 }

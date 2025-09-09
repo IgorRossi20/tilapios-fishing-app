@@ -100,7 +100,182 @@
   min-height: 80px;
 }
 
-.form-row {
+/* Animações estilo Instagram */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(5deg);
+  }
+}
+
+/* Estilo dos posts - Instagram like */
+.post-card {
+  background: white;
+  border: 1px solid #dbdbdb;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+
+.post-header {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #efefef;
+}
+
+.post-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  font-size: 18px;
+}
+
+.post-content {
+  padding: 0;
+}
+
+.post-image {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  display: block;
+}
+
+.post-actions {
+  padding: 8px 16px;
+  border-top: 1px solid #efefef;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.action-btn:hover {
+  background: #f5f5f5;
+}
+
+.like-btn.liked {
+  animation: likeAnimation 0.3s ease;
+}
+
+@keyframes likeAnimation {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.interaction-counts {
+  font-size: 14px;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.likes-count {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.shares-count {
+  color: #8e8e8e;
+  margin-bottom: 4px;
+}
+
+.comments-toggle {
+  background: none;
+  border: none;
+  color: #8e8e8e;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.comments-section {
+  border-top: 1px solid #efefef;
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.comment-item {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.comment-author {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.comment-input-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #efefef;
+}
+
+.comment-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  padding: 8px 0;
+  background: transparent;
+}
+
+.comment-submit {
+  background: none;
+  border: none;
+  color: #0095f6;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.comment-submit:disabled {
+  color: #c7c7c7;
+  cursor: default;
+}
+
+/* Responsividade melhorada */
+@media (max-width: 768px) {
+  .feed {
+    padding: 0;
+  }
+  
+  .post-card {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+  
+  .feed-header {
+     padding: 16px;
+   }
+ }
+ 
+ .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
@@ -141,84 +316,18 @@
   background: #c7c7c7;
 }
 
+/* Container dos posts */
 .posts-container {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.post-card {
-  background: white;
-  border: 1px solid #dbdbdb;
-  overflow: hidden;
-  margin-bottom: 24px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.post-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.post-header {
-  padding: 1rem 1.5rem;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.post-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.25rem;
-  flex-shrink: 0;
-}
-
-.post-user-info {
-  flex: 1;
-}
-
-.post-user-name {
-  margin: 0 0 0.2rem 0;
-  color: #2c3e50;
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.post-user-level {
-  margin: 0;
-  color: #7f8c8d;
-  font-size: 0.75rem;
-}
-
-.post-timestamp {
-  color: #95a5a6;
-  font-size: 0.75rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.post-image {
-  width: 100%;
-  height: 300px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 4rem;
-  color: #dee2e6;
-}
-
+/* Conteúdo do post */
 .post-content {
   padding: 1rem 1.5rem;
+  color: #2c3e50;
+  line-height: 1.6;
 }
 
 .post-description {
@@ -227,6 +336,50 @@
   line-height: 1.5;
 }
 
+/* Informações do usuário */
+.post-user-info {
+  flex: 1;
+}
+
+.post-user-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+}
+
+.post-user-level {
+  font-size: 11px;
+  color: #8e8e8e;
+  background: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.post-timestamp {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #8e8e8e;
+  margin-top: 2px;
+}
+
+/* Valores dos detalhes */
+.detail-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: #7f8c8d;
+  margin-top: 2px;
+}
+
+/* Detalhes do post (espécie, peso, local) */
 .post-details {
   display: flex;
   flex-wrap: wrap;
@@ -247,6 +400,7 @@
   height: 16px;
 }
 
+/* Ações do post */
 .post-actions {
   padding: 1rem 1.5rem;
   border-top: 1px solid #e9ecef;
@@ -254,32 +408,36 @@
   gap: 1.5rem;
 }
 
-.action-btn {
-  background: transparent;
-  border: none;
-  color: #6c757d;
-  cursor: pointer;
+/* Contadores de interação */
+.interaction-counts {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+  padding: 0 1.5rem;
+}
+
+.likes-count,
+.shares-count {
+  color: #6c757d;
   font-size: 0.875rem;
-  transition: color 0.2s ease;
-  padding: 0.5rem;
-  border-radius: 6px;
+  font-weight: 500;
 }
 
-.action-btn:hover {
+/* Toggle de comentários */
+.comments-toggle {
+  background: none;
+  border: none;
   color: #007bff;
-  background: #f8f9fa;
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0.25rem 1.5rem;
+  text-align: left;
+  transition: color 0.2s ease;
 }
 
-.action-btn.liked {
-  color: #e74c3c;
-}
-
-.action-btn svg {
-  width: 18px;
-  height: 18px;
+.comments-toggle:hover {
+  color: #0056b3;
+  text-decoration: underline;
 }
 
 .empty-state {
