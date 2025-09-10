@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnóstico Mobile - Tilapios</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        body {
+            padding: 16px;
+            background-color: #f9fafb;
+            color: #1f2937;
+        }
+        
+        header {
+            background-color: #0ea5e9;
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        h2 {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+            color: #0369a1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        button {
+            background-color: #0ea5e9;
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            flex-grow: 1;
+            min-width: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        
+        button:hover {
+            background-color: #0284c7;
+        }
+        
+        button.secondary {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
+        
+        button.secondary:hover {
+            background-color: #d1d5db;
+        }
+        
+        button.warning {
+            background-color: #f59e0b;
+        }
+        
+        button.warning:hover {
+            background-color: #d97706;
+        }
+        
+        button.danger {
+            background-color: #ef4444;
+        }
+        
+        button.danger:hover {
+            background-color: #dc2626;
+        }
+        
+        #output {
+            background-color: #f3f4f6;
+            border-radius: 6px;
+            padding: 16px;
+            margin-top: 16px;
+            min-height: 100px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-ok {
+            background-color: #10b981;
+        }
+        
+        .status-warning {
+            background-color: #f59e0b;
+        }
+        
+        .status-error {
+            background-color: #ef4444;
+        }
+        
+        .status-unknown {
+            background-color: #9ca3af;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #f9fafb;
+        }
+        
+        .home-link {
+            display: block;
+            text-align: center;
+            margin-top: 24px;
+            color: #0ea5e9;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .home-link:hover {
+            text-decoration: underline;
+        }
+        
+        @media (min-width: 640px) {
+            body {
+                padding: 24px;
+                max-width: 800px;
+                margin: 0 auto;
+            }
+            
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔍 Diagnóstico Mobile</h1>
+        <div class="subtitle">Ferramentas para identificar e resolver problemas em dispositivos móveis</div>
+    </header>
+    
+    <div class="card">
+        <h2>📱 Status do Dispositivo</h2>
+        <div id="device-status">
+            <div class="status-item">
+                <span class="status-indicator status-unknown"></span>
+                <span>Verificando status do dispositivo...</span>
+            </div>
+        </div>
+        <button onclick="checkDeviceStatus()">🔄 Atualizar Status</button>
+    </div>
+    
+    <div class="card">
+        <h2>🧪 Testes de Diagnóstico</h2>
+        <div class="button-container">
+            <button onclick="testLocalStorage()">💾 LocalStorage</button>
+            <button onclick="testFirebase()">🔥 Firebase</button>
+            <button onclick="testNetwork()">🌐 Rede</button>
+            <button onclick="checkDeviceInfo()">📊 Info do Dispositivo</button>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h2>🛠️ Ferramentas</h2>
+        <div class="button-container">
+            <button onclick="addTestData()" class="secondary">📥 Adicionar Dados de Teste</button>
+            <button onclick="checkData()" class="secondary">👁️ Verificar Dados</button>
+            <button onclick="clearCache()" class="warning">🧹 Limpar Cache</button>
+            <button onclick="resetApp()" class="danger">🔄 Resetar Aplicativo</button>
+        </div>
+    </div>
+    
+    <div id="output">Selecione uma opção acima para iniciar o diagnóstico...</div>
+    
+    <a href="/" class="home-link">← Voltar para a Página Inicial</a>
+    
+    <script>
+        // Verificar status do dispositivo
+        function checkDeviceStatus() {
+            const statusContainer = document.getElementById('device-status');
+            const output = document.getElementById('output');
+            output.innerHTML = '🔄 Verificando status do dispositivo...';
+            
+            // Limpar status anterior
+            statusContainer.innerHTML = '';
+            
+            // Verificar conexão
+            const isOnline = navigator.onLine;
+            addStatusItem(statusContainer, 
+                          isOnline ? 'status-ok' : 'status-error',
+                          `Conexão: ${isOnline ? 'Online ✅' : 'Offline ❌'}`); 
+            
+            // Verificar localStorage
+            let localStorageStatus = 'status-ok';
+            let localStorageMessage = 'LocalStorage: Disponível ✅';
+            
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+            } catch (e) {
+                localStorageStatus = 'status-error';
+                localStorageMessage = 'LocalStorage: Indisponível ❌';
+            }
+            
+            addStatusItem(statusContainer, localStorageStatus, localStorageMessage);
+            
+            // Verificar se houve carregamento lento
+            const slowLoad = localStorage.getItem('tilapios_slow_load');
+            addStatusItem(statusContainer, 
+                          slowLoad ? 'status-warning' : 'status-ok',
+                          `Tempo de Carregamento: ${slowLoad ? 'Lento ⚠️' : 'Normal ✅'}`);
+            
+            // Verificar se é um dispositivo móvel
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            addStatusItem(statusContainer, 
+                          'status-ok',
+                          `Tipo de Dispositivo: ${isMobile ? 'Móvel 📱' : 'Desktop 💻'}`);
+            
+            // Resumo no output
+            output.innerHTML = '✅ Verificação de status concluída!';
+        }
+        
+        function addStatusItem(container, statusClass, message) {
+            const item = document.createElement('div');
+            item.className = 'status-item';
+            item.innerHTML = `
+                <span class="status-indicator ${statusClass}"></span>
+                <span>${message}</span>
+            `;
+            container.appendChild(item);
+        }
+        
+        // Testar localStorage
+        function testLocalStorage() {
+            const output = document.getElementById('output');
+            output.innerHTML = '🔄 Testando LocalStorage...';
+            
+            try {
+                // Testar escrita
+                localStorage.setItem('test_key', 'test_value_' + Date.now());
+                const readValue = localStorage.getItem('test_key');
+                
+                // Verificar se o valor lido é o mesmo que foi escrito
+                if (readValue && readValue.startsWith('test_value_')) {
+                    // Listar todas as chaves do localStorage
+                    let keys = [];
+                    for (let i = 0; i < localStorage.length; i++) {
+                        keys.push(localStorage.key(i));
+                    }
+                    
+                    output.innerHTML = `✅ LocalStorage funcionando corretamente!
+
+Teste de escrita/leitura: Sucesso
+Valor armazenado: ${readValue}
+
+Chaves encontradas (${keys.length}):
+${keys.join('\n')}`;
+                } else {
+                    output.innerHTML = '❌ Erro: LocalStorage não está funcionando corretamente. O valor lido não corresponde ao valor escrito.';
+                }
+            } catch (e) {
+                output.innerHTML = `❌ Erro ao acessar LocalStorage: ${e.message}
+
+Isso pode ocorrer devido a:
+- Navegação privada/anônima
+- Configurações de privacidade restritivas
+- Cota de armazenamento excedida`;
+            }
+        }
+        
+        // Testar Firebase
+        function testFirebase() {
+            const output = document.getElementById('output');
+            output.innerHTML = '🔄 Testando conexão com Firebase...';
+            
+            // Carregar o script de diagnóstico do Firebase
+            const script = document.createElement('script');
+            script.src = '/firebase-check.js';
+            script.onload = function() {
+                // O script firebase-check.js deve definir uma função global runFirebaseCheck
+                if (typeof window.runFirebaseCheck === 'function') {
+                    window.runFirebaseCheck(function(results) {
+                        output.innerHTML = results;
+                    });
+                } else {
+                    output.innerHTML = '❌ Erro: Script de diagnóstico do Firebase não encontrado ou não carregou corretamente.';
+                }
+            };
+            script.onerror = function() {
+                output.innerHTML = '❌ Erro: Não foi possível carregar o script de diagnóstico do Firebase.';
+            };
+            document.body.appendChild(script);
+        }
+        
+        // Testar rede
+        function testNetwork() {
+            const output = document.getElementById('output');
+            output.innerHTML = '🔄 Testando conexão de rede...';
+            
+            // Verificar status online
+            const isOnline = navigator.onLine;
+            let results = `Status de Conexão: ${isOnline ? '✅ Online' : '❌ Offline'}`;
+            
+            // Informações de conexão (se disponíveis)
+            if (navigator.connection) {
+                const conn = navigator.connection;
+                results += `\n\nInformações de Conexão:\n`;
+                results += `- Tipo: ${conn.effectiveType || 'Desconhecido'}\n`;
+                results += `- Downlink: ${conn.downlink || 'Desconhecido'} Mbps\n`;
+                results += `- RTT: ${conn.rtt || 'Desconhecido'} ms\n`;
+                results += `- Economia de Dados: ${conn.saveData ? 'Ativado' : 'Desativado'}\n`;
+            }
+            
+            // Testar ping para API
+            results += '\n🔄 Testando ping para API...';
+            
+            const startTime = Date.now();
+            fetch('/api/ping', { method: 'GET', cache: 'no-store' })
+                .then(response => {
+                    const endTime = Date.now();
+                    const pingTime = endTime - startTime;
+                    
+                    if (response.ok) {
+                        results += `\n✅ API respondeu em ${pingTime}ms`;
+                    } else {
+                        results += `\n⚠️ API respondeu com status ${response.status} em ${pingTime}ms`;
+                    }
+                    
+                    output.innerHTML = results;
+                    
+                    // Testar download de imagem
+                    testImageDownload();
+                })
+                .catch(error => {
+                    results += `\n❌ Falha ao conectar com a API: ${error.message}`;
+                    output.innerHTML = results;
+                    
+                    // Continuar com o teste de imagem mesmo se a API falhar
+                    testImageDownload();
+                });
+                
+            function testImageDownload() {
+                results += '\n\n🔄 Testando download de imagem...';
+                output.innerHTML = results;
+                
+                const imgStartTime = Date.now();
+                const img = new Image();
+                
+                img.onload = function() {
+                    const imgEndTime = Date.now();
+                    const imgLoadTime = imgEndTime - imgStartTime;
+                    results += `\n✅ Imagem carregada em ${imgLoadTime}ms`;
+                    output.innerHTML = results;
+                };
+                
+                img.onerror = function() {
+                    results += '\n❌ Falha ao carregar imagem';
+                    output.innerHTML = results;
+                };
+                
+                // Adicionar timestamp para evitar cache
+                img.src = '/assets/test-image.jpg?t=' + Date.now();
+            }
+        }
+        
+        // Verificar informações do dispositivo
+        function checkDeviceInfo() {
+            const output = document.getElementById('output');
+            
+            // Coletar informações do dispositivo
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                vendor: navigator.vendor,
+                language: navigator.language,
+                cookiesEnabled: navigator.cookieEnabled,
+                online: navigator.onLine,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                pixelRatio: window.devicePixelRatio,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
+                localStorage: !!window.localStorage,
+                sessionStorage: !!window.sessionStorage,
+                indexedDB: !!window.indexedDB,
+                serviceWorker: !!navigator.serviceWorker,
+                connection: navigator.connection ? {
+                    effectiveType: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink,
+                    rtt: navigator.connection.rtt,
+                    saveData: navigator.connection.saveData
+                } : 'Não disponível'
+            };
+            
+            // Verificar se é um dispositivo móvel
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Formatar a saída
+            let html = `<h3>📱 Informações do Dispositivo</h3>
+<div style="background-color: ${isMobile ? '#fef3c7' : '#dbeafe'}; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+  <strong>Tipo de Dispositivo:</strong> ${isMobile ? '📱 Móvel' : '💻 Desktop'}
+</div>
+
+<h4>Navegador e Sistema</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+  <li><strong>User Agent:</strong> ${info.userAgent}</li>
+  <li><strong>Plataforma:</strong> ${info.platform}</li>
+  <li><strong>Fabricante:</strong> ${info.vendor || 'Não disponível'}</li>
+  <li><strong>Idioma:</strong> ${info.language}</li>
+</ul>
+
+<h4>Tela e Viewport</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+  <li><strong>Resolução da Tela:</strong> ${info.screenWidth} x ${info.screenHeight}</li>
+  <li><strong>Tamanho do Viewport:</strong> ${info.viewportWidth} x ${info.viewportHeight}</li>
+  <li><strong>Pixel Ratio:</strong> ${info.pixelRatio}</li>
+</ul>
+
+<h4>Recursos do Navegador</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+  <li><strong>Cookies Habilitados:</strong> ${info.cookiesEnabled ? '✅ Sim' : '❌ Não'}</li>
+  <li><strong>Online:</strong> ${info.online ? '✅ Sim' : '❌ Não'}</li>
+  <li><strong>LocalStorage:</strong> ${info.localStorage ? '✅ Disponível' : '❌ Indisponível'}</li>
+  <li><strong>SessionStorage:</strong> ${info.sessionStorage ? '✅ Disponível' : '❌ Indisponível'}</li>
+  <li><strong>IndexedDB:</strong> ${info.indexedDB ? '✅ Disponível' : '❌ Indisponível'}</li>
+  <li><strong>Service Worker:</strong> ${info.serviceWorker ? '✅ Suportado' : '❌ Não suportado'}</li>
+</ul>`;
+            
+            // Adicionar informações de conexão se disponíveis
+            if (info.connection !== 'Não disponível') {
+                html += `
+<h4>Informações de Conexão</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+  <li><strong>Tipo de Conexão:</strong> ${info.connection.effectiveType || 'Desconhecido'}</li>
+  <li><strong>Downlink:</strong> ${info.connection.downlink || 'Desconhecido'} Mbps</li>
+  <li><strong>RTT:</strong> ${info.connection.rtt || 'Desconhecido'} ms</li>
+  <li><strong>Modo Economia de Dados:</strong> ${info.connection.saveData ? '✅ Ativado' : '❌ Desativado'}</li>
+</ul>`;
+            }
+            
+            // Adicionar botão para copiar informações
+            html += `
+<button onclick="copyDeviceInfo()" style="background-color: #6366f1; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 15px;">📋 Copiar Informações</button>`;
+            
+            // Adicionar função para copiar informações
+            window.copyDeviceInfo = function() {
+                const plainText = `Informações do Dispositivo:\n\n` +
+                    `Tipo de Dispositivo: ${isMobile ? 'Móvel' : 'Desktop'}\n` +
+                    `User Agent: ${info.userAgent}\n` +
+                    `Plataforma: ${info.platform}\n` +
+                    `Resolução da Tela: ${info.screenWidth} x ${info.screenHeight}\n` +
+                    `Tamanho do Viewport: ${info.viewportWidth} x ${info.viewportHeight}\n` +
+                    `Pixel Ratio: ${info.pixelRatio}\n` +
+                    `Cookies Habilitados: ${info.cookiesEnabled ? 'Sim' : 'Não'}\n` +
+                    `Online: ${info.online ? 'Sim' : 'Não'}\n` +
+                    `LocalStorage: ${info.localStorage ? 'Disponível' : 'Indisponível'}\n` +
+                    `SessionStorage: ${info.sessionStorage ? 'Disponível' : 'Indisponível'}\n` +
+                    `IndexedDB: ${info.indexedDB ? 'Disponível' : 'Indisponível'}\n` +
+                    `Service Worker: ${info.serviceWorker ? 'Suportado' : 'Não suportado'}\n`;
+                
+                navigator.clipboard.writeText(plainText)
+                    .then(() => {
+                        alert('Informações copiadas para a área de transferência!');
+                    })
+                    .catch(err => {
+                        console.error('Erro ao copiar: ', err);
+                        alert('Não foi possível copiar as informações. Erro: ' + err);
+                    });
+            };
+            
+            output.innerHTML = html;
+        }
+        
+        // Adicionar dados de teste
+        function addTestData() {
+            const output = document.getElementById('output');
+            
+            try {
+                // Dados de exemplo para pesca
+                const testData = [
+                    { id: 'catch1', date: '2023-06-15', species: 'Tilápia', weight: 1.2, location: 'Lago Sul' },
+                    { id: 'catch2', date: '2023-06-16', species: 'Tilápia', weight: 0.8, location: 'Lago Norte' },
+                    { id: 'catch3', date: '2023-06-17', species: 'Tilápia', weight: 1.5, location: 'Lago Leste' },
+                    { id: 'catch4', date: '2023-06-18', species: 'Tilápia', weight: 2.0, location: 'Lago Oeste' },
+                    { id: 'catch5', date: '2023-06-19', species: 'Tilápia', weight: 1.7, location: 'Lago Central' }
+                ];
+                
+                // Armazenar no localStorage
+                localStorage.setItem('fishing_catches', JSON.stringify(testData));
+                
+                output.innerHTML = `✅ Dados de teste adicionados com sucesso!\n\n${testData.length} registros de pesca foram armazenados no localStorage.`;
+            } catch (e) {
+                output.innerHTML = `❌ Erro ao adicionar dados de teste: ${e.message}`;
+            }
+        }
+        
+        // Verificar dados
+        function checkData() {
+            const output = document.getElementById('output');
+            
+            try {
+                // Recuperar dados do localStorage
+                const catchesData = localStorage.getItem('fishing_catches');
+                
+                if (catchesData) {
+                    const catches = JSON.parse(catchesData);
+                    let html = `<h3>📊 Dados Armazenados</h3>\n\n`;
+                    
+                    if (catches.length > 0) {
+                        html += `<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">\n`;
+                        html += `<tr style="background-color: #e5e7eb;">\n`;
+                        html += `<th style="padding: 8px; text-align: left; border: 1px solid #d1d5db;">ID</th>\n`;
+                        html += `<th style="padding: 8px; text-align: left; border: 1px solid #d1d5db;">Data</th>\n`;
+                        html += `<th style="padding: 8px; text-align: left; border: 1px solid #d1d5db;">Espécie</th>\n`;
+                        html += `<th style="padding: 8px; text-align: left; border: 1px solid #d1d5db;">Peso (kg)</th>\n`;
+                        html += `<th style="padding: 8px; text-align: left; border: 1px solid #d1d5db;">Local</th>\n`;
+                        html += `</tr>\n`;
+                        
+                        catches.forEach((item, index) => {
+                            const rowStyle = index % 2 === 0 ? '' : 'background-color: #f9fafb;';
+                            html += `<tr style="${rowStyle}">\n`;
+                            html += `<td style="padding: 8px; border: 1px solid #d1d5db;">${item.id}</td>\n`;
+                            html += `<td style="padding: 8px; border: 1px solid #d1d5db;">${item.date}</td>\n`;
+                            html += `<td style="padding: 8px; border: 1px solid #d1d5db;">${item.species}</td>\n`;
+                            html += `<td style="padding: 8px; border: 1px solid #d1d5db;">${item.weight}</td>\n`;
+                            html += `<td style="padding: 8px; border: 1px solid #d1d5db;">${item.location}</td>\n`;
+                            html += `</tr>\n`;
+                        });
+                        
+                        html += `</table>\n`;
+                    } else {
+                        html += `<p>Nenhum dado encontrado.</p>\n`;
+                    }
+                    
+                    output.innerHTML = html;
+                } else {
+                    output.innerHTML = '❌ Nenhum dado encontrado no localStorage.';
+                }
+            } catch (e) {
+                output.innerHTML = `❌ Erro ao verificar dados: ${e.message}`;
+            }
+        }
+        
+        // Limpar cache
+        function clearCache() {
+            const output = document.getElementById('output');
+            output.innerHTML = '🔄 Limpando cache...';
+            
+            try {
+                // Lista de chaves para preservar (opcional)
+                const keysToPreserve = [];
+                
+                // Limpar localStorage (exceto chaves preservadas)
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (!keysToPreserve.includes(key)) {
+                        localStorage.removeItem(key);
+                        i--; // Ajustar índice após remoção
+                    }
+                }
+                
+                // Limpar cookies
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i];
+                    const eqPos = cookie.indexOf('=');
+                    const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                    document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+                }
+                
+                output.innerHTML = '✅ Cache limpo com sucesso! Redirecionando para a página inicial em 2 segundos...';
+                
+                // Redirecionar após 2 segundos
+                setTimeout(function() {
+                    window.location.href = '/';
+                }, 2000);
+            } catch (e) {
+                output.innerHTML = `❌ Erro ao limpar cache: ${e.message}`;
+            }
+        }
+        
+        // Resetar aplicativo
+        function resetApp() {
+            const output = document.getElementById('output');
+            
+            if (confirm('⚠️ Tem certeza que deseja resetar o aplicativo? Todos os dados serão perdidos.')) {
+                output.innerHTML = '🔄 Resetando aplicativo...';
+                
+                try {
+                    // Limpar todo o localStorage
+                    localStorage.clear();
+                    
+                    // Limpar cookies
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i];
+                        const eqPos = cookie.indexOf('=');
+                        const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                        document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+                    }
+                    
+                    // Limpar cache se o navegador suportar
+                    if ('caches' in window) {
+                        caches.keys().then(function(names) {
+                            for (let name of names) {
+                                caches.delete(name);
+                            }
+                        });
+                    }
+                    
+                    output.innerHTML = '✅ Aplicativo resetado com sucesso! Redirecionando para a página inicial em 3 segundos...';
+                    
+                    // Redirecionar após 3 segundos
+                    setTimeout(function() {
+                        window.location.href = '/?reset=true';
+                    }, 3000);
+                } catch (e) {
+                    output.innerHTML = `❌ Erro ao resetar aplicativo: ${e.message}`;
+                }
+            } else {
+                output.innerHTML = '⚠️ Operação de reset cancelada pelo usuário.';
+            }
+        }
+        
+        // Executar verificação de status ao carregar a página
+        window.onload = function() {
+            checkDeviceStatus();
+        };
+    </script>
+</body>
+</html>

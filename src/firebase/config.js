@@ -6,14 +6,14 @@ import { getAuth } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
-// Configuração do Firebase para produção
+// Configuração do Firebase usando variáveis de ambiente
 const firebaseConfig = {
-  apiKey: "AIzaSyC1V5ZxBZcP250p80ZHOZ5iNYz_rk7twR4",
-  authDomain: "tilapios-app-293fd.firebaseapp.com",
-  projectId: "tilapios-app-293fd",
-  storageBucket: "tilapios-app-293fd.appspot.com",
-  messagingSenderId: "437700591817",
-  appId: "1:437700591817:web:094f4cd27c4c9af7918d18"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 }
 
 // Inicializar Firebase

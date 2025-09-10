@@ -1,13 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Teste Feed</title>
-</head>
+    <style>
+      #mobile-helper {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #3b82f6;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        text-align: center;
+        z-index: 9999;
+        max-width: 90%;
+        animation: bounce 2s infinite;
+      }
+      
+      #mobile-helper a {
+        color: white;
+        text-decoration: underline;
+        font-weight: bold;
+      }
+      
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+        40% {transform: translateX(-50%) translateY(-10px);}
+        60% {transform: translateX(-50%) translateY(-5px);}
+      }
+    </style>
+    <script>
+      // Script para detectar problemas em dispositivos móveis
+      (function() {
+        // Verificar se é um dispositivo móvel
+        function isMobile() {
+          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // Verificar tempo de carregamento
+        window.addEventListener('load', function() {
+          const startTime = parseInt(localStorage.getItem('tilapios_load_start') || '0');
+          const loadTime = Date.now() - startTime;
+          
+          // Se o tempo de carregamento for muito longo (mais de 10 segundos) em dispositivo móvel
+          if (loadTime > 10000 && isMobile()) {
+            localStorage.setItem('tilapios_slow_load', 'true');
+          }
+        });
+      })();
+    </script>
 <body>
     <h1>Teste do Feed</h1>
-    <button onclick="addTestData()">Adicionar Dados de Teste</button>
-    <button onclick="checkData()">Verificar Dados</button>
-    <div id="output"></div>
+    <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+        <button onclick="addTestData()" style="background-color: #3b82f6; color: white; border: none; padding: 8px 16px; border-radius: 4px;">Adicionar Dados de Teste</button>
+        <button onclick="checkData()" style="background-color: #10b981; color: white; border: none; padding: 8px 16px; border-radius: 4px;">Verificar Dados</button>
+        <button onclick="clearCache()" style="background-color: #f87171; color: white; border: none; padding: 8px 16px; border-radius: 4px;">Limpar Cache e Recarregar</button>
+        <button onclick="testFirebase()" style="background-color: #8b5cf6; color: white; border: none; padding: 8px 16px; border-radius: 4px;">Testar Firebase</button>
+        <button onclick="checkDeviceInfo()" style="background-color: #f59e0b; color: white; border: none; padding: 8px 16px; border-radius: 4px;">Info do Dispositivo</button>
+    </div>
+    <div id="output" style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; margin-top: 15px; font-family: monospace; white-space: pre-wrap;"></div>
+    <div id="mobile-helper">
+      Problemas para acessar? <a href="/mobile-debug.html">Clique aqui</a>
+    </div>
 
     <script>
         function addTestData() {
@@ -49,6 +110,189 @@
             const data = JSON.parse(localStorage.getItem('fishing_catches') || '[]');
             document.getElementById('output').innerHTML = `📊 Total de capturas: ${data.length}<br><pre>${JSON.stringify(data, null, 2)}</pre>`;
         }
+        
+        function clearCache() {
+            // Limpar dados do localStorage
+            const keysToKeep = [];
+            const totalKeys = localStorage.length;
+            
+            // Mostrar mensagem de limpeza
+            document.getElementById('output').innerHTML = '🧹 Limpando cache...';
+            
+            // Limpar todos os itens do localStorage exceto os que queremos manter
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (!keysToKeep.includes(key)) {
+                    localStorage.removeItem(key);
+                    i--; // Ajustar o índice após remover um item
+                }
+            }
+            
+            // Limpar cookies relacionados à aplicação
+            document.cookie.split(';').forEach(function(c) {
+                document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+            });
+            
+            // Atualizar mensagem
+            document.getElementById('output').innerHTML = `🧹 Cache limpo! Removidos ${totalKeys - keysToKeep.length} itens do localStorage e todos os cookies.`;
+            
+            // Redirecionar após 2 segundos
+            setTimeout(function() {
+                window.location.href = '/';
+            }, 2000);
+        }
+        
+        function testFirebase() {
+            const output = document.getElementById('output');
+            output.innerHTML = '🔄 Testando conexão com Firebase...';
+            
+            // Carregar o script de diagnóstico do Firebase
+            const script = document.createElement('script');
+            script.src = '/firebase-check.js';
+            script.onload = function() {
+                // O script firebase-check.js deve definir uma função global runFirebaseCheck
+                if (typeof window.runFirebaseCheck === 'function') {
+                    window.runFirebaseCheck(function(results) {
+                        output.innerHTML = results;
+                    });
+                } else {
+                    output.innerHTML = '❌ Erro: Script de diagnóstico do Firebase não encontrado ou não carregou corretamente.';
+                }
+            };
+            script.onerror = function() {
+                output.innerHTML = '❌ Erro: Não foi possível carregar o script de diagnóstico do Firebase.';
+            };
+            document.body.appendChild(script);
+        }
+        
+        function checkDeviceInfo() {
+            const output = document.getElementById('output');
+            
+            // Coletar informações do dispositivo
+            const info = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                vendor: navigator.vendor,
+                language: navigator.language,
+                cookiesEnabled: navigator.cookieEnabled,
+                online: navigator.onLine,
+                screenWidth: window.screen.width,
+                screenHeight: window.screen.height,
+                pixelRatio: window.devicePixelRatio,
+                viewportWidth: window.innerWidth,
+                viewportHeight: window.innerHeight,
+                localStorage: !!window.localStorage,
+                sessionStorage: !!window.sessionStorage,
+                indexedDB: !!window.indexedDB,
+                serviceWorker: !!navigator.serviceWorker,
+                connection: navigator.connection ? {
+                    effectiveType: navigator.connection.effectiveType,
+                    downlink: navigator.connection.downlink,
+                    rtt: navigator.connection.rtt,
+                    saveData: navigator.connection.saveData
+                } : 'Não disponível'
+            };
+            
+            // Verificar se é um dispositivo móvel
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Formatar a saída
+            let html = `<h3>📱 Informações do Dispositivo</h3>
+<div style="background-color: ${isMobile ? '#fef3c7' : '#dbeafe'}; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+  <strong>Tipo de Dispositivo:</strong> ${isMobile ? '📱 Móvel' : '💻 Desktop'}
+</div>
+
+<h4>Navegador e Sistema</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+  <li><strong>User Agent:</strong> ${info.userAgent}</li>
+  <li><strong>Plataforma:</strong> ${info.platform}</li>
+  <li><strong>Fabricante:</strong> ${info.vendor || 'Não disponível'}</li>
+  <li><strong>Idioma:</strong> ${info.language}</li>
+</ul>
+
+<h4>Tela e Viewport</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+  <li><strong>Resolução da Tela:</strong> ${info.screenWidth} x ${info.screenHeight}</li>
+  <li><strong>Tamanho do Viewport:</strong> ${info.viewportWidth} x ${info.viewportHeight}</li>
+  <li><strong>Pixel Ratio:</strong> ${info.pixelRatio}</li>
+</ul>
+
+<h4>Recursos do Navegador</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+  <li><strong>Cookies Habilitados:</strong> ${info.cookiesEnabled ? '✅ Sim' : '❌ Não'}</li>
+  <li><strong>Online:</strong> ${info.online ? '✅ Sim' : '❌ Não'}</li>
+  <li><strong>LocalStorage:</strong> ${info.localStorage ? '✅ Disponível' : '❌ Indisponível'}</li>
+  <li><strong>SessionStorage:</strong> ${info.sessionStorage ? '✅ Disponível' : '❌ Indisponível'}</li>
+  <li><strong>IndexedDB:</strong> ${info.indexedDB ? '✅ Disponível' : '❌ Indisponível'}</li>
+  <li><strong>Service Worker:</strong> ${info.serviceWorker ? '✅ Suportado' : '❌ Não suportado'}</li>
+</ul>`;
+            
+            // Adicionar informações de conexão se disponíveis
+            if (info.connection !== 'Não disponível') {
+                html += `
+<h4>Informações de Conexão</h4>
+<ul style="list-style-type: none; padding-left: 0;">
+  <li><strong>Tipo de Conexão:</strong> ${info.connection.effectiveType || 'Desconhecido'}</li>
+  <li><strong>Downlink:</strong> ${info.connection.downlink || 'Desconhecido'} Mbps</li>
+  <li><strong>RTT:</strong> ${info.connection.rtt || 'Desconhecido'} ms</li>
+  <li><strong>Modo Economia de Dados:</strong> ${info.connection.saveData ? '✅ Ativado' : '❌ Desativado'}</li>
+</ul>`;
+            }
+            
+            // Adicionar botão para copiar informações
+            html += `
+<button onclick="copyDeviceInfo()" style="background-color: #6366f1; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-top: 15px;">📋 Copiar Informações</button>`;
+            
+            // Adicionar função para copiar informações
+            window.copyDeviceInfo = function() {
+                const plainText = `Informações do Dispositivo:\n\n` +
+                    `Tipo de Dispositivo: ${isMobile ? 'Móvel' : 'Desktop'}\n` +
+                    `User Agent: ${info.userAgent}\n` +
+                    `Plataforma: ${info.platform}\n` +
+                    `Resolução da Tela: ${info.screenWidth} x ${info.screenHeight}\n` +
+                    `Tamanho do Viewport: ${info.viewportWidth} x ${info.viewportHeight}\n` +
+                    `Pixel Ratio: ${info.pixelRatio}\n` +
+                    `Cookies Habilitados: ${info.cookiesEnabled ? 'Sim' : 'Não'}\n` +
+                    `Online: ${info.online ? 'Sim' : 'Não'}\n` +
+                    `LocalStorage: ${info.localStorage ? 'Disponível' : 'Indisponível'}\n` +
+                    `SessionStorage: ${info.sessionStorage ? 'Disponível' : 'Indisponível'}\n` +
+                    `IndexedDB: ${info.indexedDB ? 'Disponível' : 'Indisponível'}\n` +
+                    `Service Worker: ${info.serviceWorker ? 'Suportado' : 'Não suportado'}\n`;
+                
+                navigator.clipboard.writeText(plainText)
+                    .then(() => {
+                        alert('Informações copiadas para a área de transferência!');
+                    })
+                    .catch(err => {
+                        console.error('Erro ao copiar: ', err);
+                        alert('Não foi possível copiar as informações. Erro: ' + err);
+                    });
+            };
+            
+            output.innerHTML = html;
+        }
+    </script>
+    
+    <script>
+      // Script para exibir o helper em dispositivos móveis após um tempo
+      (function() {
+        function isMobile() {
+          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        if (isMobile()) {
+          // Exibir o helper após 5 segundos em dispositivos móveis
+          setTimeout(function() {
+            var helper = document.getElementById('mobile-helper');
+            if (helper) helper.style.display = 'block';
+            
+            // Esconder após 15 segundos se não houver interação
+            setTimeout(function() {
+              if (helper && !helper.dataset.clicked) helper.style.display = 'none';
+            }, 15000);
+          }, 5000);
+        }
+      })();
     </script>
 </body>
 </html>

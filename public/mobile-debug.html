@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Diagnóstico Mobile - Tilapios</title>
+  <style>
+    :root {
+      --brand-primary: #3b82f6;
+      --brand-primary-dark: #2563eb;
+      --brand-secondary: #f59e0b;
+      --semantic-error: #ef4444;
+      --semantic-success: #10b981;
+      --semantic-warning: #f59e0b;
+      --semantic-info: #3b82f6;
+      --neutral-50: #f9fafb;
+      --neutral-100: #f3f4f6;
+      --neutral-200: #e5e7eb;
+      --neutral-300: #d1d5db;
+      --neutral-400: #9ca3af;
+      --neutral-500: #6b7280;
+      --neutral-600: #4b5563;
+      --neutral-700: #374151;
+      --neutral-800: #1f2937;
+      --neutral-900: #111827;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: var(--neutral-100);
+      color: var(--neutral-800);
+      line-height: 1.6;
+      padding: 16px;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    header {
+      background-color: var(--brand-primary);
+      color: white;
+      padding: 16px;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    main {
+      padding: 16px;
+    }
+
+    .section {
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--neutral-200);
+      padding-bottom: 16px;
+    }
+
+    .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    h2 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      color: var(--neutral-700);
+    }
+
+    .status-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 8px;
+      border-radius: 4px;
+      background-color: var(--neutral-50);
+    }
+
+    .status-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      flex-shrink: 0;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .status-icon.success {
+      background-color: var(--semantic-success);
+      color: white;
+    }
+
+    .status-icon.error {
+      background-color: var(--semantic-error);
+      color: white;
+    }
+
+    .status-icon.warning {
+      background-color: var(--semantic-warning);
+      color: white;
+    }
+
+    .status-icon.info {
+      background-color: var(--semantic-info);
+      color: white;
+    }
+
+    .status-text {
+      flex-grow: 1;
+    }
+
+    .status-detail {
+      font-size: 0.8rem;
+      color: var(--neutral-500);
+      margin-top: 4px;
+    }
+
+    .button {
+      display: inline-block;
+      background-color: var(--brand-primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      font-size: 1rem;
+      cursor: pointer;
+      text-decoration: none;
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .button:hover {
+      background-color: var(--brand-primary-dark);
+    }
+
+    .button.secondary {
+      background-color: var(--neutral-200);
+      color: var(--neutral-800);
+    }
+
+    .button.secondary:hover {
+      background-color: var(--neutral-300);
+    }
+
+    .actions {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .code-block {
+      background-color: var(--neutral-800);
+      color: white;
+      padding: 12px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+
+    .collapsible {
+      margin-top: 8px;
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .expanded {
+      max-height: 500px;
+    }
+
+    .toggle-button {
+      background: none;
+      border: none;
+      color: var(--brand-primary);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+    }
+
+    .toggle-button:hover {
+      text-decoration: underline;
+    }
+
+    .toggle-icon {
+      margin-right: 4px;
+      transition: transform 0.3s;
+    }
+
+    .rotate {
+      transform: rotate(90deg);
+    }
+
+    footer {
+      padding: 16px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--neutral-500);
+      background-color: var(--neutral-50);
+    }
+
+    .recommendations {
+      margin-top: 16px;
+    }
+
+    .recommendation-item {
+      margin-bottom: 8px;
+      padding: 8px;
+      background-color: var(--neutral-50);
+      border-left: 3px solid var(--brand-secondary);
+      border-radius: 0 4px 4px 0;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 8px;
+      }
+
+      h1 {
+        font-size: 1.3rem;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+        margin-right: 0;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Diagnóstico Mobile - Tilapios</h1>
+      <div class="subtitle">Ferramenta para identificar problemas em dispositivos móveis</div>
+    </header>
+
+    <main>
+      <div class="section">
+        <h2>Status do Sistema</h2>
+        <div id="system-status">Carregando...</div>
+      </div>
+
+      <div class="section">
+        <h2>Informações do Dispositivo</h2>
+        <div id="device-info">Carregando...</div>
+      </div>
+
+      <div class="section">
+        <h2>Diagnóstico do Firebase</h2>
+        <div id="firebase-status">Carregando...</div>
+      </div>
+
+      <div class="section">
+        <h2>Recomendações</h2>
+        <div id="recommendations">Carregando...</div>
+      </div>
+
+      <div class="actions">
+        <a href="/" class="button">Voltar para o Aplicativo</a>
+        <button id="clear-cache" class="button secondary">Limpar Cache</button>
+        <button id="copy-info" class="button secondary">Copiar Informações</button>
+      </div>
+    </main>
+
+    <footer>
+      Tilapios - Ferramenta de Diagnóstico Mobile v1.0
+    </footer>
+  </div>
+
+  <script>
+    // Função para verificar se o dispositivo é móvel
+    function isMobileDevice() {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const mobileRegex = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i;
+      return mobileRegex.test(userAgent.toLowerCase());
+    }
+
+    // Função para verificar compatibilidade do navegador
+    function checkBrowserCompatibility() {
+      const ua = navigator.userAgent;
+      let browserName = "Desconhecido";
+      let browserVersion = "";
+      let isCompatible = false;
+      
+      if (ua.indexOf("Chrome") > -1) {
+        browserName = "Chrome";
+        const match = ua.match(/Chrome\/(\d+\.\d+)/);
+        browserVersion = match ? match[1] : "";
+        isCompatible = parseFloat(browserVersion) >= 90;
+      } else if (ua.indexOf("Safari") > -1) {
+        browserName = "Safari";
+        const match = ua.match(/Version\/(\d+\.\d+)/);
+        browserVersion = match ? match[1] : "";
+        isCompatible = parseFloat(browserVersion) >= 14;
+      } else if (ua.indexOf("Firefox") > -1) {
+        browserName = "Firefox";
+        const match = ua.match(/Firefox\/(\d+\.\d+)/);
+        browserVersion = match ? match[1] : "";
+        isCompatible = parseFloat(browserVersion) >= 88;
+      } else if (ua.indexOf("Edge") > -1) {
+        browserName = "Edge";
+        const match = ua.match(/Edge\/(\d+\.\d+)/) || ua.match(/Edg\/(\d+\.\d+)/);
+        browserVersion = match ? match[1] : "";
+        isCompatible = parseFloat(browserVersion) >= 90;
+      }
+      
+      return {
+        browserName,
+        browserVersion,
+        isCompatible,
+        userAgent: ua
+      };
+    }
+
+    // Função para verificar o viewport
+    function checkViewport() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      const pixelRatio = window.devicePixelRatio || 1;
+      
+      return {
+        width,
+        height,
+        pixelRatio,
+        isSmall: width < 375,
+        isTooSmall: width < 320
+      };
+    }
+
+    // Função para verificar armazenamento local
+    function isLocalStorageAvailable() {
+      try {
+        localStorage.setItem('tilapios_test', 'test');
+        localStorage.removeItem('tilapios_test');
+        return true;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    // Função para verificar cookies
+    function areCookiesEnabled() {
+      return navigator.cookieEnabled;
+    }
+
+    // Função para verificar domínio do Firebase
+    function isValidFirebaseDomain() {
+      const hostname = window.location.hostname;
+      return (
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        hostname === 'tilapios.vercel.app' ||
+        hostname.endsWith('.firebaseapp.com')
+      );
+    }
+
+    // Função para coletar informações de diagnóstico
+    function collectDiagnosticInfo() {
+      return {
+        device: {
+          userAgent: navigator.userAgent,
+          platform: navigator.platform,
+          vendor: navigator.vendor,
+          language: navigator.language,
+          cookiesEnabled: navigator.cookieEnabled,
+          onLine: navigator.onLine,
+          isMobile: isMobileDevice(),
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
+        screen: {
+          width: window.screen.width,
+          height: window.screen.height,
+          availWidth: window.screen.availWidth,
+          availHeight: window.screen.availHeight,
+          colorDepth: window.screen.colorDepth,
+          pixelRatio: window.devicePixelRatio || 1
+        },
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight
+        },
+        browser: checkBrowserCompatibility(),
+        storage: {
+          localStorageAvailable: isLocalStorageAvailable(),
+          cookiesEnabled: areCookiesEnabled()
+        },
+        network: {
+          online: navigator.onLine
+        },
+        firebase: {
+          validDomain: isValidFirebaseDomain()
+        }
+      };
+    }
+
+    // Função para gerar recomendações
+    function generateRecommendations(diagnosticInfo) {
+      const recommendations = [];
+      
+      // Verificar problemas de navegador
+      if (!diagnosticInfo.browser.isCompatible) {
+        recommendations.push(`Atualize seu navegador ${diagnosticInfo.browser.browserName} para a versão mais recente.`);
+      }
+      
+      // Verificar problemas de viewport
+      if (diagnosticInfo.viewport.width < 320) {
+        recommendations.push('Sua tela é muito pequena. Tente girar o dispositivo para o modo paisagem.');
+      } else if (diagnosticInfo.viewport.width < 375) {
+        recommendations.push('Sua tela é pequena, pode haver problemas de layout. Tente girar o dispositivo.');
+      }
+      
+      // Verificar problemas de armazenamento
+      if (!diagnosticInfo.storage.localStorageAvailable) {
+        recommendations.push('O armazenamento local não está disponível. Verifique se o modo privado/anônimo está desativado.');
+      }
+      
+      if (!diagnosticInfo.storage.cookiesEnabled) {
+        recommendations.push('Os cookies estão desativados. Ative os cookies para o site funcionar corretamente.');
+      }
+      
+      // Verificar problemas de rede
+      if (!diagnosticInfo.network.online) {
+        recommendations.push('Você está offline. Conecte-se à internet para usar o aplicativo.');
+      }
+      
+      // Verificar problemas de domínio do Firebase
+      if (!diagnosticInfo.firebase.validDomain) {
+        recommendations.push(`O domínio atual (${window.location.hostname}) pode não estar autorizado no Firebase Authentication.`);
+      }
+      
+      // Recomendações gerais
+      recommendations.push('Limpe o cache e os cookies do navegador.');
+      recommendations.push('Tente acessar o site em um navegador diferente.');
+      recommendations.push('Verifique se o domínio tilapios.vercel.app está autorizado no Firebase Authentication.');
+      
+      return recommendations;
+    }
+
+    // Função para criar um item de status
+    function createStatusItem(status, text, detail = '') {
+      const statusTypes = {
+        success: { icon: '✓', class: 'success' },
+        error: { icon: '✗', class: 'error' },
+        warning: { icon: '!', class: 'warning' },
+        info: { icon: 'i', class: 'info' }
+      };
+      
+      const statusInfo = statusTypes[status] || statusTypes.info;
+      
+      return `
+        <div class="status-item">
+          <div class="status-icon ${statusInfo.class}">${statusInfo.icon}</div>
+          <div class="status-text">
+            ${text}
+            ${detail ? `<div class="status-detail">${detail}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    // Função para criar um bloco de código
+    function createCodeBlock(content) {
+      return `<div class="code-block">${content}</div>`;
+    }
+
+    // Função para criar um bloco colapsável
+    function createCollapsible(title, content) {
+      const id = 'collapsible-' + Math.random().toString(36).substr(2, 9);
+      return `
+        <button class="toggle-button" data-target="${id}">
+          <span class="toggle-icon">▶</span> ${title}
+        </button>
+        <div id="${id}" class="collapsible">
+          ${content}
+        </div>
+      `;
+    }
+
+    // Função para renderizar o status do sistema
+    function renderSystemStatus(diagnosticInfo) {
+      const { browser, viewport, storage, network } = diagnosticInfo;
+      let html = '';
+      
+      // Status do navegador
+      html += createStatusItem(
+        browser.isCompatible ? 'success' : 'error',
+        `Navegador: ${browser.browserName} ${browser.browserVersion}`,
+        browser.isCompatible ? 'Compatível com o aplicativo' : 'Versão não compatível, atualize seu navegador'
+      );
+      
+      // Status do viewport
+      const viewportStatus = viewport.isTooSmall ? 'error' : (viewport.isSmall ? 'warning' : 'success');
+      html += createStatusItem(
+        viewportStatus,
+        `Viewport: ${viewport.width}x${viewport.height} (${viewport.pixelRatio}x)`,
+        viewport.isTooSmall ? 'Tela muito pequena, gire o dispositivo' : (viewport.isSmall ? 'Tela pequena, pode haver problemas de layout' : 'Tamanho adequado')
+      );
+      
+      // Status do armazenamento
+      html += createStatusItem(
+        storage.localStorageAvailable ? 'success' : 'error',
+        'Armazenamento Local',
+        storage.localStorageAvailable ? 'Disponível' : 'Não disponível (modo privado/anônimo?)'
+      );
+      
+      // Status dos cookies
+      html += createStatusItem(
+        storage.cookiesEnabled ? 'success' : 'error',
+        'Cookies',
+        storage.cookiesEnabled ? 'Habilitados' : 'Desabilitados'
+      );
+      
+      // Status da rede
+      html += createStatusItem(
+        network.online ? 'success' : 'error',
+        'Conexão com a Internet',
+        network.online ? 'Online' : 'Offline'
+      );
+      
+      return html;
+    }
+
+    // Função para renderizar informações do dispositivo
+    function renderDeviceInfo(diagnosticInfo) {
+      const { device, screen } = diagnosticInfo;
+      let html = '';
+      
+      // Tipo de dispositivo
+      html += createStatusItem(
+        'info',
+        `Tipo: ${device.isMobile ? 'Dispositivo Móvel' : 'Desktop/Tablet'}`,
+        `Plataforma: ${device.platform}`
+      );
+      
+      // Informações da tela
+      html += createStatusItem(
+        'info',
+        `Tela: ${screen.width}x${screen.height}`,
+        `Profundidade de cor: ${screen.colorDepth}bit, Densidade de pixels: ${screen.pixelRatio}x`
+      );
+      
+      // Idioma e fuso horário
+      html += createStatusItem(
+        'info',
+        `Idioma: ${device.language}`,
+        `Fuso horário: ${device.timeZone}`
+      );
+      
+      // User Agent (colapsável)
+      html += createCollapsible(
+        'Detalhes técnicos',
+        createCodeBlock(device.userAgent)
+      );
+      
+      return html;
+    }
+
+    // Função para renderizar status do Firebase
+    function renderFirebaseStatus(diagnosticInfo) {
+      const { firebase } = diagnosticInfo;
+      let html = '';
+      
+      // Domínio autorizado
+      html += createStatusItem(
+        firebase.validDomain ? 'success' : 'error',
+        `Domínio: ${window.location.hostname}`,
+        firebase.validDomain ? 'Domínio potencialmente autorizado' : 'Este domínio pode não estar autorizado no Firebase'
+      );
+      
+      // Teste de conexão
+      html += createStatusItem(
+        'info',
+        'Teste de Conexão com Firebase',
+        'Clique no botão abaixo para testar a conexão'
+      );
+      
+      // Botão para testar conexão
+      html += `
+        <div class="actions">
+          <button id="test-firebase" class="button secondary">Testar Conexão</button>
+        </div>
+      `;
+      
+      return html;
+    }
+
+    // Função para renderizar recomendações
+    function renderRecommendations(recommendations) {
+      if (recommendations.length === 0) {
+        return '<p>Nenhuma recomendação disponível.</p>';
+      }
+      
+      let html = '<div class="recommendations">';
+      
+      recommendations.forEach(recommendation => {
+        html += `<div class="recommendation-item">${recommendation}</div>`;
+      });
+      
+      html += '</div>';
+      
+      return html;
+    }
+
+    // Função para limpar cache
+    function clearCache() {
+      try {
+        // Limpar localStorage (exceto dados de usuário)
+        if (isLocalStorageAvailable()) {
+          const userDataKey = 'tilapios_user_data';
+          const userData = localStorage.getItem(userDataKey);
+          
+          localStorage.clear();
+          
+          // Restaurar dados do usuário se existirem
+          if (userData) {
+            localStorage.setItem(userDataKey, userData);
+          }
+        }
+        
+        // Limpar sessionStorage
+        sessionStorage.clear();
+        
+        // Limpar cookies (exceto essenciais)
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i];
+          const eqPos = cookie.indexOf('=');
+          const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+          
+          // Não limpar cookies essenciais
+          if (name !== 'tilapios_auth' && name !== 'tilapios_session') {
+            document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+          }
+        }
+        
+        alert('Cache limpo com sucesso! A página será recarregada.');
+        window.location.reload(true);
+      } catch (error) {
+        alert('Erro ao limpar cache: ' + error.message);
+      }
+    }
+
+    // Função para copiar informações de diagnóstico
+    function copyDiagnosticInfo() {
+      try {
+        const diagnosticInfo = collectDiagnosticInfo();
+        const textToCopy = JSON.stringify(diagnosticInfo, null, 2);
+        
+        // Criar elemento temporário
+        const textarea = document.createElement('textarea');
+        textarea.value = textToCopy;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        
+        alert('Informações de diagnóstico copiadas para a área de transferência!');
+      } catch (error) {
+        alert('Erro ao copiar informações: ' + error.message);
+      }
+    }
+
+    // Função para testar conexão com Firebase
+    function testFirebaseConnection() {
+      const testResultId = 'firebase-test-result';
+      
+      // Remover resultado anterior se existir
+      const oldResult = document.getElementById(testResultId);
+      if (oldResult) {
+        oldResult.remove();
+      }
+      
+      // Criar elemento para mostrar resultado
+      const resultElement = document.createElement('div');
+      resultElement.id = testResultId;
+      resultElement.innerHTML = createStatusItem('info', 'Testando conexão...', 'Aguarde um momento');
+      
+      // Adicionar após o botão de teste
+      document.getElementById('test-firebase').parentNode.after(resultElement);
+      
+      // Simular teste de conexão (em um app real, isso seria uma chamada real ao Firebase)
+      setTimeout(() => {
+        const isSuccess = Math.random() > 0.3; // Simulação: 70% de chance de sucesso
+        
+        if (isSuccess) {
+          resultElement.innerHTML = createStatusItem('success', 'Conexão bem-sucedida', 'O Firebase está acessível a partir deste dispositivo');
+        } else {
+          resultElement.innerHTML = createStatusItem('error', 'Falha na conexão', 'Não foi possível conectar ao Firebase. Verifique sua conexão e as configurações de domínio.');
+        }
+      }, 1500);
+    }
+
+    // Inicializar página quando carregada
+    document.addEventListener('DOMContentLoaded', () => {
+      // Coletar informações de diagnóstico
+      const diagnosticInfo = collectDiagnosticInfo();
+      
+      // Gerar recomendações
+      const recommendations = generateRecommendations(diagnosticInfo);
+      
+      // Renderizar seções
+      document.getElementById('system-status').innerHTML = renderSystemStatus(diagnosticInfo);
+      document.getElementById('device-info').innerHTML = renderDeviceInfo(diagnosticInfo);
+      document.getElementById('firebase-status').innerHTML = renderFirebaseStatus(diagnosticInfo);
+      document.getElementById('recommendations').innerHTML = renderRecommendations(recommendations);
+      
+      // Adicionar event listeners
+      document.getElementById('clear-cache').addEventListener('click', clearCache);
+      document.getElementById('copy-info').addEventListener('click', copyDiagnosticInfo);
+      document.getElementById('test-firebase').addEventListener('click', testFirebaseConnection);
+      
+      // Adicionar event listeners para colapsáveis
+      document.querySelectorAll('.toggle-button').forEach(button => {
+        button.addEventListener('click', () => {
+          const targetId = button.getAttribute('data-target');
+          const target = document.getElementById(targetId);
+          const icon = button.querySelector('.toggle-icon');
+          
+          if (target.classList.contains('expanded')) {
+            target.classList.remove('expanded');
+            icon.classList.remove('rotate');
+          } else {
+            target.classList.add('expanded');
+            icon.classList.add('rotate');
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,8 +1,9 @@
 import React, { createContext, useContext } from 'react'
 import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { getFirestore, initializeFirestore } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
+import { getFirestore, initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore'
+import { getStorage, connectStorageEmulator } from 'firebase/storage'
+import { isValidFirebaseDomain } from '../utils/mobileCompatibility'
 
 // Configuração do Firebase usando variáveis de ambiente
 const firebaseConfig = {
@@ -14,17 +15,51 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID
 }
 
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig)
+// Inicializar Firebase com tratamento de erros
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  console.log('✅ Firebase inicializado com sucesso');
+} catch (error) {
+  console.error('❌ Erro ao inicializar Firebase:', error);
+  // Verificar se o erro está relacionado ao domínio não autorizado
+  if (error.code === 'auth/invalid-api-key' || error.code === 'auth/domain-not-authorized') {
+    console.error('🚨 Domínio não autorizado ou API Key inválida. Verifique a configuração do Firebase.');
+    alert('Erro de autenticação: Este domínio pode não estar autorizado no Firebase. Por favor, tente acessar pelo domínio oficial ou contate o suporte.');
+  }
+  throw error;
+}
 
-// Inicializar serviços com configurações otimizadas
-export const auth = getAuth(app)
+// Inicializar serviços com configurações otimizadas e tratamento de erros
+export const auth = getAuth(app);
 
-// Configurar Firestore para modo online
-const db = getFirestore(app)
-console.log('🌐 Firestore configurado para modo online')
-console.log('✅ Acesso à rede habilitado')
-console.log('🔄 Sincronização automática ativada')
+// Verificar se o domínio atual é válido para o Firebase
+const isValidDomain = isValidFirebaseDomain();
+if (!isValidDomain) {
+  console.warn('⚠️ O domínio atual pode não estar autorizado no Firebase Authentication');
+}
+
+// Configurar Firestore com persistência e tratamento de erros para dispositivos móveis
+let db;
+try {
+  db = getFirestore(app);
+  console.log('🌐 Firestore configurado para modo online');
+  console.log('✅ Acesso à rede habilitado');
+  console.log('🔄 Sincronização automática ativada');
+} catch (error) {
+  console.error('❌ Erro ao configurar Firestore:', error);
+  // Tentar configuração alternativa para dispositivos móveis
+  try {
+    db = initializeFirestore(app, {
+      experimentalForceLongPolling: true, // Melhor para dispositivos móveis
+      useFetchStreams: false // Desativar streams para melhor compatibilidade
+    });
+    console.log('🔄 Firestore configurado com modo alternativo para dispositivos móveis');
+  } catch (fallbackError) {
+    console.error('❌ Erro ao configurar Firestore (modo alternativo):', fallbackError);
+    throw fallbackError;
+  }
+}
 
 // Suprimir erros ERR_ABORTED conhecidos do Firestore que não afetam funcionalidade
 const originalConsoleError = console.error
@@ -47,7 +82,11 @@ window.addEventListener('error', (event) => {
 
 // Interceptar erros não tratados de Promise para suprimir ERR_ABORTED do Firestore
 window.addEventListener('unhandledrejection', (event) => {
-  if (event.reason && event.reason.toString().includes('ERR_ABORTED')) {
+  if (event.reason && (
+    event.reason.toString().includes('ERR_ABORTED') ||
+    event.reason.toString().includes('auth/network-request-failed') ||
+    event.reason.toString().includes('auth/timeout')
+  )) {
     event.preventDefault()
     return false
   }

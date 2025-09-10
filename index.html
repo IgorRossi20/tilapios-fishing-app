@@ -1,13 +1,134 @@
-<!doctype html>
+<!doctype<!DOCTYPE html>
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tilapios - Competições de Pesca</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Tilapios</title>
+    <style>
+      #mobile-helper {
+        display: none;
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #3b82f6;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+        text-align: center;
+        z-index: 9999;
+        max-width: 90%;
+        animation: bounce 2s infinite;
+      }
+      
+      #mobile-helper a {
+        color: white;
+        text-decoration: underline;
+        font-weight: bold;
+      }
+      
+      @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {transform: translateX(-50%) translateY(0);}
+        40% {transform: translateX(-50%) translateY(-10px);}
+        60% {transform: translateX(-50%) translateY(-5px);}
+      }
+    </style>
+    <script>
+      // Script para detectar problemas em dispositivos móveis
+      (function() {
+        // Verificar se é um dispositivo móvel
+        function isMobile() {
+          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // Verificar se o Firebase está carregando corretamente
+        function checkFirebaseLoading() {
+          // Armazenar timestamp de início
+          localStorage.setItem('tilapios_load_start', Date.now());
+          
+          // Verificar se houve erro de carregamento anterior
+          const previousError = localStorage.getItem('tilapios_load_error');
+          const loadAttempts = parseInt(localStorage.getItem('tilapios_load_attempts') || '0');
+          
+          // Se houver erro anterior e for dispositivo móvel, redirecionar para diagnóstico
+          if (previousError && isMobile() && loadAttempts > 2) {
+            window.location.href = '/mobile-debug.html';
+            return;
+          }
+          
+          // Incrementar tentativas de carregamento
+          localStorage.setItem('tilapios_load_attempts', loadAttempts + 1);
+          
+          // Limpar erro anterior se existir
+          localStorage.removeItem('tilapios_load_error');
+        }
+
+        // Detectar erros de carregamento
+        window.addEventListener('error', function(event) {
+          if (event.message && (
+            event.message.includes('Firebase') ||
+            event.message.includes('auth') ||
+            event.message.includes('firestore') ||
+            event.message.includes('network')
+          )) {
+            localStorage.setItem('tilapios_load_error', event.message);
+            console.error('Erro detectado:', event.message);
+          }
+        });
+
+        // Verificar tempo de carregamento
+        window.addEventListener('load', function() {
+          const startTime = parseInt(localStorage.getItem('tilapios_load_start') || '0');
+          const loadTime = Date.now() - startTime;
+          
+          // Se o tempo de carregamento for muito longo (mais de 10 segundos) em dispositivo móvel
+          if (loadTime > 10000 && isMobile()) {
+            localStorage.setItem('tilapios_slow_load', 'true');
+          }
+        });
+
+        // Iniciar verificação
+        checkFirebaseLoading();
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <div id="mobile-helper">
+      Problemas para acessar? <a href="/mobile-debug.html">Clique aqui</a>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
-  </body>
+    
+    <script>
+      // Script para exibir o helper em dispositivos móveis após um tempo
+      (function() {
+        function isMobile() {
+          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        if (isMobile()) {
+          // Exibir o helper após 5 segundos em dispositivos móveis
+          setTimeout(function() {
+            var helper = document.getElementById('mobile-helper');
+            if (helper) helper.style.display = 'block';
+            
+            // Esconder após 15 segundos se não houver interação
+            setTimeout(function() {
+              if (helper && !helper.dataset.clicked) helper.style.display = 'none';
+            }, 15000);
+          }, 5000);
+        }
+      })();
+    </script>
+  <noscript>
+       <div style="text-align: center; padding: 20px; font-family: sans-serif;">
+         <h2>JavaScript Desativado</h2>
+        <p>Este aplicativo requer JavaScript para funcionar. Por favor, ative o JavaScript no seu navegador e recarregue a página.</p>
+       </div>
+     </noscript>
+   </body>
 </html>
