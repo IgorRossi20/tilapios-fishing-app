@@ -915,6 +915,7 @@ p {
   z-index: var(--z-50);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+  overflow: visible;
 }
 
 .header.scrolled {
@@ -928,6 +929,7 @@ p {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  overflow: visible;
   position: relative;
   max-width: 1200px;
   margin: 0 auto;
@@ -943,8 +945,11 @@ p {
   display: flex;
   align-items: center;
   gap: var(--spacing-2);
-  padding: var(--spacing-1);
+  padding: var(--spacing-2);
+  margin: calc(-1 * var(--spacing-1));
   overflow: visible;
+  position: relative;
+  z-index: 10;
 }
 
 .logo:hover {
@@ -966,11 +971,13 @@ p {
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
   position: relative;
   z-index: 1;
+  overflow: visible;
 }
 
 .logo:hover .logo-icon {
   transform: rotate(5deg) scale(1.05);
   box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+  overflow: visible;
 }
 
 .logo-text {
