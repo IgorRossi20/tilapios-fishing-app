@@ -46,26 +46,32 @@
         }
 
         // Verificar se o Firebase está carregando corretamente
-        function checkFirebaseLoading() {
-          // Armazenar timestamp de início
-          localStorage.setItem('tilapios_load_start', Date.now());
-          
-          // Verificar se houve erro de carregamento anterior
-          const previousError = localStorage.getItem('tilapios_load_error');
-          const loadAttempts = parseInt(localStorage.getItem('tilapios_load_attempts') || '0');
-          
-          // Se houver erro anterior e for dispositivo móvel, redirecionar para diagnóstico
-          if (previousError && isMobile() && loadAttempts > 2) {
-            window.location.href = '/mobile-debug.html';
-            return;
-          }
-          
-          // Incrementar tentativas de carregamento
-          localStorage.setItem('tilapios_load_attempts', loadAttempts + 1);
-          
-          // Limpar erro anterior se existir
-          localStorage.removeItem('tilapios_load_error');
+      function checkFirebaseLoading() {
+        // Armazenar timestamp de início
+        localStorage.setItem('tilapios_load_start', Date.now());
+        
+        // Verificar se houve erro de carregamento anterior
+        const previousError = localStorage.getItem('tilapios_load_error');
+        const loadAttempts = parseInt(localStorage.getItem('tilapios_load_attempts') || '0');
+        
+        // Se houver erro anterior e for dispositivo móvel, redirecionar para diagnóstico
+        if (previousError && isMobile() && loadAttempts > 2) {
+          window.location.href = '/mobile-debug.html';
+          return;
         }
+        
+        // Redirecionar para a página de login se estiver na raiz do site
+        if (window.location.pathname === '/' || window.location.pathname === '') {
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Incrementar tentativas de carregamento
+        localStorage.setItem('tilapios_load_attempts', loadAttempts + 1);
+        
+        // Limpar erro anterior se existir
+        localStorage.removeItem('tilapios_load_error');
+      }
 
         // Detectar erros de carregamento
         window.addEventListener('error', function(event) {

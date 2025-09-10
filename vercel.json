@@ -15,6 +15,14 @@
       "dest": "/assets/$1"
     },
     {
+      "src": "/mobile-debug.html",
+      "dest": "/mobile-debug.html"
+    },
+    {
+      "src": "/",
+      "dest": "/login"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
