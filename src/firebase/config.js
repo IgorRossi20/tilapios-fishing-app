@@ -31,10 +31,14 @@ export const COLLECTIONS = {
   USERS: 'users',
   POSTS: 'posts',
   TOURNAMENTS: 'tournaments',
+  FISHING_TOURNAMENTS: 'fishing_tournaments',
   CATCHES: 'catches',
+  FISHING_CATCHES: 'fishing_catches',
   RANKINGS: 'rankings',
   COMMENTS: 'comments',
-  LIKES: 'likes'
+  LIKES: 'likes',
+  TOURNAMENT_INVITES: 'tournament_invites',
+  NOTIFICATIONS: 'notifications'
 }
 
 // Funções utilitárias para Firestore

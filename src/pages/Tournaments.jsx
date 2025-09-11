@@ -3,6 +3,7 @@ import { Users, Plus, Trophy, Calendar, Clock, Star, Shield, Award, Target } fro
 import { useAuth } from '../contexts/AuthContext'
 import { useFishing } from '../contexts/FishingContext'
 import { useNavigate } from 'react-router-dom'
+import TournamentInvites from '../components/TournamentInvites'
 import './Tournaments.css'
 
 const Tournaments = () => {
@@ -419,6 +420,13 @@ const Tournaments = () => {
                     {tournament.description}
                   </p>
                   
+                  {/* Componente de convites */}
+                  <TournamentInvites 
+                    tournamentId={tournament.id}
+                    tournamentName={tournament.name}
+                    isCreator={isOwnerOfTournament}
+                  />
+                  
                   <div className="tournament-actions">
                     <button 
                       onClick={() => navigate(`/tournaments/${tournament.id}`)}
@@ -537,6 +545,37 @@ const Tournaments = () => {
                     {tournament.description}
                   </p>
                   
+                  {/* Botão de participação destacado */}
+                  {canJoin && !isFull && (
+                    <div className="join-tournament-section">
+                      <button 
+                        onClick={() => handleJoinTournament(tournament.id)}
+                        className="btn btn-join-tournament"
+                      >
+                        🎣 Participar desse Campeonato!
+                      </button>
+                      <p className="join-help-text">
+                        Clique para se inscrever e começar a competir!
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Status quando não pode participar */}
+                  {(!canJoin || isFull) && (
+                    <div className="join-tournament-section unavailable">
+                      <button 
+                        disabled
+                        className="btn btn-join-tournament btn-disabled"
+                        title={isFull ? 'Campeonato lotado' : 'Campeonato não disponível para participação'}
+                      >
+                        {isFull ? '🚫 Campeonato Lotado' : '⏰ Indisponível'}
+                      </button>
+                      <p className="join-help-text">
+                        {isFull ? 'Este campeonato atingiu o limite de participantes.' : 'Este campeonato não está disponível para participação no momento.'}
+                      </p>
+                    </div>
+                  )}
+                  
                   <div className="tournament-actions">
                     <button 
                       onClick={() => navigate(`/tournaments/${tournament.id}`)}
@@ -551,23 +590,6 @@ const Tournaments = () => {
                     >
                       Ver Ranking
                     </button>
-                    
-                    {canJoin && !isFull ? (
-                      <button 
-                        onClick={() => handleJoinTournament(tournament.id)}
-                        className="btn btn-sm"
-                      >
-                        Participar
-                      </button>
-                    ) : (
-                      <button 
-                        disabled
-                        className="btn btn-sm btn-disabled"
-                        title={isFull ? 'Campeonato lotado' : 'Campeonato não disponível para participação'}
-                      >
-                        {isFull ? 'Lotado' : 'Indisponível'}
-                      </button>
-                    )}
                   </div>
                 </div>
               )

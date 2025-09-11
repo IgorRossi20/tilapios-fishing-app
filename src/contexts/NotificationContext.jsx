@@ -171,6 +171,47 @@ export const NotificationProvider = ({ children }) => {
     )
   }, [addNotification])
 
+  // Notificações de convites
+  const notifyInviteSent = useCallback((inviteeEmail, tournamentName) => {
+    return addNotification(
+      `Convite enviado para ${inviteeEmail} para o campeonato "${tournamentName}"!`,
+      'success',
+      'invite'
+    )
+  }, [addNotification])
+
+  const notifyInviteReceived = useCallback((tournamentName, inviterName) => {
+    return addNotification(
+      `Você foi convidado por ${inviterName} para o campeonato "${tournamentName}"!`,
+      'info',
+      'invite'
+    )
+  }, [addNotification])
+
+  const notifyInviteAccepted = useCallback(() => {
+    return addNotification(
+      'Convite aceito! Você entrou no campeonato!',
+      'success',
+      'invite'
+    )
+  }, [addNotification])
+
+  const notifyInviteDeclined = useCallback((tournamentName) => {
+    return addNotification(
+      `Convite para o campeonato "${tournamentName}" foi recusado.`,
+      'info',
+      'invite'
+    )
+  }, [addNotification])
+
+  const notifyInviteExpired = useCallback((tournamentName) => {
+    return addNotification(
+      `Convite para o campeonato "${tournamentName}" expirou.`,
+      'warning',
+      'invite'
+    )
+  }, [addNotification])
+
   // Funções de gerenciamento
   const markAsRead = useCallback((notificationId) => {
     setNotifications(prev => 
@@ -218,6 +259,12 @@ export const NotificationProvider = ({ children }) => {
     notifySyncSuccess,
     notifySyncError,
     notifyOfflineMode,
+    // Notificações de convites
+    notifyInviteSent,
+    notifyInviteReceived,
+    notifyInviteAccepted,
+    notifyInviteDeclined,
+    notifyInviteExpired,
     // Gerenciamento
     markAsRead,
     markAllAsRead,

@@ -668,24 +668,7 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Ações Rápidas */}
-      <div className="card mt-3">
-        <h2 style={{ marginBottom: '20px' }}>Ações Rápidas</h2>
-        <div className="grid grid-3">
-          <button className="btn" style={{ padding: '20px', height: 'auto' }} onClick={() => navigate('/catch')}>
-            <Fish size={24} style={{ marginBottom: '10px' }} />
-            <br />Registrar Captura
-          </button>
-          <button className="btn btn-secondary" style={{ padding: '20px', height: 'auto' }}>
-            <Users size={24} style={{ marginBottom: '10px' }} />
-            <br />Criar Campeonato
-          </button>
-          <button className="btn" style={{ padding: '20px', height: 'auto', background: '#FF9800' }}>
-            <Trophy size={24} style={{ marginBottom: '10px' }} />
-            <br />Ver Ranking
-          </button>
-        </div>
-          </div>
+
         </div>
       </div>
     </div>

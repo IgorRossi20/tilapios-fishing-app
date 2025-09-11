@@ -60,5 +60,23 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
+    
+    // Convites de campeonatos
+    match /tournament_invites/{inviteId} {
+      allow read: if request.auth != null && 
+        (request.auth.uid == resource.data.inviterId || 
+         request.auth.uid == resource.data.inviteeId);
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.inviterId;
+      allow update: if request.auth != null && 
+        (request.auth.uid == resource.data.inviterId || 
+         request.auth.uid == resource.data.inviteeId);
+      allow delete: if request.auth != null && request.auth.uid == resource.data.inviterId;
+    }
+    
+    // Notificações do usuário
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null;
+    }
   }
 }

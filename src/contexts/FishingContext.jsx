@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion, orderBy } from 'firebase/firestore'
 import { db } from './FirebaseContext'
+import { COLLECTIONS } from '../firebase/config'
 import { useAuth } from './AuthContext'
 import { useNotification } from './NotificationContext'
 
@@ -132,7 +133,7 @@ const FishingProvider = ({ children }) => {
           // Sincronizar torneios do usuário
           console.log('🔄 [FIRESTORE] Buscando torneios do usuário...')
           const tournamentsQuery = query(
-            collection(db, 'fishing_tournaments'),
+            collection(db, COLLECTIONS.FISHING_TOURNAMENTS),
             where('participants', 'array-contains', user.uid)
           )
           const tournamentsSnapshot = await getDocs(tournamentsQuery)
@@ -203,7 +204,7 @@ const FishingProvider = ({ children }) => {
            console.log('🔄 Sincronizando dados globais online...')
            
            // Sincronizar todos os torneios
-           const allTournamentsSnapshot = await getDocs(collection(db, 'fishing_tournaments'))
+           const allTournamentsSnapshot = await getDocs(collection(db, COLLECTIONS.FISHING_TOURNAMENTS))
            const tournaments = []
            allTournamentsSnapshot.forEach((doc) => {
              tournaments.push({ id: doc.id, ...doc.data() })
@@ -330,7 +331,7 @@ const FishingProvider = ({ children }) => {
       for (const tournamentData of pendingTournaments) {
         try {
           console.log('📤 [PENDING] Sincronizando campeonato:', tournamentData.name)
-          const docRef = await addDoc(collection(db, 'fishing_tournaments'), {
+          const docRef = await addDoc(collection(db, COLLECTIONS.FISHING_TOURNAMENTS), {
             ...tournamentData,
             syncedAt: new Date().toISOString()
           })
@@ -364,7 +365,7 @@ const FishingProvider = ({ children }) => {
       for (const participation of pendingParticipations) {
         try {
           console.log('📤 [PENDING] Sincronizando participação:', participation.tournamentId)
-          const tournamentRef = doc(db, 'fishing_tournaments', participation.tournamentId)
+          const tournamentRef = doc(db, COLLECTIONS.FISHING_TOURNAMENTS, participation.tournamentId)
           await updateDoc(tournamentRef, {
             participants: arrayUnion(participation.userId),
             participantNames: arrayUnion(participation.userName)
@@ -426,7 +427,7 @@ const FishingProvider = ({ children }) => {
       }
 
       const q = query(
-        collection(db, 'fishing_tournaments'),
+        collection(db, COLLECTIONS.FISHING_TOURNAMENTS),
         where('participants', 'array-contains', user.uid)
       )
       const querySnapshot = await getDocs(q)
@@ -439,7 +440,7 @@ const FishingProvider = ({ children }) => {
       // Atualizar cache local
       saveToLocalStorage(cacheKey, tournaments)
       // Também manter compatibilidade com uma chave genérica, se existir em código legado
-      saveToLocalStorage('fishing_tournaments', tournaments)
+      saveToLocalStorage(COLLECTIONS.FISHING_TOURNAMENTS, tournaments)
     } catch (error) {
       console.warn('Aviso ao carregar campeonatos (usando fallback local):', error)
       // Fallback para cache local
@@ -594,7 +595,7 @@ const FishingProvider = ({ children }) => {
     try {
       if (isOnline) {
         console.log('🌐 Online - salvando campeonato no Firestore...')
-        const docRef = await addDoc(collection(db, 'fishing_tournaments'), newTournament)
+        const docRef = await addDoc(collection(db, COLLECTIONS.FISHING_TOURNAMENTS), newTournament)
         console.log('✅ Campeonato criado com ID:', docRef.id)
         
         // Notificar sucesso
@@ -711,7 +712,7 @@ const FishingProvider = ({ children }) => {
       
       if (isOnline) {
         console.log('🌐 Online - atualizando participação no Firestore...')
-        const tournamentRef = doc(db, 'fishing_tournaments', tournamentId)
+        const tournamentRef = doc(db, COLLECTIONS.FISHING_TOURNAMENTS, tournamentId)
         await updateDoc(tournamentRef, {
           participants: arrayUnion(user.uid),
           participantNames: arrayUnion(user.displayName || user.email)
@@ -1309,6 +1310,112 @@ const FishingProvider = ({ children }) => {
     }
   }
 
+  // Funções de convites para campeonatos
+  const sendTournamentInvite = async (tournamentId, inviteeEmail) => {
+    if (!user) throw new Error('Usuário não autenticado')
+    
+    try {
+      const tournament = allTournaments.find(t => t.id === tournamentId)
+      if (!tournament) throw new Error('Campeonato não encontrado')
+      
+      if (tournament.createdBy !== user.uid) {
+        throw new Error('Apenas o criador pode enviar convites')
+      }
+      
+      const invite = {
+        id: `invite_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        tournamentId,
+        tournamentName: tournament.name,
+        inviterId: user.uid,
+        inviterName: user.displayName || user.email,
+        inviteeEmail,
+        status: 'pending', // 'pending', 'accepted', 'declined'
+        createdAt: new Date().toISOString(),
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 dias
+      }
+      
+      if (isOnline) {
+        // Salvar convite no Firestore
+        await addDoc(collection(db, COLLECTIONS.TOURNAMENT_INVITES), invite)
+        notification.notifyInviteSent(inviteeEmail, tournament.name)
+      } else {
+        // Salvar no cache local
+        const pendingInvites = getFromLocalStorage('pending_invites', [])
+        pendingInvites.push(invite)
+        saveToLocalStorage('pending_invites', pendingInvites)
+        notification.notifyInviteSent(inviteeEmail, tournament.name)
+      }
+      
+      return invite
+    } catch (error) {
+      console.error('Erro ao enviar convite:', error)
+      throw error
+    }
+  }
+  
+  const generateTournamentInviteLink = (tournamentId) => {
+    const baseUrl = window.location.origin
+    return `${baseUrl}/tournaments/join/${tournamentId}`
+  }
+  
+  const joinTournamentByInvite = async (tournamentId, inviteId = null) => {
+    if (!user) throw new Error('Usuário não autenticado')
+    
+    try {
+      // Usar a função existente de joinTournament
+      await joinTournament(tournamentId)
+      
+      // Se há um convite específico, marcar como aceito
+      if (inviteId && isOnline) {
+        const inviteRef = doc(db, COLLECTIONS.TOURNAMENT_INVITES, inviteId)
+        await updateDoc(inviteRef, {
+          status: 'accepted',
+          acceptedAt: new Date().toISOString()
+        })
+      }
+      
+      notification.notifyInviteAccepted()
+    } catch (error) {
+      console.error('Erro ao aceitar convite:', error)
+      throw error
+    }
+  }
+  
+  const loadUserInvites = async () => {
+    if (!user) return []
+    
+    try {
+      if (isOnline) {
+        const invitesQuery = query(
+          collection(db, COLLECTIONS.TOURNAMENT_INVITES),
+          where('inviteeEmail', '==', user.email),
+          where('status', '==', 'pending'),
+          orderBy('createdAt', 'desc')
+        )
+        
+        const invitesSnapshot = await getDocs(invitesQuery)
+        const invites = invitesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }))
+        
+        // Filtrar convites não expirados
+        const validInvites = invites.filter(invite => {
+          const expiresAt = new Date(invite.expiresAt)
+          return expiresAt > new Date()
+        })
+        
+        return validInvites
+      } else {
+        // Retornar convites do cache local (se houver)
+        return getFromLocalStorage(`user_invites_${user.uid}`, [])
+      }
+    } catch (error) {
+      console.error('Erro ao carregar convites:', error)
+      return []
+    }
+  }
+
   const value = {
     userTournaments,
     allTournaments,
@@ -1336,7 +1443,12 @@ const FishingProvider = ({ children }) => {
     loadPosts,
     likePost,
     addComment,
-    sharePost
+    sharePost,
+    // Funções de convites
+    sendTournamentInvite,
+    generateTournamentInviteLink,
+    joinTournamentByInvite,
+    loadUserInvites
   }
 
   // Helper para computar ranking a partir de uma lista de capturas
