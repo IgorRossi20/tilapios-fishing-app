@@ -54,9 +54,9 @@
         const previousError = localStorage.getItem('tilapios_load_error');
         const loadAttempts = parseInt(localStorage.getItem('tilapios_load_attempts') || '0');
         
-        // Se houver erro anterior e for dispositivo móvel, redirecionar para diagnóstico
+        // Anteriormente redirecionava para página de diagnóstico, agora apenas registra o erro
         if (previousError && isMobile() && loadAttempts > 2) {
-          window.location.href = '/mobile-debug.html';
+          console.error('Erro persistente detectado:', previousError);
           return;
         }
         
@@ -104,31 +104,10 @@
   </head>
   <body>
     <div id="root"></div>
-    <div id="mobile-helper">
-      Problemas para acessar? <a href="/mobile-debug.html">Clique aqui</a>
-    </div>
+    <!-- Helper de diagnóstico mobile removido -->
     <script type="module" src="/src/main.jsx"></script>
     
-    <script>
-      // Script para exibir o helper em dispositivos móveis após um tempo
-      (function() {
-        function isMobile() {
-          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        }
-        
-        if (isMobile()) {
-          // Exibir o helper após 5 segundos em dispositivos móveis
-          setTimeout(function() {
-            var helper = document.getElementById('mobile-helper');
-            if (helper) helper.style.display = 'block';
-            
-            // Esconder após 15 segundos se não houver interação
-            setTimeout(function() {
-              if (helper && !helper.dataset.clicked) helper.style.display = 'none';
-            }, 15000);
-          }, 5000);
-        }
-      })();
+    <!-- Script para exibir o helper em dispositivos móveis foi removido -->
     </script>
   <noscript>
        <div style="text-align: center; padding: 20px; font-family: sans-serif;">

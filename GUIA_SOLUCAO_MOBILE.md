@@ -30,13 +30,14 @@ Criamos um guia detalhado para adicionar o domínio `tilapios.vercel.app` à lis
 - **Arquivo**: [FIREBASE_DOMAIN_SETUP.md](./FIREBASE_DOMAIN_SETUP.md)
 - **Conteúdo**: Instruções passo a passo para acessar o console do Firebase e adicionar o domínio à lista de domínios autorizados.
 
-### 2. Script de Diagnóstico do Firebase
+### 2. Diagnóstico do Firebase
 
-Desenvolvemos um script que pode ser executado no console do navegador para diagnosticar problemas relacionados ao Firebase:
+O Firebase pode apresentar problemas de compatibilidade em alguns dispositivos móveis. Para diagnosticar problemas:
 
-- **Arquivo**: [public/firebase-check.js](./public/firebase-check.js)
-- **Como usar**: Abra o console do navegador (F12), cole o conteúdo do script e pressione Enter.
-- **Funcionalidades**: Verifica se o Firebase está carregado, se os serviços estão disponíveis, se o domínio está autorizado, e testa a conexão com os serviços do Firebase.
+- Abra o console do navegador (F12) e verifique se há erros relacionados ao Firebase
+- Verifique se o domínio está autorizado no Firebase Authentication
+- Teste a conexão com os serviços do Firebase usando o console do navegador
+- Use as ferramentas de desenvolvedor para verificar erros de rede relacionados ao Firebase
 
 ### 3. Otimização do FirebaseContext
 
@@ -48,12 +49,17 @@ Melhoramos o arquivo `FirebaseContext.jsx` para aumentar a compatibilidade com d
 - **Supressão inteligente de erros** conhecidos que não afetam a funcionalidade
 - **Interceptação de erros de rede** relacionados ao Firebase
 
-### 4. Página de Diagnóstico para Dispositivos Móveis
+### 4. Diagnóstico para Dispositivos Móveis
 
-Criamos uma página de diagnóstico específica para dispositivos móveis que pode ser acessada diretamente:
+Para diagnosticar problemas em dispositivos móveis, siga estas etapas:
 
-- **URL**: [https://tilapios.vercel.app/mobile-debug.html](https://tilapios.vercel.app/mobile-debug.html)
-- **Funcionalidades**: Exibe informações sobre o dispositivo, navegador, conexão, e testa a compatibilidade com o Firebase.
+1. Abra o console do navegador no seu dispositivo móvel (geralmente acessível através das ferramentas de desenvolvedor)
+2. Verifique as mensagens de erro relacionadas ao Firebase
+3. Utilize as funções de diagnóstico disponíveis no console do navegador digitando:
+   ```javascript
+   localStorage.getItem('tilapios_load_error')
+   ```
+4. Verifique informações do dispositivo e navegador para compatibilidade
 
 ## Como Resolver o Problema
 
@@ -63,9 +69,10 @@ Criamos uma página de diagnóstico específica para dispositivos móveis que po
    - **Android (Chrome)**: Configurações > Privacidade e segurança > Limpar dados de navegação
    - **iOS (Safari)**: Ajustes > Safari > Limpar histórico e dados do site
 
-2. **Acesse a página de diagnóstico**:
-   - Visite [https://tilapios.vercel.app/mobile-debug.html](https://tilapios.vercel.app/mobile-debug.html)
-   - Siga as instruções exibidas na página
+2. **Verifique o console do navegador**:
+   - Abra as ferramentas de desenvolvedor do seu navegador
+   - Verifique se há erros relacionados ao Firebase
+   - Use o console para verificar informações de diagnóstico com `localStorage.getItem('tilapios_diagnostic')`
 
 3. **Tente um navegador alternativo**:
    - Se estiver usando Safari, tente Chrome ou Firefox

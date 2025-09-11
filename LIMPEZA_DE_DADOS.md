@@ -2,7 +2,7 @@
 
 ## Descrição
 
-Esta ferramenta foi criada para facilitar a limpeza completa de dados do Firebase (Firestore e Storage) nos ambientes de produção e homologação do Tilapios. Ela permite apagar todos os dados de forma segura e controlada para realizar novos testes.
+Esta ferramenta foi desenvolvida para facilitar a limpeza de dados do Firebase (Firestore e Storage) nos ambientes de produção e homologação do aplicativo Tilapios. Ela permite apagar todos os dados de forma segura e controlada, com confirmações para evitar exclusões acidentais.
 
 ## ⚠️ ATENÇÃO: OPERAÇÃO DE ALTO RISCO
 
@@ -10,46 +10,68 @@ Esta ferramenta foi criada para facilitar a limpeza completa de dados do Firebas
 
 ## Como Usar
 
-### Método 1: Executar o arquivo BAT
+Execute o arquivo `executar-limpeza.bat` e escolha uma das opções disponíveis:
 
-1. Dê um duplo clique no arquivo `executar-limpeza.bat`
-2. O navegador será aberto automaticamente com a ferramenta
+### Opção 1: Ferramenta de Limpeza de Dados
 
-### Método 2: Abrir diretamente o arquivo HTML
+Esta opção abre a ferramenta principal para limpar dados do Firebase.
 
-1. Abra o arquivo `limpar-dados.html` em seu navegador
+### Opção 2: Teste de Conexão com Firebase
 
-## Instruções de Uso
+Esta opção abre uma ferramenta de diagnóstico para testar a conexão com o Firebase e verificar a autenticação. Use esta opção se estiver tendo problemas com a ferramenta principal.
 
-1. **Autenticação**: Você deve estar autenticado no sistema Tilapios para usar a ferramenta
-2. **Selecione o Ambiente**: Escolha entre PRODUÇÃO ou HOMOLOGAÇÃO
-3. **Limpar Dados**: Clique no botão "Limpar Dados" e siga as instruções de confirmação
-4. **Limpar Cache Local**: Use esta opção para limpar apenas o cache local do navegador
+## Autenticação
+
+Para utilizar a ferramenta, você precisa estar autenticado com uma conta que tenha permissões de administrador no Firebase.
+
+**Novo**: A ferramenta agora inclui um formulário de login manual diretamente na interface, facilitando a autenticação sem precisar navegar para outra página.
+
+## Seleção de Ambiente
+
+A ferramenta permite selecionar qual ambiente você deseja limpar:
+
+- **Produção**: Ambiente de produção (dados reais)
+- **Homologação**: Ambiente de testes/homologação
 
 ## O que será limpo
 
-### Dados do Firestore
-Todas as coleções serão limpas, incluindo:
-- users
-- posts
-- tournaments
-- fishing_tournaments
-- fishing_catches
-- catches
-- rankings
-- comments
-- likes
+A ferramenta irá limpar:
 
-### Firebase Storage
-Todos os arquivos e pastas armazenados no Storage serão removidos.
+1. **Coleções do Firestore**:
+   - users
+   - posts
+   - tournaments
+   - fishing_tournaments
+   - fishing_catches
+   - catches
+   - rankings
+   - comments
+   - likes
 
-### Dados Locais
-- localStorage do navegador
-- Cookies relacionados à aplicação
+2. **Firebase Storage**: Todos os arquivos armazenados
+
+3. **Dados Locais**: localStorage do navegador
+
+## Confirmação de Segurança
+
+Para evitar exclusões acidentais, a ferramenta exige uma confirmação digitando uma frase específica antes de executar a limpeza.
+
+## Solução de Problemas
+
+Se a ferramenta não estiver funcionando corretamente:
+
+1. Use a opção "Testar conexão com Firebase" no menu inicial para verificar se a conexão está funcionando
+2. Verifique se as credenciais do Firebase estão corretas
+3. Tente fazer login manualmente usando o formulário na interface
+4. Limpe o cache do navegador e tente novamente
 
 ## Após a Limpeza
 
-Recomendamos fazer logout e login novamente para atualizar o estado da aplicação após a limpeza de dados.
+Após a conclusão da limpeza, recomenda-se:
+
+1. Fazer logout e login novamente para atualizar o estado da aplicação
+2. Verificar se todos os dados foram realmente removidos
+3. Reiniciar a aplicação, se necessário
 
 ## Suporte
 

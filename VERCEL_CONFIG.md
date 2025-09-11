@@ -60,7 +60,8 @@ Para testar localmente, certifique-se de que o arquivo `.env` existe na raiz do 
 Se você estiver enfrentando uma tela branca ao acessar `tilapios.vercel.app` em dispositivos móveis:
 
 1. Verifique se o domínio `tilapios.vercel.app` está autorizado no Firebase Authentication
-2. Acesse a página de diagnóstico em `https://tilapios.vercel.app/mobile-check.html`
-3. Consulte o guia completo de solução de problemas em `MOBILE_TROUBLESHOOTING.md`
+2. Abra o console do navegador (ferramentas de desenvolvedor) e verifique as mensagens de erro
+3. Consulte o diagnóstico integrado digitando no console: `console.log(JSON.parse(localStorage.getItem('tilapios_diagnostic')))`
+4. Consulte o guia completo de solução de problemas em `MOBILE_TROUBLESHOOTING.md`
 
-A página de diagnóstico ajudará a identificar problemas específicos com seu dispositivo móvel e fornecerá recomendações para resolvê-los.
+O sistema de diagnóstico integrado ajudará a identificar problemas específicos com seu dispositivo móvel e fornecerá recomendações para resolvê-los.

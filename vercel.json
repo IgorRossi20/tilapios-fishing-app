@@ -14,10 +14,7 @@
       "src": "/assets/(.*)",
       "dest": "/assets/$1"
     },
-    {
-      "src": "/mobile-debug.html",
-      "dest": "/mobile-debug.html"
-    },
+    // Rota para mobile-debug.html removida
     {
       "src": "/",
       "dest": "/login"

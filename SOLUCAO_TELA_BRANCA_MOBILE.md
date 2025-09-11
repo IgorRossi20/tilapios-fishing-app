@@ -18,10 +18,9 @@ Implementamos várias melhorias para resolver este problema:
 
 1. **Utilitário de Compatibilidade Móvel**: Adicionamos um sistema que detecta e corrige automaticamente problemas comuns em dispositivos móveis.
 
-2. **Página de Diagnóstico**: Criamos uma página especial para diagnosticar problemas em dispositivos móveis, acessível em:
-   - [/mobile-debug.html](https://tilapios.vercel.app/mobile-debug.html)
+2. **Diagnóstico Integrado**: Implementamos um sistema de diagnóstico integrado que armazena informações no localStorage do navegador para facilitar a solução de problemas.
 
-3. **Detecção Automática de Problemas**: O site agora detecta automaticamente problemas de carregamento e redireciona para a página de diagnóstico quando necessário.
+3. **Detecção Automática de Problemas**: O site agora detecta automaticamente problemas de carregamento e registra informações de diagnóstico que podem ser acessadas pelo console do navegador.
 
 4. **Configuração Otimizada do Firebase**: Melhoramos a configuração do Firebase para dispositivos móveis, incluindo tratamento de erros específicos.
 
@@ -42,11 +41,14 @@ Siga estas etapas para resolver o problema da tela branca:
 1. Vá para Configurações > Safari
 2. Toque em "Limpar histórico e dados do site"
 
-### 2. Acessar a Página de Diagnóstico
+### 2. Acessar o Diagnóstico Integrado
 
-1. Acesse diretamente: [https://tilapios.vercel.app/mobile-debug.html](https://tilapios.vercel.app/mobile-debug.html)
-2. Siga as recomendações apresentadas na página de diagnóstico
-3. Use o botão "Limpar Cache" disponível na página
+1. Abra o console do navegador (ferramentas de desenvolvedor) no seu dispositivo móvel
+2. Digite o seguinte comando para ver informações de diagnóstico:
+   ```javascript
+   console.log(JSON.parse(localStorage.getItem('tilapios_diagnostic')))
+   ```
+3. Verifique as recomendações geradas pelo sistema de diagnóstico integrado
 
 ### 3. Tentar Navegadores Alternativos
 
@@ -77,7 +79,7 @@ Ao entrar em contato, por favor forneça:
 2. Versão do sistema operacional
 3. Navegador utilizado e sua versão
 4. Captura de tela do problema (se possível)
-5. Informações de diagnóstico (disponíveis na página de diagnóstico)
+5. Informações de diagnóstico (obtidas através do console do navegador usando o comando acima)
 
 ## Próximas Atualizações
 
