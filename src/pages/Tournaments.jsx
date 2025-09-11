@@ -12,7 +12,10 @@ const Tournaments = () => {
     userTournaments, 
     allTournaments,
     createTournament, 
-    joinTournament, 
+    joinTournament,
+    leaveTournament,
+    deleteTournament,
+    finishTournament,
     loadUserTournaments
   } = useFishing()
   
@@ -92,6 +95,64 @@ const Tournaments = () => {
       console.error('Erro ao entrar no campeonato:', error)
       setMessage('Erro ao entrar no campeonato: ' + error.message)
     }
+  }
+
+  const handleLeaveTournament = async (tournamentId) => {
+    if (!window.confirm('Tem certeza que deseja sair deste campeonato?')) return
+    
+    try {
+      await leaveTournament(tournamentId)
+      setMessage('Você saiu do campeonato com sucesso!')
+      await loadTournaments()
+    } catch (error) {
+      console.error('Erro ao sair do campeonato:', error)
+      setMessage('Erro ao sair do campeonato: ' + error.message)
+    }
+  }
+
+  const handleDeleteTournament = async (tournamentId) => {
+    if (!window.confirm('Tem certeza que deseja deletar este campeonato? Esta ação não pode ser desfeita.')) return
+    
+    try {
+      await deleteTournament(tournamentId)
+      setMessage('Campeonato deletado com sucesso!')
+      await loadTournaments()
+    } catch (error) {
+      console.error('Erro ao deletar campeonato:', error)
+      setMessage('Erro ao deletar campeonato: ' + error.message)
+    }
+  }
+
+  const handleFinishTournament = async (tournamentId) => {
+    if (!window.confirm('Tem certeza que deseja finalizar este campeonato?')) return
+    
+    try {
+      await finishTournament(tournamentId)
+      setMessage('Campeonato finalizado com sucesso!')
+      await loadTournaments()
+    } catch (error) {
+      console.error('Erro ao finalizar campeonato:', error)
+      setMessage('Erro ao finalizar campeonato: ' + error.message)
+    }
+  }
+
+  const isOwner = (tournament) => {
+    return tournament.createdBy === user?.uid
+  }
+
+  const isParticipant = (tournament) => {
+    return tournament.participants?.includes(user?.uid)
+  }
+
+  const getTournamentStatus = (tournament) => {
+    const now = new Date()
+    const startDate = new Date(tournament.startDate)
+    const endDate = new Date(tournament.endDate)
+    
+    if (tournament.status === 'finished') return 'finished'
+    if (now < startDate) return 'upcoming'
+    if (now >= startDate && now <= endDate) return 'active'
+    return 'finished'
   }
 
   // Limpar mensagem após 3 segundos
@@ -308,66 +369,111 @@ const Tournaments = () => {
         {/* Conteúdo das Tabs */}
         {activeTab === 'my-tournaments' && (
           <div className="tournaments-grid">
-            {userTournaments.map(tournament => (
-              <div key={tournament.id} className="tournament-card">
-                <div className="tournament-header">
-                  <h3>{tournament.name}</h3>
-                  {getStatusBadge(tournament.status)}
-                </div>
-                
-                <div className="tournament-details">
-                  <div className="detail-item">
-                    <Calendar size={16} />
-                    <span>
-                      {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}
-                    </span>
+            {userTournaments.map(tournament => {
+              const currentStatus = getTournamentStatus(tournament)
+              const isOwnerOfTournament = isOwner(tournament)
+              const isParticipantOfTournament = isParticipant(tournament)
+              
+              return (
+                <div key={tournament.id} className="tournament-card">
+                  <div className="tournament-header">
+                    <h3>{tournament.name}</h3>
+                    <div className="tournament-badges">
+                      {getStatusBadge(currentStatus)}
+                      {isOwnerOfTournament && <span className="badge badge-owner">Criador</span>}
+                    </div>
                   </div>
-                  <div className="detail-item">
-                    <Users size={16} />
-                    <span>
-                      {tournament.participants?.length || 0}/{tournament.maxParticipants} pescadores
-                    </span>
-                  </div>
-                  {tournament.entryFee > 0 && (
+                  
+                  <div className="tournament-details">
                     <div className="detail-item">
-                      <Target size={16} />
+                      <Calendar size={16} />
                       <span>
-                        Taxa: R$ {tournament.entryFee.toFixed(2)}
+                        {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}
                       </span>
                     </div>
-                  )}
-                  {tournament.prizePool > 0 && (
-                    <div className="detail-item prize">
-                      <Award size={16} />
+                    <div className="detail-item">
+                      <Users size={16} />
                       <span>
-                        Prêmio: R$ {tournament.prizePool.toFixed(2)}
+                        {tournament.participants?.length || 0}/{tournament.maxParticipants} pescadores
                       </span>
                     </div>
-                  )}
+                    {tournament.entryFee > 0 && (
+                      <div className="detail-item">
+                        <Target size={16} />
+                        <span>
+                          Taxa: R$ {tournament.entryFee.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    {tournament.prizePool > 0 && (
+                      <div className="detail-item prize">
+                        <Award size={16} />
+                        <span>
+                          Prêmio: R$ {tournament.prizePool.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="tournament-description">
+                    {tournament.description}
+                  </p>
+                  
+                  <div className="tournament-actions">
+                    <button 
+                      onClick={() => navigate(`/tournaments/${tournament.id}`)}
+                      className="btn btn-sm"
+                    >
+                      Ver Detalhes
+                    </button>
+                    
+                    <button 
+                      onClick={() => navigate(`/ranking?tournament=${tournament.id}`)}
+                      className="btn btn-sm btn-secondary"
+                    >
+                      Ver Ranking
+                    </button>
+                    
+                    {/* Ações para o criador do campeonato */}
+                    {isOwnerOfTournament && (
+                      <>
+                        {currentStatus === 'active' && (
+                          <button 
+                            onClick={() => handleFinishTournament(tournament.id)}
+                            className="btn btn-sm btn-warning"
+                          >
+                            Finalizar
+                          </button>
+                        )}
+                        {currentStatus !== 'active' && (
+                          <button 
+                            onClick={() => handleDeleteTournament(tournament.id)}
+                            className="btn btn-sm btn-danger"
+                          >
+                            Deletar
+                          </button>
+                        )}
+                      </>
+                    )}
+                    
+                    {/* Ações para participantes (não criadores) */}
+                    {!isOwnerOfTournament && isParticipantOfTournament && currentStatus !== 'finished' && (
+                      <button 
+                        onClick={() => handleLeaveTournament(tournament.id)}
+                        className="btn btn-sm btn-secondary"
+                      >
+                        Sair
+                      </button>
+                    )}
+                  </div>
                 </div>
-                
-                <p className="tournament-description">
-                  {tournament.description}
-                </p>
-                
-                <div className="tournament-actions">
-                  <button 
-                    onClick={() => navigate(`/ranking?tournament=${tournament.id}`)}
-                    className="btn btn-sm"
-                  >
-                    Ver Ranking
-                  </button>
-                  {tournament.status === 'active' && (
-                    <button className="btn btn-sm btn-secondary">Gerenciar</button>
-                  )}
-                </div>
-              </div>
-            ))}
+              )
+            })}
             
             {userTournaments.length === 0 && (
               <div className="empty-state">
                 <Shield size={48} />
-                <p>Você ainda não criou nenhum campeonato de pesca.</p>
+                <p>Você ainda não participa de nenhum campeonato de pesca.</p>
                 <button 
                   onClick={() => setShowCreateForm(true)}
                   className="btn"
@@ -381,64 +487,98 @@ const Tournaments = () => {
 
         {activeTab === 'public-tournaments' && (
           <div className="tournaments-grid">
-            {publicTournaments.map(tournament => (
-              <div key={tournament.id} className="tournament-card">
-                <div className="tournament-header">
-                  <h3>{tournament.name}</h3>
-                  {getStatusBadge(tournament.status)}
-                </div>
-                
-                <div className="tournament-details">
-                  <div className="detail-item">
-                    <Calendar size={16} />
-                    <span>
-                      {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}
-                    </span>
+            {publicTournaments.map(tournament => {
+              const currentStatus = getTournamentStatus(tournament)
+              const canJoin = currentStatus === 'upcoming' || currentStatus === 'active'
+              const isFull = (tournament.participants?.length || 0) >= tournament.maxParticipants
+              
+              return (
+                <div key={tournament.id} className="tournament-card">
+                  <div className="tournament-header">
+                    <h3>{tournament.name}</h3>
+                    <div className="tournament-badges">
+                      {getStatusBadge(currentStatus)}
+                      {isFull && <span className="badge badge-full">Lotado</span>}
+                    </div>
                   </div>
-                  <div className="detail-item">
-                    <Users size={16} />
-                    <span>
-                      {tournament.participants?.length || 0}/{tournament.maxParticipants} pescadores
-                    </span>
-                  </div>
-                  {tournament.entryFee > 0 && (
+                  
+                  <div className="tournament-details">
                     <div className="detail-item">
-                      <Target size={16} />
+                      <Calendar size={16} />
                       <span>
-                        Taxa: R$ {tournament.entryFee.toFixed(2)}
+                        {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}
                       </span>
                     </div>
-                  )}
-                  {tournament.prizePool > 0 && (
-                    <div className="detail-item prize">
-                      <Award size={16} />
+                    <div className="detail-item">
+                      <Users size={16} />
                       <span>
-                        Prêmio: R$ {tournament.prizePool.toFixed(2)}
+                        {tournament.participants?.length || 0}/{tournament.maxParticipants} pescadores
                       </span>
                     </div>
-                  )}
+                    {tournament.entryFee > 0 && (
+                      <div className="detail-item">
+                        <Target size={16} />
+                        <span>
+                          Taxa: R$ {tournament.entryFee.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                    {tournament.prizePool > 0 && (
+                      <div className="detail-item prize">
+                        <Award size={16} />
+                        <span>
+                          Prêmio: R$ {tournament.prizePool.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="tournament-description">
+                    {tournament.description}
+                  </p>
+                  
+                  <div className="tournament-actions">
+                    <button 
+                      onClick={() => navigate(`/tournaments/${tournament.id}`)}
+                      className="btn btn-sm"
+                    >
+                      Ver Detalhes
+                    </button>
+                    
+                    <button 
+                      onClick={() => navigate(`/ranking?tournament=${tournament.id}`)}
+                      className="btn btn-sm btn-secondary"
+                    >
+                      Ver Ranking
+                    </button>
+                    
+                    {canJoin && !isFull ? (
+                      <button 
+                        onClick={() => handleJoinTournament(tournament.id)}
+                        className="btn btn-sm"
+                      >
+                        Participar
+                      </button>
+                    ) : (
+                      <button 
+                        disabled
+                        className="btn btn-sm btn-disabled"
+                        title={isFull ? 'Campeonato lotado' : 'Campeonato não disponível para participação'}
+                      >
+                        {isFull ? 'Lotado' : 'Indisponível'}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                
-                <p className="tournament-description">
-                  {tournament.description}
-                </p>
-                
-                <div className="tournament-actions">
-                  <button 
-                    onClick={() => navigate(`/ranking?tournament=${tournament.id}`)}
-                    className="btn btn-sm btn-secondary"
-                  >
-                    Ver Ranking
-                  </button>
-                  <button 
-                    onClick={() => handleJoinTournament(tournament.id)}
-                    className="btn btn-sm"
-                  >
-                    Participar
-                  </button>
-                </div>
+              )
+            })}
+            
+            {publicTournaments.length === 0 && (
+              <div className="empty-state">
+                <Users size={48} />
+                <p>Nenhum campeonato público disponível no momento.</p>
               </div>
-            ))}
+            )}
           </div>
         )}
 

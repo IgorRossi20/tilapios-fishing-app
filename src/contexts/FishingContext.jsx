@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react'
 import { doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion, orderBy } from 'firebase/firestore'
 import { db } from './FirebaseContext'
 import { useAuth } from './AuthContext'
+import { useNotification } from './NotificationContext'
 
 const FishingContext = createContext()
 
@@ -15,6 +16,7 @@ const useFishing = () => {
 
 const FishingProvider = ({ children }) => {
   const { user } = useAuth()
+  const notification = useNotification()
   const [userTournaments, setUserTournaments] = useState([])
   const [allTournaments, setAllTournaments] = useState([])
   const [userCatches, setUserCatches] = useState([])
@@ -307,16 +309,86 @@ const FishingProvider = ({ children }) => {
       
       // Sempre limpar dados pendentes, mesmo com erros
       console.log('🧹 [PENDING] Limpando capturas pendentes...')
-      console.log('📊 [PENDING] Resultado: ', { sincronizadas: syncedCount, erros: errorCount })
+      console.log('📊 [PENDING] Resultado capturas: ', { sincronizadas: syncedCount, erros: errorCount })
+      
+      // Notificar sincronização se houver dados sincronizados
+      if (syncedCount > 0) {
+        notification.notifyDataSynced(`${syncedCount} captura${syncedCount > 1 ? 's' : ''} sincronizada${syncedCount > 1 ? 's' : ''}`)
+      }
       
       // Forçar limpeza
       localStorage.removeItem('pending_catches')
       saveToLocalStorage('pending_catches', [])
       
+      // Sincronizar campeonatos pendentes
+      const pendingTournaments = getFromLocalStorage('pending_tournaments', [])
+      console.log('📋 [PENDING] Campeonatos pendentes encontrados:', pendingTournaments.length)
+      
+      let tournamentSyncedCount = 0
+      let tournamentErrorCount = 0
+      
+      for (const tournamentData of pendingTournaments) {
+        try {
+          console.log('📤 [PENDING] Sincronizando campeonato:', tournamentData.name)
+          const docRef = await addDoc(collection(db, 'fishing_tournaments'), {
+            ...tournamentData,
+            syncedAt: new Date().toISOString()
+          })
+          console.log('✅ [PENDING] Campeonato sincronizado com ID:', docRef.id)
+          tournamentSyncedCount++
+        } catch (error) {
+          console.error('❌ [PENDING] Erro ao sincronizar campeonato:', error)
+          tournamentErrorCount++
+        }
+      }
+      
+      // Limpar campeonatos pendentes
+      if (pendingTournaments.length > 0) {
+        localStorage.removeItem('pending_tournaments')
+        saveToLocalStorage('pending_tournaments', [])
+        console.log('📊 [PENDING] Resultado campeonatos: ', { sincronizados: tournamentSyncedCount, erros: tournamentErrorCount })
+        
+        // Notificar sincronização de campeonatos
+        if (tournamentSyncedCount > 0) {
+          notification.notifyDataSynced(`${tournamentSyncedCount} campeonato${tournamentSyncedCount > 1 ? 's' : ''} sincronizado${tournamentSyncedCount > 1 ? 's' : ''}`)
+        }
+      }
+      
+      // Sincronizar participações pendentes
+      const pendingParticipations = getFromLocalStorage('pending_participations', [])
+      console.log('📋 [PENDING] Participações pendentes encontradas:', pendingParticipations.length)
+      
+      let participationSyncedCount = 0
+      let participationErrorCount = 0
+      
+      for (const participation of pendingParticipations) {
+        try {
+          console.log('📤 [PENDING] Sincronizando participação:', participation.tournamentId)
+          const tournamentRef = doc(db, 'fishing_tournaments', participation.tournamentId)
+          await updateDoc(tournamentRef, {
+            participants: arrayUnion(participation.userId),
+            participantNames: arrayUnion(participation.userName)
+          })
+          console.log('✅ [PENDING] Participação sincronizada')
+          participationSyncedCount++
+        } catch (error) {
+          console.error('❌ [PENDING] Erro ao sincronizar participação:', error)
+          participationErrorCount++
+        }
+      }
+      
+      // Limpar participações pendentes
+      if (pendingParticipations.length > 0) {
+        localStorage.removeItem('pending_participations')
+        saveToLocalStorage('pending_participations', [])
+        console.log('📊 [PENDING] Resultado participações: ', { sincronizadas: participationSyncedCount, erros: participationErrorCount })
+      }
+      
       // Recarregar dados atualizados
       await loadUserCatches()
+      await loadUserTournaments()
       
-      console.log('✅ [PENDING] Limpeza concluída - dados pendentes removidos')
+      console.log('✅ [PENDING] Limpeza concluída - todos os dados pendentes removidos')
       setSyncStatus('idle')
       
       // Forçar atualização da interface
@@ -421,36 +493,529 @@ const FishingProvider = ({ children }) => {
     }
   }
 
-  // Criar campeonato
+  // Criar campeonato com validações e suporte offline
   const createTournament = async (tournamentData) => {
+    console.log('🏆 Iniciando criação de campeonato...')
+    console.log('👤 Usuário autenticado:', !!user, user?.uid)
+    console.log('📊 Dados do campeonato:', tournamentData)
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado')
+    }
+    
+    // Validações básicas
+    if (!tournamentData.name || tournamentData.name.trim() === '') {
+      throw new Error('Nome do campeonato é obrigatório')
+    }
+    
+    if (tournamentData.name.length < 3) {
+      throw new Error('Nome do campeonato deve ter pelo menos 3 caracteres')
+    }
+    
+    if (tournamentData.name.length > 100) {
+      throw new Error('Nome do campeonato deve ter no máximo 100 caracteres')
+    }
+    
+    if (!tournamentData.startDate || !tournamentData.endDate) {
+      throw new Error('Datas de início e fim são obrigatórias')
+    }
+    
+    // Validações de datas
+    const startDate = new Date(tournamentData.startDate)
+    const endDate = new Date(tournamentData.endDate)
+    const now = new Date()
+    
+    // Verificar se as datas são válidas
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      throw new Error('Datas inválidas fornecidas')
+    }
+    
+    if (startDate >= endDate) {
+      throw new Error('Data de início deve ser anterior à data de fim')
+    }
+    
+    // Data de fim deve ser pelo menos 1 hora no futuro
+    const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000)
+    if (endDate <= oneHourFromNow) {
+      throw new Error('Data de fim deve ser pelo menos 1 hora no futuro')
+    }
+    
+    // Duração mínima de 1 hora
+    const durationHours = (endDate - startDate) / (1000 * 60 * 60)
+    if (durationHours < 1) {
+      throw new Error('Campeonato deve ter duração mínima de 1 hora')
+    }
+    
+    // Duração máxima de 30 dias
+    if (durationHours > 720) {
+      throw new Error('Campeonato deve ter duração máxima de 30 dias')
+    }
+    
+    // Validações de participantes
+    if (tournamentData.maxParticipants && (tournamentData.maxParticipants < 2 || tournamentData.maxParticipants > 1000)) {
+      throw new Error('Número máximo de participantes deve estar entre 2 e 1000')
+    }
+    
+    // Validações financeiras
+    if (tournamentData.entryFee && (tournamentData.entryFee < 0 || tournamentData.entryFee > 10000)) {
+      throw new Error('Taxa de entrada deve estar entre R$ 0 e R$ 10.000')
+    }
+    
+    if (tournamentData.prizePool && (tournamentData.prizePool < 0 || tournamentData.prizePool > 100000)) {
+      throw new Error('Prêmio deve estar entre R$ 0 e R$ 100.000')
+    }
+    
+    // Validação de descrição
+    if (tournamentData.description && tournamentData.description.length > 1000) {
+      throw new Error('Descrição deve ter no máximo 1000 caracteres')
+    }
+    
+    // Validação de regras
+    if (tournamentData.rules && tournamentData.rules.length > 2000) {
+      throw new Error('Regras devem ter no máximo 2000 caracteres')
+    }
+    
+    const newTournament = {
+      ...tournamentData,
+      createdBy: user.uid,
+      creatorName: user.displayName || user.email,
+      participants: [user.uid],
+      participantNames: [user.displayName || user.email],
+      createdAt: new Date().toISOString(),
+      status: startDate <= now ? 'active' : 'upcoming',
+      maxParticipants: tournamentData.maxParticipants || 100,
+      entryFee: tournamentData.entryFee || 0,
+      prize: tournamentData.prize || 0,
+      rules: tournamentData.rules || '',
+      location: tournamentData.location || '',
+      description: tournamentData.description || ''
+    }
+    
     try {
-      const docRef = await addDoc(collection(db, 'fishing_tournaments'), {
-        ...tournamentData,
-        createdBy: user.uid,
-        participants: [user.uid],
-        createdAt: new Date().toISOString(),
-        status: 'active'
-      })
-      
-      await loadUserTournaments()
-      return docRef.id
+      if (isOnline) {
+        console.log('🌐 Online - salvando campeonato no Firestore...')
+        const docRef = await addDoc(collection(db, 'fishing_tournaments'), newTournament)
+        console.log('✅ Campeonato criado com ID:', docRef.id)
+        
+        // Notificar sucesso
+        notification.notifyTournamentCreated(newTournament.name)
+        
+        // Recarregar dados
+        await loadUserTournaments()
+        return docRef.id
+      } else {
+        console.log('📱 Offline - salvando campeonato localmente...')
+        // Salvar offline
+        const tempId = `temp_tournament_${Date.now()}_${user.uid.substring(0, 8)}_${Math.random().toString(36).substring(2, 15)}`
+        const tournamentWithId = { id: tempId, ...newTournament, isPending: true }
+        
+        // Salvar na lista de pendentes
+        const pendingTournaments = getFromLocalStorage('pending_tournaments', [])
+        pendingTournaments.push(tournamentWithId)
+        saveToLocalStorage('pending_tournaments', pendingTournaments)
+        
+        // Atualizar cache local do usuário
+        const userCacheKey = `user_tournaments_${user.uid}`
+        const currentTournaments = getFromLocalStorage(userCacheKey, [])
+        currentTournaments.push(tournamentWithId)
+        saveToLocalStorage(userCacheKey, currentTournaments)
+        
+        // Atualizar estado local
+        setUserTournaments(prev => [...prev, tournamentWithId])
+        
+        // Notificar sucesso offline
+        notification.notifyTournamentCreated(newTournament.name)
+        
+        console.log('📱 Campeonato salvo offline. Será sincronizado quando a conexão for restaurada.')
+        return tempId
+      }
     } catch (error) {
-      console.error('Erro ao criar campeonato:', error)
+      console.error('❌ Erro ao criar campeonato:', error)
       throw error
     }
   }
 
-  // Participar de campeonato
+  // Participar de campeonato com validações
   const joinTournament = async (tournamentId) => {
+    console.log('🎯 Tentando participar do campeonato:', tournamentId)
+    console.log('👤 Usuário:', user?.uid)
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado')
+    }
+    
+    // Validação do ID do campeonato
+    if (!tournamentId || typeof tournamentId !== 'string') {
+      throw new Error('ID do campeonato inválido')
+    }
+    
     try {
-      const tournamentRef = doc(db, 'fishing_tournaments', tournamentId)
-      await updateDoc(tournamentRef, {
-        participants: arrayUnion(user.uid)
-      })
+      // Verificar se o campeonato existe e se o usuário já participa
+      const tournament = allTournaments.find(t => t.id === tournamentId) || 
+                        userTournaments.find(t => t.id === tournamentId)
       
-      await loadUserTournaments()
+      if (!tournament) {
+        throw new Error('Campeonato não encontrado')
+      }
+      
+      // Validações de status do campeonato
+      if (tournament.status === 'finished') {
+        throw new Error('Este campeonato já foi finalizado')
+      }
+      
+      if (tournament.status === 'cancelled') {
+        throw new Error('Este campeonato foi cancelado')
+      }
+      
+      // Verificar se o usuário já participa
+      if (tournament.participants && tournament.participants.includes(user.uid)) {
+        throw new Error('Você já está participando deste campeonato')
+      }
+      
+      // Verificar se o usuário é o criador (já participa automaticamente)
+      if (tournament.createdBy === user.uid) {
+        throw new Error('Você é o criador deste campeonato e já participa automaticamente')
+      }
+      
+      // Validações de capacidade
+      if (tournament.maxParticipants && tournament.participants && 
+          tournament.participants.length >= tournament.maxParticipants) {
+        throw new Error('Campeonato lotado')
+      }
+      
+      // Validações de tempo
+      const now = new Date()
+      const startDate = new Date(tournament.startDate)
+      const endDate = new Date(tournament.endDate)
+      
+      // Verificar se as datas são válidas
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error('Campeonato com datas inválidas')
+      }
+      
+      // Não permitir inscrição após o fim do campeonato
+      if (endDate <= now) {
+        throw new Error('Período de inscrição encerrado')
+      }
+      
+      // Permitir inscrição até 30 minutos após o início (para casos de atraso)
+      const thirtyMinutesAfterStart = new Date(startDate.getTime() + 30 * 60 * 1000)
+      if (now > thirtyMinutesAfterStart && tournament.status === 'active') {
+        throw new Error('Não é possível se inscrever em campeonato que já começou há mais de 30 minutos')
+      }
+      
+      // Validações de perfil do usuário
+      if (!user.displayName && !user.email) {
+        throw new Error('Perfil incompleto. Atualize suas informações antes de participar')
+      }
+      
+      if (isOnline) {
+        console.log('🌐 Online - atualizando participação no Firestore...')
+        const tournamentRef = doc(db, 'fishing_tournaments', tournamentId)
+        await updateDoc(tournamentRef, {
+          participants: arrayUnion(user.uid),
+          participantNames: arrayUnion(user.displayName || user.email)
+        })
+        
+        console.log('✅ Participação registrada com sucesso')
+        
+        // Notificar sucesso
+        notification.notifyTournamentJoined(tournament.name)
+        
+        await loadUserTournaments()
+      } else {
+        console.log('📱 Offline - salvando participação localmente...')
+        // Salvar participação offline
+        const pendingParticipations = getFromLocalStorage('pending_participations', [])
+        pendingParticipations.push({
+          tournamentId,
+          userId: user.uid,
+          userName: user.displayName || user.email,
+          timestamp: new Date().toISOString()
+        })
+        saveToLocalStorage('pending_participations', pendingParticipations)
+        
+        // Atualizar cache local
+        const userCacheKey = `user_tournaments_${user.uid}`
+        const currentTournaments = getFromLocalStorage(userCacheKey, [])
+        const updatedTournament = { ...tournament }
+        if (!updatedTournament.participants) updatedTournament.participants = []
+        if (!updatedTournament.participantNames) updatedTournament.participantNames = []
+        
+        updatedTournament.participants.push(user.uid)
+        updatedTournament.participantNames.push(user.displayName || user.email)
+        updatedTournament.isPendingParticipation = true
+        
+        currentTournaments.push(updatedTournament)
+        saveToLocalStorage(userCacheKey, currentTournaments)
+        
+        // Atualizar estado local
+        setUserTournaments(prev => [...prev, updatedTournament])
+        
+        // Notificar sucesso offline
+        notification.notifyTournamentJoined(tournament.name)
+        
+        console.log('📱 Participação salva offline. Será sincronizada quando a conexão for restaurada.')
+      }
     } catch (error) {
-      console.error('Erro ao participar do campeonato:', error)
+      console.error('❌ Erro ao participar do campeonato:', error)
+      throw error
+    }
+  }
+
+  // Sair de campeonato
+  const leaveTournament = async (tournamentId) => {
+    console.log('🚪 Saindo do campeonato:', tournamentId)
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado')
+    }
+    
+    try {
+      const tournament = allTournaments.find(t => t.id === tournamentId) || 
+                        userTournaments.find(t => t.id === tournamentId)
+      
+      if (!tournament) {
+        throw new Error('Campeonato não encontrado')
+      }
+      
+      if (tournament.createdBy === user.uid) {
+        throw new Error('Criador do campeonato não pode sair. Use a função de cancelar campeonato.')
+      }
+      
+      if (tournament.status === 'finished') {
+        throw new Error('Não é possível sair de um campeonato finalizado')
+      }
+      
+      if (isOnline) {
+        const tournamentRef = doc(db, 'fishing_tournaments', tournamentId)
+        const tournamentDoc = await getDoc(tournamentRef)
+        
+        if (tournamentDoc.exists()) {
+          const data = tournamentDoc.data()
+          const updatedParticipants = (data.participants || []).filter(id => id !== user.uid)
+          const updatedParticipantNames = (data.participantNames || []).filter(name => name !== (user.displayName || user.email))
+          
+          await updateDoc(tournamentRef, {
+            participants: updatedParticipants,
+            participantNames: updatedParticipantNames
+          })
+        }
+        
+        // Notificar sucesso
+        notification.notifyTournamentLeft(tournament.name)
+        
+        await loadUserTournaments()
+      } else {
+        // Remover localmente
+        const userCacheKey = `user_tournaments_${user.uid}`
+        const currentTournaments = getFromLocalStorage(userCacheKey, [])
+        const filteredTournaments = currentTournaments.filter(t => t.id !== tournamentId)
+        saveToLocalStorage(userCacheKey, filteredTournaments)
+        setUserTournaments(filteredTournaments)
+        
+        // Notificar sucesso offline
+        notification.notifyTournamentLeft(tournament.name)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao sair do campeonato:', error)
+      throw error
+    }
+  }
+
+  // Cancelar/Deletar campeonato (apenas criador)
+  const deleteTournament = async (tournamentId) => {
+    console.log('🗑️ Deletando campeonato:', tournamentId)
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado')
+    }
+    
+    // Validação do ID do campeonato
+    if (!tournamentId || typeof tournamentId !== 'string') {
+      throw new Error('ID do campeonato inválido')
+    }
+    
+    try {
+      const tournament = allTournaments.find(t => t.id === tournamentId) || 
+                        userTournaments.find(t => t.id === tournamentId)
+      
+      if (!tournament) {
+        throw new Error('Campeonato não encontrado')
+      }
+      
+      // Verificar se o usuário é o criador
+      if (tournament.createdBy !== user.uid) {
+        throw new Error('Apenas o criador pode deletar o campeonato')
+      }
+      
+      // Verificar se o campeonato já foi deletado/cancelado
+      if (tournament.status === 'cancelled') {
+        throw new Error('Este campeonato já foi cancelado')
+      }
+      
+      // Verificar se o campeonato já foi finalizado
+      if (tournament.status === 'finished') {
+        throw new Error('Não é possível deletar um campeonato já finalizado')
+      }
+      
+      // Validações de tempo e participantes
+      const now = new Date()
+      const startDate = new Date(tournament.startDate)
+      const participantCount = tournament.participants ? tournament.participants.length : 0
+      
+      // Não permitir deletar campeonato ativo com múltiplos participantes
+      if (tournament.status === 'active' && participantCount > 1) {
+        throw new Error('Não é possível deletar um campeonato ativo com outros participantes')
+      }
+      
+      // Não permitir deletar campeonato que já começou há mais de 1 hora
+      const oneHourAfterStart = new Date(startDate.getTime() + 60 * 60 * 1000)
+      if (now > oneHourAfterStart && tournament.status === 'active') {
+        throw new Error('Não é possível deletar um campeonato que já está em andamento há mais de 1 hora')
+      }
+      
+      // Verificar se há capturas registradas no campeonato
+      const tournamentCatches = userCatches.filter(catch_ => catch_.tournamentId === tournamentId)
+      if (tournamentCatches.length > 0) {
+        throw new Error('Não é possível deletar um campeonato que já possui capturas registradas')
+      }
+      
+      if (isOnline) {
+        // Deletar do Firestore
+        const tournamentRef = doc(db, 'fishing_tournaments', tournamentId)
+        await updateDoc(tournamentRef, {
+          status: 'cancelled',
+          cancelledAt: new Date().toISOString(),
+          cancelledBy: user.uid
+        })
+        
+        // Notificar sucesso
+        notification.notifyTournamentDeleted(tournament.name)
+        
+        await loadUserTournaments()
+      } else {
+        // Marcar como cancelado localmente
+        const userCacheKey = `user_tournaments_${user.uid}`
+        const currentTournaments = getFromLocalStorage(userCacheKey, [])
+        const updatedTournaments = currentTournaments.map(t => 
+          t.id === tournamentId ? { ...t, status: 'cancelled', cancelledAt: new Date().toISOString() } : t
+        )
+        saveToLocalStorage(userCacheKey, updatedTournaments)
+        setUserTournaments(updatedTournaments)
+        
+        // Notificar sucesso offline
+        notification.notifyTournamentDeleted(tournament.name)
+      }
+    } catch (error) {
+      console.error('❌ Erro ao deletar campeonato:', error)
+      throw error
+    }
+  }
+
+  // Finalizar campeonato (apenas criador)
+  const finishTournament = async (tournamentId) => {
+    console.log('🏁 Finalizando campeonato:', tournamentId)
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado')
+    }
+    
+    // Validação do ID do campeonato
+    if (!tournamentId || typeof tournamentId !== 'string') {
+      throw new Error('ID do campeonato inválido')
+    }
+    
+    try {
+      const tournament = allTournaments.find(t => t.id === tournamentId) || 
+                        userTournaments.find(t => t.id === tournamentId)
+      
+      if (!tournament) {
+        throw new Error('Campeonato não encontrado')
+      }
+      
+      // Verificar se o usuário é o criador
+      if (tournament.createdBy !== user.uid) {
+        throw new Error('Apenas o criador pode finalizar o campeonato')
+      }
+      
+      // Verificar status atual
+      if (tournament.status === 'finished') {
+        throw new Error('Campeonato já foi finalizado')
+      }
+      
+      if (tournament.status === 'cancelled') {
+        throw new Error('Não é possível finalizar um campeonato cancelado')
+      }
+      
+      // Validações de tempo
+      const now = new Date()
+      const startDate = new Date(tournament.startDate)
+      const endDate = new Date(tournament.endDate)
+      
+      // Verificar se as datas são válidas
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        throw new Error('Campeonato com datas inválidas')
+      }
+      
+      // Não permitir finalizar antes do início
+      if (now < startDate) {
+        throw new Error('Não é possível finalizar um campeonato que ainda não começou')
+      }
+      
+      // Permitir finalização antecipada apenas se for pelo menos 50% do tempo
+      const totalDuration = endDate - startDate
+      const elapsedTime = now - startDate
+      const minimumDurationForEarlyFinish = totalDuration * 0.5
+      
+      if (now < endDate && elapsedTime < minimumDurationForEarlyFinish) {
+        throw new Error('Campeonato só pode ser finalizado antecipadamente após pelo menos 50% do tempo decorrido')
+      }
+      
+      // Verificar se há pelo menos um participante
+      const participantCount = tournament.participants ? tournament.participants.length : 0
+      if (participantCount < 1) {
+        throw new Error('Não é possível finalizar um campeonato sem participantes')
+      }
+      
+      // Calcular ranking final
+      const finalRanking = await getTournamentRanking(tournamentId, 'weight')
+      
+      if (isOnline) {
+        const tournamentRef = doc(db, 'fishing_tournaments', tournamentId)
+        await updateDoc(tournamentRef, {
+          status: 'finished',
+          finishedAt: new Date().toISOString(),
+          finishedBy: user.uid,
+          finalRanking: finalRanking
+        })
+        
+        // Notificar sucesso
+        notification.notifyTournamentFinished(tournament.name)
+        
+        await loadUserTournaments()
+      } else {
+        // Finalizar localmente
+        const userCacheKey = `user_tournaments_${user.uid}`
+        const currentTournaments = getFromLocalStorage(userCacheKey, [])
+        const updatedTournaments = currentTournaments.map(t => 
+          t.id === tournamentId ? { 
+            ...t, 
+            status: 'finished', 
+            finishedAt: new Date().toISOString(),
+            finalRanking: finalRanking 
+          } : t
+        )
+        saveToLocalStorage(userCacheKey, updatedTournaments)
+        setUserTournaments(updatedTournaments)
+        
+        // Notificar sucesso offline
+        notification.notifyTournamentFinished(tournament.name)
+      }
+      
+      return finalRanking
+    } catch (error) {
+      console.error('❌ Erro ao finalizar campeonato:', error)
       throw error
     }
   }
@@ -476,7 +1041,7 @@ const FishingProvider = ({ children }) => {
       userId: user.uid,
       userName: user.displayName || user.email,
       registeredAt: new Date().toISOString(),
-      id: `temp_${Date.now()}_${user.uid.substring(0, 8)}_${Math.random().toString(36).substring(2, 9)}_${performance.now().toString(36).substring(2, 8)}`
+      id: `temp_${Date.now()}_${user.uid.substring(0, 8)}_${Math.random().toString(36).substring(2, 15)}_${performance.now().toString().replace('.', '')}`
     }
     
     console.log('📝 Dados estruturados para salvar:', newCatch)
@@ -495,6 +1060,9 @@ const FishingProvider = ({ children }) => {
         // Atualizar ID com o ID real do Firestore
         newCatch.id = docRef.id
         
+        // Notificar sucesso
+        notification.notifyCatchRegistered(newCatch.species || 'Peixe', newCatch.weight)
+        
         // Recarregar capturas após registro
         await loadUserCatches()
       } else {
@@ -511,6 +1079,9 @@ const FishingProvider = ({ children }) => {
         
         // Atualizar estado local
         setUserCatches(prev => [...prev, { ...newCatch, isPending: true }])
+        
+        // Notificar sucesso offline
+        notification.notifyCatchRegistered(newCatch.species || 'Peixe', newCatch.weight)
         
         console.log('Captura salva offline. Será sincronizada quando a conexão for restaurada.')
       }
@@ -616,7 +1187,7 @@ const FishingProvider = ({ children }) => {
         return { id: docRef.id, ...newPost }
       } else {
         // Salvar localmente se offline
-        const tempId = `temp_post_${Date.now()}`
+        const tempId = `temp_post_${Date.now()}_${user.uid.substring(0, 8)}_${Math.random().toString(36).substring(2, 15)}`
         const postWithId = { id: tempId, ...newPost, isTemp: true }
         const localPosts = getFromLocalStorage('local_posts', [])
         localPosts.unshift(postWithId)
@@ -748,6 +1319,9 @@ const FishingProvider = ({ children }) => {
     syncStatus,
     createTournament,
     joinTournament,
+    leaveTournament,
+    deleteTournament,
+    finishTournament,
     registerCatch,
     loadUserTournaments,
     loadUserCatches,
@@ -768,7 +1342,10 @@ const FishingProvider = ({ children }) => {
   // Helper para computar ranking a partir de uma lista de capturas
   const computeRankingFromCatches = (catchesList = [], rankingType = 'weight') => {
     if (!Array.isArray(catchesList) || catchesList.length === 0) return []
+    
     const userStats = {}
+    
+    // Processar todas as capturas
     catchesList.forEach(c => {
       if (!userStats[c.userId]) {
         userStats[c.userId] = {
@@ -776,22 +1353,187 @@ const FishingProvider = ({ children }) => {
           userName: c.userName,
           totalCatches: 0,
           totalWeight: 0,
-          biggestFish: { weight: 0 }
+          averageWeight: 0,
+          biggestFish: { weight: 0, species: '', length: 0 },
+          smallestFish: { weight: Infinity, species: '', length: Infinity },
+          speciesCount: {},
+          uniqueSpecies: 0,
+          totalLength: 0,
+          averageLength: 0,
+          score: 0,
+          lastCatchDate: null,
+          firstCatchDate: null,
+          catchDates: [],
+          activeDays: 0
         }
       }
-      userStats[c.userId].totalCatches++
-      userStats[c.userId].totalWeight += c.weight || 0
-      if ((c.weight || 0) > userStats[c.userId].biggestFish.weight) {
-        userStats[c.userId].biggestFish = c
+      
+      const stats = userStats[c.userId]
+      const weight = c.weight || 0
+      const length = c.length || 0
+      const species = c.species || 'Desconhecido'
+      const catchDate = c.date || c.createdAt
+      
+      // Estatísticas básicas
+      stats.totalCatches++
+      stats.totalWeight += weight
+      stats.totalLength += length
+      
+      // Maior peixe
+      if (weight > stats.biggestFish.weight) {
+        stats.biggestFish = {
+          weight,
+          species,
+          length,
+          location: c.location,
+          date: catchDate
+        }
+      }
+      
+      // Menor peixe
+      if (weight < stats.smallestFish.weight && weight > 0) {
+        stats.smallestFish = {
+          weight,
+          species,
+          length,
+          location: c.location,
+          date: catchDate
+        }
+      }
+      
+      // Contagem de espécies
+      if (!stats.speciesCount[species]) {
+        stats.speciesCount[species] = 0
+      }
+      stats.speciesCount[species]++
+      
+      // Datas de pesca
+      if (catchDate) {
+        const dateStr = new Date(catchDate).toDateString()
+        if (!stats.catchDates.includes(dateStr)) {
+          stats.catchDates.push(dateStr)
+        }
+        
+        if (!stats.firstCatchDate || new Date(catchDate) < new Date(stats.firstCatchDate)) {
+          stats.firstCatchDate = catchDate
+        }
+        
+        if (!stats.lastCatchDate || new Date(catchDate) > new Date(stats.lastCatchDate)) {
+          stats.lastCatchDate = catchDate
+        }
       }
     })
+    
+    // Calcular estatísticas derivadas
+    Object.values(userStats).forEach(stats => {
+      // Médias
+      stats.averageWeight = stats.totalCatches > 0 ? stats.totalWeight / stats.totalCatches : 0
+      stats.averageLength = stats.totalCatches > 0 ? stats.totalLength / stats.totalCatches : 0
+      
+      // Espécies únicas
+      stats.uniqueSpecies = Object.keys(stats.speciesCount).length
+      
+      // Dias ativos
+      stats.activeDays = stats.catchDates.length
+      
+      // Sistema de pontuação avançado
+      stats.score = calculateAdvancedScore(stats)
+      
+      // Limpar dados temporários
+      delete stats.catchDates
+    })
+    
     const ranking = Object.values(userStats)
-    if (rankingType === 'weight') {
-      ranking.sort((a, b) => b.totalWeight - a.totalWeight)
-    } else {
-      ranking.sort((a, b) => b.totalCatches - a.totalCatches)
+    
+    // Ordenação baseada no tipo de ranking
+    switch (rankingType) {
+      case 'weight':
+        ranking.sort((a, b) => {
+          if (b.totalWeight !== a.totalWeight) return b.totalWeight - a.totalWeight
+          if (b.totalCatches !== a.totalCatches) return b.totalCatches - a.totalCatches
+          return b.biggestFish.weight - a.biggestFish.weight
+        })
+        break
+        
+      case 'quantity':
+        ranking.sort((a, b) => {
+          if (b.totalCatches !== a.totalCatches) return b.totalCatches - a.totalCatches
+          if (b.totalWeight !== a.totalWeight) return b.totalWeight - a.totalWeight
+          return b.uniqueSpecies - a.uniqueSpecies
+        })
+        break
+        
+      case 'biggest':
+        ranking.sort((a, b) => {
+          if (b.biggestFish.weight !== a.biggestFish.weight) return b.biggestFish.weight - a.biggestFish.weight
+          if (b.totalWeight !== a.totalWeight) return b.totalWeight - a.totalWeight
+          return b.totalCatches - a.totalCatches
+        })
+        break
+        
+      case 'species':
+        ranking.sort((a, b) => {
+          if (b.uniqueSpecies !== a.uniqueSpecies) return b.uniqueSpecies - a.uniqueSpecies
+          if (b.totalCatches !== a.totalCatches) return b.totalCatches - a.totalCatches
+          return b.totalWeight - a.totalWeight
+        })
+        break
+        
+      case 'score':
+      default:
+        ranking.sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score
+          if (b.totalWeight !== a.totalWeight) return b.totalWeight - a.totalWeight
+          return b.totalCatches - a.totalCatches
+        })
+        break
     }
+    
+    // Adicionar posição no ranking
+    ranking.forEach((participant, index) => {
+      participant.position = index + 1
+      participant.isWinner = index === 0
+      participant.isPodium = index < 3
+    })
+    
     return ranking
+  }
+  
+  // Sistema de pontuação avançado
+  const calculateAdvancedScore = (stats) => {
+    let score = 0
+    
+    // Pontos por peso total (1 ponto por kg)
+    score += stats.totalWeight * 1
+    
+    // Pontos por quantidade de peixes (5 pontos por peixe)
+    score += stats.totalCatches * 5
+    
+    // Bônus por diversidade de espécies (20 pontos por espécie única)
+    score += stats.uniqueSpecies * 20
+    
+    // Bônus por maior peixe (peso do maior peixe * 10)
+    score += stats.biggestFish.weight * 10
+    
+    // Bônus por consistência (pontos por dia ativo)
+    score += stats.activeDays * 15
+    
+    // Bônus por peso médio alto (se > 2kg, bônus de 50 pontos)
+    if (stats.averageWeight > 2) {
+      score += 50
+    }
+    
+    // Bônus por pescador experiente (se > 10 peixes, bônus de 100 pontos)
+    if (stats.totalCatches > 10) {
+      score += 100
+    }
+    
+    // Bônus por especialista em espécies (se > 5 espécies, bônus de 200 pontos)
+    if (stats.uniqueSpecies > 5) {
+      score += 200
+    }
+    
+    return Math.round(score)
   }
 
   return (

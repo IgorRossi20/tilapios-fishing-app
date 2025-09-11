@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { Fish, Mail, Lock, User } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import './Login.css'
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true)
@@ -108,55 +109,33 @@ const Login = () => {
   }
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div className="card" style={{ maxWidth: '400px', width: '100%' }}>
-        <div className="text-center mb-3">
-          <Fish size={48} className="text-primary" style={{ marginBottom: '10px' }} />
-          <h1 style={{ color: '#2196F3', marginBottom: '10px' }}>Tilapios</h1>
-          <p style={{ color: '#666' }}>
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <Fish size={48} className="login-logo" />
+          <h1 className="login-title">Tilapios</h1>
+          <p className="login-subtitle">
             {isLogin ? 'Entre na sua conta' : 'Crie sua conta'}
           </p>
         </div>
 
         {error && (
-          <div style={{ 
-            background: '#ffebee', 
-            color: '#c62828', 
-            padding: '10px', 
-            borderRadius: '8px', 
-            marginBottom: '20px',
-            textAlign: 'center',
-            border: '1px solid #ffcdd2'
-          }}>
+          <div className="alert alert-error">
             {error}
           </div>
         )}
 
         {success && (
-          <div style={{ 
-            background: '#e8f5e8', 
-            color: '#2e7d32', 
-            padding: '10px', 
-            borderRadius: '8px', 
-            marginBottom: '20px',
-            textAlign: 'center',
-            border: '1px solid #c8e6c9'
-          }}>
+          <div className="alert alert-success">
             {success}
           </div>
         )}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="login-form">
           {!isLogin && (
             <div className="form-group">
               <label className="form-label">
-                <User size={16} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
+                <User size={16} />
                 Nome
               </label>
               <input
@@ -173,7 +152,7 @@ const Login = () => {
 
           <div className="form-group">
             <label className="form-label">
-              <Mail size={16} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
+              <Mail size={16} />
               Email
             </label>
             <input
@@ -189,7 +168,7 @@ const Login = () => {
 
           <div className="form-group">
             <label className="form-label">
-              <Lock size={16} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
+              <Lock size={16} />
               Senha
             </label>
             <input
@@ -205,12 +184,11 @@ const Login = () => {
 
           <button 
             type="submit" 
-            className="btn" 
-            style={{ width: '100%', marginBottom: '10px' }}
+            className="login-btn"
             disabled={loading}
           >
             {loading ? (
-              <div className="spinner" style={{ width: '20px', height: '20px', margin: '0 auto' }}></div>
+              <div className="login-spinner"></div>
             ) : (
               isLogin ? 'Entrar' : 'Criar Conta'
             )}
@@ -221,14 +199,7 @@ const Login = () => {
               <button 
                 type="button"
                 onClick={() => setShowForgotPassword(true)}
-                style={{ 
-                  background: 'none', 
-                  border: 'none', 
-                  color: '#2196F3', 
-                  fontSize: '14px',
-                  textDecoration: 'underline',
-                  cursor: 'pointer'
-                }}
+                className="forgot-password-btn"
               >
                 Esqueci minha senha
               </button>
@@ -237,26 +208,15 @@ const Login = () => {
         </form>
 
         {showForgotPassword && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}>
-            <div className="card" style={{ maxWidth: '400px', width: '90%', margin: '20px' }}>
-              <h3 style={{ marginBottom: '20px', textAlign: 'center' }}>Recuperar Senha</h3>
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3 className="modal-title">Recuperar Senha</h3>
               <form onSubmit={handleForgotPassword}>
                 <div className="form-group">
                   <label className="form-label">
-                    <Mail size={16} style={{ marginRight: '5px', verticalAlign: 'middle' }} />
-                    Email
-                  </label>
+                      <Mail size={16} />
+                      Email
+                    </label>
                   <input
                     type="email"
                     value={resetEmail}
@@ -266,15 +226,14 @@ const Login = () => {
                     required
                   />
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div className="modal-actions">
                   <button 
                     type="submit" 
-                    className="btn" 
-                    style={{ flex: 1 }}
+                    className="modal-btn modal-btn-primary"
                     disabled={loading}
                   >
                     {loading ? (
-                      <div className="spinner" style={{ width: '20px', height: '20px', margin: '0 auto' }}></div>
+                      <div className="login-spinner"></div>
                     ) : (
                       'Enviar Email'
                     )}
@@ -286,8 +245,7 @@ const Login = () => {
                       setResetEmail('')
                       setError('')
                     }}
-                    className="btn btn-secondary"
-                    style={{ flex: 1, background: '#f5f5f5', color: '#666' }}
+                    className="modal-btn modal-btn-secondary"
                   >
                     Cancelar
                   </button>
@@ -297,8 +255,8 @@ const Login = () => {
           </div>
         )}
 
-        <div className="text-center">
-          <p style={{ color: '#666', marginBottom: '10px' }}>
+        <div className="switch-section">
+          <p className="switch-text">
             {isLogin ? 'Não tem uma conta?' : 'Já tem uma conta?'}
           </p>
           <button 
@@ -308,12 +266,10 @@ const Login = () => {
               setSuccess('')
               setFormData({ email: '', password: '', displayName: '' })
             }}
-            className="btn btn-secondary"
-            style={{ background: 'transparent', color: '#2196F3', border: '2px solid #2196F3' }}
+            className="switch-mode-btn"
           >
             {isLogin ? 'Criar Conta' : 'Fazer Login'}
           </button>
-
         </div>
       </div>
     </div>

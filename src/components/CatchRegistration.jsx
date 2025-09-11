@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Fish, MapPin, Calendar, Weight, Ruler, Camera, Trophy } from 'lucide-react'
+import { Fish, Calendar, Weight, Camera, Trophy, TrendingUp, Award } from 'lucide-react'
 import { useFishing } from '../contexts/FishingContext'
 import './CatchRegistration.css'
 
@@ -8,8 +8,6 @@ const CatchRegistration = () => {
   const [formData, setFormData] = useState({
     species: '',
     weight: '',
-    length: '',
-    location: '',
     tournamentId: '',
     photo: null,
     notes: ''
@@ -69,7 +67,6 @@ const CatchRegistration = () => {
       await registerCatch({
         ...formData,
         weight: parseFloat(formData.weight),
-        length: formData.length ? parseFloat(formData.length) : null,
         caughtAt: new Date().toISOString()
       })
       
@@ -80,8 +77,6 @@ const CatchRegistration = () => {
       setFormData({
         species: '',
         weight: '',
-        length: '',
-        location: '',
         tournamentId: '',
         photo: null,
         notes: ''
@@ -110,22 +105,58 @@ const CatchRegistration = () => {
     <div className="catch-registration">
       <div className="container">
         <div className="header">
-          <h1>
-            <Fish size={32} className="text-primary" />
-            Registrar Pesca
-          </h1>
-          <p>Registre sua pesca e acompanhe suas estatísticas!</p>
+          <h1><Fish size={24} /> Registrar Pesca</h1>
+          <p>Registre suas capturas e acompanhe seu progresso</p>
         </div>
-
-        {message && (
-          <div className={`message ${messageType}`}>
-            {message}
+        
+        {userStats && (
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Fish size={24} />
+              </div>
+              <div className="stat-value">{userStats.totalCatches || 0}</div>
+              <div className="stat-label">Total de Capturas</div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Weight size={24} />
+              </div>
+              <div className="stat-value">{userStats.totalWeight ? userStats.totalWeight.toFixed(2) : '0'} kg</div>
+              <div className="stat-label">Peso Total</div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">
+                <TrendingUp size={24} />
+              </div>
+              <div className="stat-value">{userStats.averageWeight ? userStats.averageWeight.toFixed(2) : '0'} kg</div>
+              <div className="stat-label">Média por Captura</div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">
+                <Award size={24} />
+              </div>
+              <div className="stat-value">{userStats.biggestCatch ? userStats.biggestCatch.weight.toFixed(2) : '0'} kg</div>
+              <div className="stat-label">Maior Captura</div>
+            </div>
           </div>
         )}
 
-        <div className="content">
-          <div className="form-section">
-            <form onSubmit={handleSubmit} className="catch-form">
+        {message && (
+          <div className={`message ${messageType}`}>
+            {messageType === 'success' ? '✅ ' : '❌ '}{message}
+          </div>
+        )}
+
+        <div className="content-grid">
+            <div className="content-card">
+              <div className="card-title">
+                <Fish size={20} /> Formulário de Registro
+              </div>
+              <form onSubmit={handleSubmit} className="catch-form">
               <div className="form-row">
                 <div className="form-group">
                   <label className="form-label">
@@ -163,36 +194,7 @@ const CatchRegistration = () => {
                 </div>
               </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">
-                    <Ruler size={16} />
-                    Comprimento (cm)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    className="form-input"
-                    value={formData.length}
-                    onChange={(e) => setFormData({ ...formData, length: e.target.value })}
-                    placeholder="Ex: 45"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    <MapPin size={16} />
-                    Local da Pesca
-                  </label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    placeholder="Ex: Lago das Garças"
-                  />
-                </div>
-              </div>
+              {/* Campos de Comprimento e Local da Pesca removidos conforme solicitado */}
 
               <div className="form-group">
                 <label className="form-label">
@@ -221,7 +223,7 @@ const CatchRegistration = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  className="form-input"
+                  className="form-input file-input"
                   onChange={handlePhotoChange}
                 />
               </div>
@@ -239,63 +241,15 @@ const CatchRegistration = () => {
 
               <button
                 type="submit"
-                className="btn btn-primary"
+                className="submit-btn"
                 disabled={loading}
               >
-                {loading ? 'Registrando...' : 'Registrar Pesca'}
+                {loading ? 'Registrando...' : 'Registrar Pesca'} <Trophy size={20} />
               </button>
             </form>
           </div>
 
-          {userStats && (
-            <div className="stats-section">
-              <h3>Suas Estatísticas</h3>
-              <div className="stats-grid">
-                <div className="stat-card">
-                  <div className="stat-icon">
-                    <Fish size={24} />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-value">{userStats.totalCatches}</span>
-                    <span className="stat-label">Total de Pescas</span>
-                  </div>
-                </div>
 
-                <div className="stat-card">
-                  <div className="stat-icon">
-                    <Weight size={24} />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-value">{userStats.totalWeight.toFixed(2)} kg</span>
-                    <span className="stat-label">Peso Total</span>
-                  </div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-icon">
-                    <Trophy size={24} />
-                  </div>
-                  <div className="stat-info">
-                    <span className="stat-value">{userStats.averageWeight.toFixed(2)} kg</span>
-                    <span className="stat-label">Peso Médio</span>
-                  </div>
-                </div>
-
-                {userStats.biggestFish.weight > 0 && (
-                  <div className="stat-card highlight">
-                    <div className="stat-icon">
-                      <Fish size={24} />
-                    </div>
-                    <div className="stat-info">
-                      <span className="stat-value">{userStats.biggestFish.weight} kg</span>
-                      <span className="stat-label">Maior Peixe</span>
-                      <span className="stat-detail">{userStats.biggestFish.species}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

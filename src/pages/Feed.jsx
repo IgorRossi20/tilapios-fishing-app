@@ -17,8 +17,42 @@ const Feed = () => {
     fishSpecies: '',
     weight: '',
     location: '',
+    date: new Date().toISOString().split('T')[0],
     image: null
   })
+  
+  const [imagePreview, setImagePreview] = useState(null)
+  
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setNewPost(prev => ({
+        ...prev,
+        image: file
+      }))
+      
+      // Criar preview da imagem
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreview(e.target.result)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+  
+  const fishSpecies = [
+    'Tucunaré',
+    'Dourado',
+    'Pintado',
+    'Tilápia',
+    'Pacu',
+    'Tambaqui',
+    'Pirarucu',
+    'Traíra',
+    'Corvina',
+    'Robalo',
+    'Outro'
+  ]
 
   useEffect(() => {
     loadPostsData()
@@ -39,6 +73,12 @@ const Feed = () => {
   const handleCreatePost = async (e) => {
     e.preventDefault()
     
+    // Validar formulário
+    if (!newPost.fishSpecies || !newPost.weight || !newPost.location) {
+      alert('Por favor, preencha todos os campos obrigatórios: espécie, peso e local.')
+      return
+    }
+    
     // Prevenir dupla submissão
     if (loading) {
       return
@@ -47,12 +87,35 @@ const Feed = () => {
     try {
       setLoading(true)
       
+      // Processar imagem se existir
+      let imageUrl = '🐟' // Emoji padrão se não tiver imagem
+      if (newPost.image && typeof newPost.image !== 'string') {
+        // Em um app real, aqui faria upload da imagem para um servidor
+        // e obteria a URL. Por enquanto, usamos o preview como URL
+        imageUrl = imagePreview
+      }
+      
+      // Criar dados da captura no formato esperado pelo registerCatch
+      const captureData = {
+        species: newPost.fishSpecies,
+        weight: parseFloat(newPost.weight),
+        location: newPost.location,
+        date: newPost.date || new Date().toISOString().split('T')[0],
+        description: newPost.description,
+        image: imageUrl
+      }
+      
+      // Registrar a captura usando a função do contexto
+      const { registerCatch } = useFishing()
+      await registerCatch(captureData)
+      
+      // Criar post para o feed com os mesmos dados
       const postData = {
         description: newPost.description,
         fishSpecies: newPost.fishSpecies,
         weight: parseFloat(newPost.weight),
         location: newPost.location,
-        image: '🐟' // Por enquanto emoji, depois implementar upload
+        image: imageUrl
       }
       
       const createdPost = await createPost(postData)
@@ -66,12 +129,16 @@ const Feed = () => {
         fishSpecies: '',
         weight: '',
         location: '',
+        date: new Date().toISOString().split('T')[0],
         image: null
       })
+      setImagePreview(null)
       setShowCreatePost(false)
+      
+      alert('Captura registrada com sucesso! 🎣')
     } catch (error) {
       console.error('Erro ao criar post:', error)
-      alert('Erro ao criar post. Tente novamente.')
+      alert('Erro ao registrar captura. Tente novamente.')
     } finally {
       setLoading(false)
     }
@@ -167,17 +234,35 @@ const Feed = () => {
   }
 
   const formatTimeAgo = (timestamp) => {
-    const now = new Date()
-    const diff = now - timestamp
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const minutes = Math.floor(diff / (1000 * 60))
-    
-    if (hours > 0) {
-      return `${hours}h atrás`
-    } else if (minutes > 0) {
-      return `${minutes}min atrás`
-    } else {
-      return 'Agora'
+    try {
+      // Verificar se o timestamp é válido
+      if (!timestamp) {
+        return 'Data não disponível'
+      }
+      
+      // Converter para Date se necessário
+      const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
+      
+      // Verificar se a data é válida
+      if (isNaN(date.getTime())) {
+        return 'Data não disponível'
+      }
+      
+      const now = new Date()
+      const diff = now - date
+      const hours = Math.floor(diff / (1000 * 60 * 60))
+      const minutes = Math.floor(diff / (1000 * 60))
+      
+      if (hours > 0) {
+        return `${hours}h atrás`
+      } else if (minutes > 0) {
+        return `${minutes}min atrás`
+      } else {
+        return 'Agora'
+      }
+    } catch (error) {
+      console.error('Erro ao formatar timestamp:', error)
+      return 'Data não disponível'
     }
   }
 
@@ -238,16 +323,19 @@ const Feed = () => {
             
             <div className="grid grid-2">
               <div className="form-group">
-                <label className="form-label">Espécie do Peixe</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  value={newPost.fishSpecies}
-                  onChange={(e) => setNewPost({...newPost, fishSpecies: e.target.value})}
-                  placeholder="Ex: Tucunaré, Dourado..."
-                  required
-                />
-              </div>
+              <label className="form-label">Espécie do Peixe</label>
+              <select
+                className="form-input"
+                value={newPost.fishSpecies}
+                onChange={(e) => setNewPost({...newPost, fishSpecies: e.target.value})}
+                required
+              >
+                <option value="">Selecione a espécie</option>
+                {fishSpecies.map((species, index) => (
+                  <option key={index} value={species}>{species}</option>
+                ))}
+              </select>
+            </div>
               <div className="form-group">
                 <label className="form-label">Peso (kg)</label>
                 <input
@@ -280,9 +368,14 @@ const Feed = () => {
                 type="file"
                 className="form-input"
                 accept="image/*"
-                onChange={(e) => setNewPost({...newPost, image: e.target.files[0]})}
+                onChange={handleImageChange}
               />
               <small style={{ color: '#666', fontSize: '12px' }}>Adicione uma foto para mostrar sua captura!</small>
+              {imagePreview && (
+                <div className="image-preview">
+                  <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', marginTop: '10px', borderRadius: '8px' }} />
+                </div>
+              )}
             </div>
             
             <div style={{ display: 'flex', gap: '10px' }}>

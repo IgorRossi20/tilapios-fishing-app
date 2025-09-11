@@ -1,14 +1,14 @@
 .catch-registration {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #f5f7fa;
   padding: 1rem 0;
-  overflow-x: hidden; /* Previne scroll horizontal */
+  overflow-x: hidden; /* Prevents horizontal scroll */
   width: 100%;
   box-sizing: border-box;
 }
 
 .catch-registration .container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 1rem;
   width: 100%;
@@ -18,7 +18,7 @@
 .catch-registration .header {
   text-align: center;
   margin-bottom: 2rem;
-  color: white;
+  color: #2c3e50;
 }
 
 .catch-registration .header h1 {
@@ -26,14 +26,17 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  font-size: 2.5rem;
+  font-size: 1.75rem;
   margin-bottom: 0.5rem;
-  font-weight: 700;
+  font-weight: 600;
+  color: #2c3e50;
 }
 
 .catch-registration .header p {
-  font-size: 1.1rem;
-  opacity: 0.9;
+  font-size: 1rem;
+  color: #7f8c8d;
+  line-height: 1.4;
+  margin: 0;
 }
 
 .catch-registration .content {
@@ -43,11 +46,84 @@
   align-items: start;
 }
 
+.catch-registration .content-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.catch-registration .card-title {
+  margin: 0 0 1.25rem 0;
+  color: #2c3e50;
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.catch-registration .card-title svg {
+  color: #007bff;
+}
+
+.catch-registration .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.catch-registration .stat-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+.catch-registration .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.catch-registration .stat-icon {
+  margin-bottom: 0.75rem;
+  color: #007bff;
+}
+
+.catch-registration .stat-value {
+  margin: 0.75rem 0 0.5rem 0;
+  font-size: 1.75rem;
+  font-weight: bold;
+  color: #2c3e50;
+}
+
+.catch-registration .stat-label {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 0.875rem;
+}
+
 .catch-registration .form-section {
   background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .catch-registration .catch-form {
@@ -62,12 +138,110 @@
   gap: 1rem;
 }
 
-@media (min-width: 768px) {
+/* Small Tablets */
+@media (min-width: 640px) {
+  .catch-registration {
+    padding: 1.5rem;
+  }
+  
+  .catch-registration .form-section {
+    padding: 2rem 1.5rem;
+  }
+  
   .catch-registration .form-row {
     grid-template-columns: 1fr 1fr;
+    gap: 1rem;
   }
 }
 
+/* Tablets */
+@media (min-width: 768px) {
+  .catch-registration {
+    padding: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .catch-registration .form-section {
+    padding: 2.5rem 2rem;
+  }
+  
+  .catch-registration .form-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  
+  .catch-registration .btn {
+    padding: 1rem 2.5rem;
+    font-size: 1.05rem;
+    min-height: 52px;
+    max-width: 320px;
+  }
+}
+
+/* Notebooks */
+@media (min-width: 1024px) {
+  .catch-registration {
+    padding: 2.5rem;
+    max-width: 900px;
+  }
+  
+  .catch-registration .form-section {
+    padding: 3rem 2.5rem;
+  }
+  
+  .catch-registration .form-row {
+    gap: 2rem;
+  }
+  
+  .catch-registration .btn {
+    max-width: 350px;
+    padding: 1.125rem 2.75rem;
+    font-size: 1.1rem;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1280px) {
+  .catch-registration {
+    max-width: 1000px;
+    padding: 3rem;
+  }
+  
+  .catch-registration .form-section {
+    padding: 3.5rem 3rem;
+  }
+}
+
+/* Extra Small Mobile */
+@media (max-width: 360px) {
+  .catch-registration {
+    padding: 0.5rem;
+  }
+  
+  .catch-registration .form-section {
+    padding: 1rem 0.75rem;
+  }
+  
+  .catch-registration .form-group {
+    margin-bottom: 0.875rem;
+  }
+  
+  .catch-registration .form-input,
+  .catch-registration .form-select,
+  .catch-registration .form-textarea {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+  
+  .catch-registration .btn {
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+    min-height: 52px;
+  }
+}
+
+/* Mobile */
 @media (max-width: 480px) {
   .catch-registration .form-section {
     padding: 1.5rem 1rem;
@@ -80,8 +254,19 @@
   .catch-registration .form-input,
   .catch-registration .form-select,
   .catch-registration .form-textarea {
-    padding: 0.6rem;
-    font-size: 0.9rem;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+  
+  .catch-registration .btn {
+    padding: 1.2rem 1.5rem;
+    font-size: 1.1rem;
+    min-height: 56px;
+    border-radius: 12px;
+    max-width: 100%;
+    margin: 1.5rem auto 0.5rem;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+    letter-spacing: 0.25px;
   }
 }
 
@@ -105,23 +290,26 @@
 .catch-registration .form-select,
 .catch-registration .form-textarea {
   padding: 0.75rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   font-size: 1rem;
-  transition: all 0.2s;
-  background: white;
+  width: 100%;
+  transition: all 0.2s ease;
+  background-color: #f8fafc;
   min-height: 44px;
   -webkit-appearance: none;
   appearance: none;
   box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .catch-registration .form-input:focus,
 .catch-registration .form-select:focus,
 .catch-registration .form-textarea:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+  background-color: #fff;
 }
 
 .catch-registration .form-textarea {
@@ -129,30 +317,68 @@
   min-height: 80px;
 }
 
-.catch-registration .btn {
-  padding: 1rem 1.5rem;
+.catch-registration .file-input {
+  padding: 0.6rem;
+  height: auto;
+  background-color: #fff;
+}
+
+.catch-registration .file-input::-webkit-file-upload-button {
+  background: #007bff;
+  color: white;
   border: none;
+  padding: 0.5rem 1rem;
   border-radius: 8px;
+  font-weight: 600;
+  margin-right: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.catch-registration .file-input::-webkit-file-upload-button:hover {
+  background: #0069d9;
+}
+
+.catch-registration .btn {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 12px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
   min-height: 48px;
   touch-action: manipulation;
+  width: 100%;
+  max-width: 300px;
+  margin: 1rem auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.25px;
+  text-transform: none;
 }
 
-.catch-registration .btn-primary {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.catch-registration .btn-primary,
+.catch-registration .submit-btn {
+  background: #007bff;
   color: white;
 }
 
-.catch-registration .btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+.catch-registration .btn-primary:hover:not(:disabled),
+.catch-registration .submit-btn:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.catch-registration .btn-primary:active:not(:disabled),
+.catch-registration .submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
+  background: #004085;
 }
 
 .catch-registration .btn:disabled {
@@ -163,9 +389,16 @@
 
 .catch-registration .message {
   padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1rem;
+  border-radius: 12px;
+  margin-bottom: 1.5rem;
   font-weight: 500;
+  text-align: center;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .catch-registration .message.success {
@@ -287,8 +520,14 @@
   }
   
   .catch-registration .content {
-    grid-template-columns: 1fr 400px;
+    grid-template-columns: 1fr;
     gap: 2rem;
+  }
+  
+  .catch-registration .content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
   
   .catch-registration .form-row {
@@ -302,23 +541,53 @@
 }
 
 /* Mobile styles */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (max-width: 767px) {
   .catch-registration .content {
     grid-template-columns: 1fr;
     gap: 1.5rem;
   }
   
+  .catch-registration .content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
   .catch-registration .form-row {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .catch-registration .header h1 {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
   
   .catch-registration .form-section,
-  .catch-registration .stats-section {
-    padding: 1.5rem;
+  .catch-registration .stats-section,
+  .catch-registration .content-card {
+    padding: 1.25rem;
+  }
+  
+  .catch-registration .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .catch-registration .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .catch-registration .form-label {
+    font-size: 0.9rem;
   }
 }
 
@@ -328,22 +597,59 @@
   }
   
   .catch-registration .container {
-    padding: 0 0.5rem;
+    padding: 0 0.75rem;
   }
   
   .catch-registration .header h1 {
-    font-size: 1.75rem;
+    font-size: 1.5rem;
+  }
+  
+  .catch-registration .header p {
+    font-size: 0.9rem;
   }
   
   .catch-registration .form-section,
-  .catch-registration .stats-section {
+  .catch-registration .stats-section,
+  .catch-registration .content-card {
     padding: 1rem;
+    border-radius: 12px;
   }
   
   .catch-registration .form-input,
   .catch-registration .form-select,
   .catch-registration .form-textarea {
     font-size: 16px;
+    padding: 0.6rem;
+  }
+  
+  .catch-registration .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .catch-registration .stat-card {
+    padding: 1rem;
+  }
+  
+  .catch-registration .stat-value {
+    font-size: 1.25rem;
+    margin: 0.5rem 0 0.25rem 0;
+  }
+  
+  .catch-registration .stat-label {
+    font-size: 0.75rem;
+  }
+  
+  .catch-registration .stat-icon {
+    margin-bottom: 0.5rem;
+  }
+  
+  .catch-registration .btn {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    font-size: 0.95rem;
+    min-height: 44px;
   }
 }
 
@@ -357,8 +663,21 @@
     gap: 2.5rem;
   }
   
+  .catch-registration .content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
   .catch-registration .form-section,
-  .catch-registration .stats-section {
-    padding: 2.5rem;
+  .catch-registration .stats-section,
+  .catch-registration .content-card {
+    padding: 2rem;
+  }
+  
+  .catch-registration .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
   }
 }

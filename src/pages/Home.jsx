@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Fish, Trophy, Users, TrendingUp, Calendar, Award, Wifi, WifiOff, Heart, MessageCircle, Share2, Camera, MapPin, Clock, Plus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
@@ -21,6 +21,8 @@ const Home = () => {
   const [loading, setLoading] = useState(true)
   const [feedPosts, setFeedPosts] = useState([])
   const [postInteractions, setPostInteractions] = useState({})
+  const [showComments, setShowComments] = useState({})
+  const [newComment, setNewComment] = useState({})
   const [showCreatePost, setShowCreatePost] = useState(false)
 
   useEffect(() => {
@@ -30,6 +32,22 @@ const Home = () => {
     // Carregar feed sempre, independente do usuário
     loadFeedPosts()
   }, [user, userCatches])
+
+  // Memoizar stats calculados para evitar recálculos desnecessários
+  const memoizedStats = useMemo(() => {
+    if (!userCatches || userCatches.length === 0) {
+      return {
+        totalFish: 0,
+        totalWeight: 0,
+        averageWeight: 0,
+        biggestFish: null
+      }
+    }
+    return calculateUserStats(userCatches)
+  }, [userCatches, calculateUserStats])
+
+  // Memoizar posts do feed para evitar re-renderizações
+  const memoizedFeedPosts = useMemo(() => feedPosts, [feedPosts])
 
   // Monitorar dados pendentes
   useEffect(() => {
@@ -56,7 +74,7 @@ const Home = () => {
 
   // Carregar posts do feed social
   // Funções de interação com posts
-  const handleLike = (postId) => {
+  const handleLike = useCallback((postId) => {
     setPostInteractions(prev => ({
       ...prev,
       [postId]: {
@@ -67,11 +85,18 @@ const Home = () => {
           : (prev[postId]?.likes || 0) + 1
       }
     }))
-  }
+  }, [])
 
-  const handleComment = (postId) => {
-    const comment = prompt('Digite seu comentário:')
-    if (comment && comment.trim()) {
+  const toggleComments = useCallback((postId) => {
+    setShowComments(prev => ({
+      ...prev,
+      [postId]: !prev[postId]
+    }))
+  }, [])
+
+  const handleComment = useCallback((postId) => {
+    const commentText = newComment[postId]
+    if (commentText && commentText.trim()) {
       setPostInteractions(prev => ({
         ...prev,
         [postId]: {
@@ -79,16 +104,22 @@ const Home = () => {
           comments: (prev[postId]?.comments || 0) + 1,
           commentsList: [...(prev[postId]?.commentsList || []), {
             id: Date.now(),
-            text: comment.trim(),
+            text: commentText.trim(),
             user: user?.displayName || 'Anônimo',
             timestamp: new Date().toISOString()
           }]
         }
       }))
+      
+      // Limpar campo de comentário
+      setNewComment(prev => ({
+        ...prev,
+        [postId]: ''
+      }))
     }
-  }
+  }, [newComment, user])
 
-  const handleShare = (postId, postContent) => {
+  const handleShare = useCallback((postId, postContent) => {
     if (navigator.share) {
       navigator.share({
         title: 'Captura de Pesca',
@@ -110,75 +141,63 @@ const Home = () => {
         shares: (prev[postId]?.shares || 0) + 1
       }
     }))
-  }
+  }, [])
 
-  const loadFeedPosts = async () => {
+  const loadFeedPosts = useCallback(async () => {
     try {
-      // Converter capturas em posts sociais
+      // Carregar apenas capturas de usuários autenticados
       let allCatches = JSON.parse(localStorage.getItem('fishing_catches') || '[]')
       
-      // Se não há capturas, adicionar dados de exemplo
-      if (allCatches.length === 0) {
-        allCatches = [
-          {
-            id: 'demo_1',
-            species: 'Dourado',
-            weight: 4.5,
-            location: 'Rio Paraná',
-            userName: 'João Silva',
-            registeredAt: new Date().toISOString(),
-            photo: null
-          },
-          {
-            id: 'demo_2',
-            species: 'Pintado', 
-            weight: 8.2,
-            location: 'Rio Tietê',
-            userName: 'Maria Santos',
-            registeredAt: new Date(Date.now() - 3600000).toISOString(),
-            photo: null
-          },
-          {
-            id: 'demo_3',
-            species: 'Pacu',
-            weight: 2.1,
-            location: 'Lago dos Patos',
-            userName: 'Pedro Costa',
-            registeredAt: new Date(Date.now() - 7200000).toISOString(),
-            photo: null
-          }
-        ]
-      }
+      // Limpar dados antigos com IDs problemáticos
+      allCatches = allCatches.filter(catch_ => {
+        // Remover capturas com IDs antigos que podem causar duplicatas
+        if (catch_.id && catch_.id.includes('temp_1756953370487')) {
+          return false
+        }
+        return true
+      })
       
-      const posts = allCatches
+      // Salvar dados limpos de volta
+      localStorage.setItem('fishing_catches', JSON.stringify(allCatches))
+      
+      // Filtrar apenas capturas que têm userId (usuários autenticados)
+      const authenticatedCatches = allCatches.filter(catch_ => 
+        catch_.userId && 
+        catch_.userId !== 'demo' && 
+        !catch_.id?.startsWith('demo_')
+      )
+      
+      const posts = authenticatedCatches
         .sort((a, b) => new Date(b.registeredAt || b.date) - new Date(a.registeredAt || a.date))
         .slice(0, 10)
         .map((catch_, index) => ({
-          id: catch_.id || `catch_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 7)}`,
+          id: catch_.id || `catch_${catch_.userId || 'unknown'}_${catch_.registeredAt || catch_.date || Date.now()}_${index}_${Math.random().toString(36).substring(2, 12)}`,
           type: 'catch',
           user: {
-            name: catch_.userName || 'Pescador Anônimo',
-            avatar: catch_.userName?.charAt(0)?.toUpperCase() || 'P',
+            name: catch_.userName || user?.displayName || user?.email || 'Pescador',
+            avatar: catch_.userAvatar || user?.photoURL || catch_.userName?.charAt(0)?.toUpperCase() || 'P',
             level: 'Pescador'
           },
           content: {
             species: catch_.species,
             weight: catch_.weight,
             location: catch_.location,
-            description: `Capturei um(a) ${catch_.species} de ${catch_.weight}kg em ${catch_.location}! 🎣`,
+            description: catch_.notes || `Capturei um(a) ${catch_.species} de ${catch_.weight}kg em ${catch_.location}! 🎣`,
             image: catch_.photo || null
           },
           timestamp: catch_.registeredAt || catch_.date,
-          likes: Math.floor(Math.random() * 20) + 1,
-          comments: Math.floor(Math.random() * 8),
-          shares: Math.floor(Math.random() * 5)
+          likes: catch_.likes || 0,
+          comments: catch_.comments || 0,
+          shares: catch_.shares || 0,
+          isLiked: false
         }))
       
       setFeedPosts(posts)
     } catch (error) {
       console.error('Erro ao carregar feed:', error)
+      setFeedPosts([])
     }
-  }
+  }, [user])
 
   const loadDashboardData = async () => {
     try {
@@ -372,134 +391,150 @@ const Home = () => {
                </div>
              </div>
 
-             {/* Posts do Feed */}
-             <div className="d-flex flex-column gap-4">
+             {/* Posts do Feed - Estilo Instagram */}
+             <div className="feed-container">
                {feedPosts.length > 0 ? (
                  feedPosts.map((post, index) => {
-                   const postKey = post.id || `feed-post-${index}-${post.timestamp || Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                   const postKey = post.id || `feed-post-${index}-${post.timestamp || post.content?.species || Date.now()}-${Math.random().toString(36).substring(2, 9)}`
                    return (
-                   <div key={postKey} className="card hover:shadow-lg transition-all">
-                     {/* Header do Post */}
-                     <div className="d-flex align-center gap-3 mb-4">
-                       <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 d-flex align-center justify-center text-white font-bold text-lg">
-                         {post.user.avatar}
-                       </div>
-                       <div className="flex-1">
-                         <div className="font-semibold text-gray-900">{post.user.name}</div>
-                         <div className="text-sm text-gray-500 d-flex align-center gap-2">
-                           <Clock size={12} />
-                           {new Date(post.timestamp).toLocaleDateString('pt-BR', {
-                             day: '2-digit',
-                             month: 'short',
-                             hour: '2-digit',
-                             minute: '2-digit'
-                           })}
+                   <div key={postKey} className="instagram-post">
+                     {/* Header do Post - Estilo Instagram */}
+                     <div className="post-header">
+                       <div className="user-info">
+                         <div className="user-avatar">
+                           {post.user.avatar}
+                         </div>
+                         <div className="user-details">
+                           <div className="username">{post.user.name}</div>
+                           <div className="location">{post.content.location}</div>
                          </div>
                        </div>
-                       <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                         {post.user.level}
+                       <div className="post-options">
+                         <div className="three-dots">•••</div>
                        </div>
                      </div>
 
-                     {/* Conteúdo do Post */}
-                     <div className="mb-4">
-                       <p className="text-gray-800 mb-3">{post.content.description}</p>
-                       
-                       {/* Informações da Captura */}
-                       <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg border border-blue-200">
-                         <div className="grid grid-3 gap-4 text-sm">
-                           <div className="d-flex align-center gap-2">
-                             <Fish size={16} className="text-blue-600" />
-                             <div>
-                               <div className="font-semibold text-gray-900">{post.content.species}</div>
-                               <div className="text-xs text-gray-600">Espécie</div>
-                             </div>
-                           </div>
-                           
-                           <div className="d-flex align-center gap-2">
-                             <Trophy size={16} className="text-green-600" />
-                             <div>
-                               <div className="font-semibold text-gray-900">{post.content.weight}kg</div>
-                               <div className="text-xs text-gray-600">Peso</div>
-                             </div>
-                           </div>
-                           
-                           <div className="d-flex align-center gap-2">
-                             <MapPin size={16} className="text-red-600" />
-                             <div>
-                               <div className="font-semibold text-gray-900">{post.content.location}</div>
-                               <div className="text-xs text-gray-600">Local</div>
-                             </div>
+                     {/* Imagem do Post */}
+                     <div className="post-image">
+                       {post.content.image ? (
+                         <img src={post.content.image} alt="Captura" />
+                       ) : (
+                         <div className="placeholder-image">
+                           <Fish size={48} />
+                           <div className="catch-info">
+                             <div className="species">{post.content.species}</div>
+                             <div className="weight">{post.content.weight}kg</div>
                            </div>
                          </div>
+                       )}
+                     </div>
+
+                     {/* Ações do Post */}
+                     <div className="post-actions">
+                       <div className="action-buttons">
+                         <button 
+                           onClick={() => handleLike(post.id)}
+                           className={`action-btn like-btn ${
+                             postInteractions[post.id]?.liked ? 'liked' : ''
+                           }`}
+                         >
+                           <Heart size={24} fill={postInteractions[post.id]?.liked ? 'currentColor' : 'none'} />
+                         </button>
+                         <button 
+                           onClick={() => toggleComments(post.id)}
+                           className="action-btn comment-btn"
+                         >
+                           <MessageCircle size={24} />
+                         </button>
+                         <button 
+                           onClick={() => handleShare(post.id)}
+                           className="action-btn share-btn"
+                         >
+                           <Share2 size={24} />
+                         </button>
                        </div>
+                     </div>
+
+                     {/* Likes */}
+                     <div className="likes-section">
+                       <span className="likes-count">
+                         {(post.likes || 0) + (postInteractions[post.id]?.likes || 0)} curtidas
+                       </span>
+                     </div>
+
+                     {/* Caption */}
+                     <div className="caption-section">
+                       <span className="username">{post.user.name}</span>
+                       <span className="caption-text">{post.content.description}</span>
+                     </div>
+
+                     {/* Timestamp */}
+                     <div className="timestamp">
+                       {(() => {
+                         try {
+                           if (!post.timestamp) {
+                             return 'Data não disponível'
+                           }
+                           
+                           const date = new Date(post.timestamp)
+                           
+                           if (isNaN(date.getTime())) {
+                             return 'Data não disponível'
+                           }
+                           
+                           return date.toLocaleDateString('pt-BR', {
+                             day: '2-digit',
+                             month: 'short'
+                           }).toUpperCase()
+                         } catch (error) {
+                           console.error('Erro ao formatar timestamp:', error)
+                           return 'Data não disponível'
+                         }
+                       })()}
                      </div>
 
                      {/* Comentários */}
-                     {postInteractions[post.id]?.commentsList?.length > 0 && (
-                       <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                         <h5 className="text-sm font-semibold text-gray-700 mb-2">Comentários:</h5>
-                         {postInteractions[post.id].commentsList.slice(-3).map((comment) => (
-                           <div key={comment.id} className="mb-2 last:mb-0">
-                             <div className="text-sm">
-                               <span className="font-semibold text-blue-600">{comment.user}:</span>
-                               <span className="ml-2 text-gray-800">{comment.text}</span>
-                             </div>
-                             <div className="text-xs text-gray-500 mt-1">
-                               {new Date(comment.timestamp).toLocaleString('pt-BR')}
-                             </div>
+                     {showComments[post.id] && (
+                       <div className="comments-section">
+                         {/* Lista de comentários */}
+                         {postInteractions[post.id]?.commentsList?.map((comment) => (
+                           <div key={comment.id} className="comment-item">
+                             <span className="comment-author">{comment.user}</span>
+                             <span className="comment-text">{comment.text}</span>
                            </div>
                          ))}
-                         {postInteractions[post.id].commentsList.length > 3 && (
-                           <div className="text-xs text-gray-500 mt-2">
-                             +{postInteractions[post.id].commentsList.length - 3} comentários anteriores
-                           </div>
-                         )}
+                         
+                         {/* Campo para novo comentário */}
+                         <div className="comment-input-container">
+                           <input
+                             type="text"
+                             placeholder="Adicione um comentário..."
+                             value={newComment[post.id] || ''}
+                             onChange={(e) => setNewComment(prev => ({
+                               ...prev,
+                               [post.id]: e.target.value
+                             }))}
+                             className="comment-input"
+                             onKeyPress={(e) => {
+                               if (e.key === 'Enter') {
+                                 handleComment(post.id)
+                               }
+                             }}
+                           />
+                           <button
+                             onClick={() => handleComment(post.id)}
+                             disabled={!newComment[post.id]?.trim()}
+                             className="comment-submit"
+                           >
+                             Publicar
+                           </button>
+                         </div>
                        </div>
                      )}
 
-                     {/* Ações do Post */}
-                     <div className="d-flex justify-between align-center pt-3 border-t border-gray-200">
-                       <div className="d-flex gap-6">
-                         <button 
-                           onClick={() => handleLike(post.id)}
-                           className={`d-flex align-center gap-2 transition-colors ${
-                             postInteractions[post.id]?.liked 
-                               ? 'text-red-500' 
-                               : 'text-gray-600 hover:text-red-500'
-                           }`}
-                         >
-                           <Heart size={16} fill={postInteractions[post.id]?.liked ? 'currentColor' : 'none'} />
-                           <span className="text-sm">
-                             {(post.likes || 0) + (postInteractions[post.id]?.likes || 0)}
-                           </span>
-                         </button>
-                         
-                         <button 
-                           onClick={() => handleComment(post.id)}
-                           className="d-flex align-center gap-2 text-gray-600 hover:text-blue-500 transition-colors"
-                         >
-                           <MessageCircle size={16} />
-                           <span className="text-sm">
-                             {(post.comments || 0) + (postInteractions[post.id]?.comments || 0)}
-                           </span>
-                         </button>
-                         
-                         <button 
-                           onClick={() => handleShare(post.id, post.content)}
-                           className="d-flex align-center gap-2 text-gray-600 hover:text-green-500 transition-colors"
-                         >
-                           <Share2 size={16} />
-                           <span className="text-sm">
-                             {(post.shares || 0) + (postInteractions[post.id]?.shares || 0)}
-                           </span>
-                         </button>
-                       </div>
-                       
-                       <div className="text-xs text-gray-500">
-                         🎣 Captura registrada
-                       </div>
-                     </div>
+
+
+
                    </div>
                  )
                  })
@@ -598,7 +633,15 @@ const Home = () => {
                     <div>
                       <h4 style={{ margin: '0 0 5px 0', color: '#333' }}>{catch_.species}</h4>
                       <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>
-                        {catch_.location} • {new Date(catch_.date || catch_.timestamp).toLocaleDateString('pt-BR')}
+                        {catch_.location} • {(() => {
+                          const dateValue = catch_.registeredAt || catch_.date || catch_.timestamp || new Date().toISOString()
+                          try {
+                            const date = new Date(dateValue)
+                            return isNaN(date.getTime()) ? 'Data não disponível' : date.toLocaleDateString('pt-BR')
+                          } catch (error) {
+                            return 'Data não disponível'
+                          }
+                        })()}
                       </p>
                     </div>
                     <div className="badge badge-success">
@@ -617,7 +660,7 @@ const Home = () => {
             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
               <Fish size={48} style={{ color: '#ddd', marginBottom: '15px' }} />
               <p style={{ color: '#666', marginBottom: '20px' }}>Nenhuma captura registrada ainda.</p>
-              <button className="btn" onClick={() => navigate('/capture')}>
+              <button className="btn" onClick={() => navigate('/catch')}>
                 Registrar Primeira Captura
               </button>
             </div>
@@ -629,7 +672,7 @@ const Home = () => {
       <div className="card mt-3">
         <h2 style={{ marginBottom: '20px' }}>Ações Rápidas</h2>
         <div className="grid grid-3">
-          <button className="btn" style={{ padding: '20px', height: 'auto' }} onClick={() => navigate('/capture')}>
+          <button className="btn" style={{ padding: '20px', height: 'auto' }} onClick={() => navigate('/catch')}>
             <Fish size={24} style={{ marginBottom: '10px' }} />
             <br />Registrar Captura
           </button>

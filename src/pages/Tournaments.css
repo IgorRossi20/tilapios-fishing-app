@@ -119,11 +119,19 @@
   border: 2px solid #e1e5e9;
   border-radius: 8px;
   font-size: 1rem;
+  color: #333 !important;
+  background-color: white;
   transition: border-color 0.3s ease;
   box-sizing: border-box;
   min-height: 44px;
   -webkit-appearance: none;
   appearance: none;
+}
+
+.tournaments .form-input::placeholder,
+.tournaments .form-textarea::placeholder {
+  color: #999 !important;
+  opacity: 1;
 }
 
 .tournaments .form-input:focus,
@@ -521,6 +529,101 @@
 /* Tournament details container */
 .tournaments .tournament-details {
   margin-bottom: 1rem;
+}
+
+/* Tournament badges container */
+.tournaments .tournament-badges {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* Badge styles */
+.tournaments .badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tournaments .badge-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.tournaments .badge-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.tournaments .badge-owner {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border: 1px solid #bbdefb;
+}
+
+.tournaments .badge-full {
+  background-color: #ffebee;
+  color: #c62828;
+  border: 1px solid #ffcdd2;
+}
+
+/* Button styles */
+.tournaments .btn-warning {
+  background-color: #ffc107;
+  color: #212529;
+  border: 1px solid #ffc107;
+}
+
+.tournaments .btn-warning:hover {
+  background-color: #e0a800;
+  border-color: #d39e00;
+  transform: translateY(-1px);
+}
+
+.tournaments .btn-danger {
+  background-color: #dc3545;
+  color: white;
+  border: 1px solid #dc3545;
+}
+
+.tournaments .btn-danger:hover {
+  background-color: #c82333;
+  border-color: #bd2130;
+  transform: translateY(-1px);
+}
+
+.tournaments .btn-disabled {
+  background-color: #e9ecef;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.tournaments .btn-disabled:hover {
+  transform: none;
+  background-color: #e9ecef;
+  border-color: #dee2e6;
+}
+
+/* Tournament actions improvements */
+.tournaments .tournament-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.tournaments .tournament-actions .btn {
+  flex: 1;
+  min-width: 100px;
+  transition: all 0.2s ease;
 }
 
 /* Large desktop styles */

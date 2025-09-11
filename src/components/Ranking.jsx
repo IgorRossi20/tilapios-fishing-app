@@ -6,7 +6,7 @@ import './Ranking.css'
 const Ranking = () => {
   const { userTournaments, getTournamentRanking, getGeneralRanking } = useFishing()
   const [selectedTournament, setSelectedTournament] = useState('general')
-  const [rankingType, setRankingType] = useState('weight') // 'weight' or 'quantity'
+  const [rankingType, setRankingType] = useState('score') // 'score', 'weight', 'quantity', 'biggest', 'species'
   const [ranking, setRanking] = useState([])
   const [loading, setLoading] = useState(false)
   const [tournamentInfo, setTournamentInfo] = useState(null)
@@ -58,7 +58,22 @@ const Ranking = () => {
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
+    try {
+      if (!dateString) {
+        return 'Data não disponível'
+      }
+      
+      const date = new Date(dateString)
+      
+      if (isNaN(date.getTime())) {
+        return 'Data não disponível'
+      }
+      
+      return date.toLocaleDateString('pt-BR')
+    } catch (error) {
+      console.error('Erro ao formatar data:', error)
+      return 'Data não disponível'
+    }
   }
 
   const getStatusBadge = (tournament) => {
@@ -109,7 +124,14 @@ const Ranking = () => {
 
             <div className="form-group">
               <label className="form-label">📊 Ranking por</label>
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 flex-wrap">
+                <button 
+                  className={`btn ${rankingType === 'score' ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => setRankingType('score')}
+                >
+                  <Trophy size={18} />
+                  Pontuação
+                </button>
                 <button 
                   className={`btn ${rankingType === 'weight' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setRankingType('weight')}
@@ -123,6 +145,20 @@ const Ranking = () => {
                 >
                   <Fish size={18} />
                   Quantidade
+                </button>
+                <button 
+                  className={`btn ${rankingType === 'biggest' ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => setRankingType('biggest')}
+                >
+                  <Award size={18} />
+                  Maior Peixe
+                </button>
+                <button 
+                  className={`btn ${rankingType === 'species' ? 'btn-primary' : 'btn-outline'}`}
+                  onClick={() => setRankingType('species')}
+                >
+                  <TrendingUp size={18} />
+                  Diversidade
                 </button>
               </div>
             </div>
@@ -183,10 +219,16 @@ const Ranking = () => {
                 </h3>
                 <div className="d-flex flex-column gap-1 text-sm text-gray-600">
                   <span className="d-flex align-center gap-1">
-                    {rankingType === 'weight' ? (
+                    {rankingType === 'score' ? (
+                      <><Trophy size={16} /> Por pontuação geral</>
+                    ) : rankingType === 'weight' ? (
                       <><Weight size={16} /> Por peso total</>
-                    ) : (
+                    ) : rankingType === 'quantity' ? (
                       <><Fish size={16} /> Por quantidade</>
+                    ) : rankingType === 'biggest' ? (
+                      <><Award size={16} /> Por maior peixe</>
+                    ) : (
+                      <><TrendingUp size={16} /> Por diversidade de espécies</>
                     )}
                   </span>
                   <span className="d-flex align-center gap-1">
@@ -331,6 +373,18 @@ const Ranking = () => {
                         
                         {/* Estatísticas */}
                         <div className="stats-section">
+                          {rankingType === 'score' && (
+                            <div className={`stat-item ${
+                              isPodium ? 'podium-stat' : 'regular-stat'
+                            }`}>
+                              <Trophy size={16} className="stat-icon" />
+                              <div className="stat-content">
+                                <div className="stat-value">{participant.score || 0}</div>
+                                <div className="stat-label">pontos</div>
+                              </div>
+                            </div>
+                          )}
+                          
                           <div className={`stat-item ${
                             isPodium ? 'podium-stat' : 'regular-stat'
                           }`}>
@@ -351,7 +405,7 @@ const Ranking = () => {
                             </div>
                           </div>
                           
-                          {participant.biggestFish && participant.biggestFish.weight > 0 && (
+                          {(rankingType === 'biggest' || rankingType === 'score') && participant.biggestFish && participant.biggestFish.weight > 0 && (
                             <div className={`stat-item ${
                               isPodium ? 'podium-stat' : 'regular-stat'
                             }`}>
@@ -359,6 +413,30 @@ const Ranking = () => {
                               <div className="stat-content">
                                 <div className="stat-value">{participant.biggestFish.weight.toFixed(1)}kg</div>
                                 <div className="stat-label">maior peixe</div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {(rankingType === 'species' || rankingType === 'score') && (
+                            <div className={`stat-item ${
+                              isPodium ? 'podium-stat' : 'regular-stat'
+                            }`}>
+                              <TrendingUp size={16} className="stat-icon" />
+                              <div className="stat-content">
+                                <div className="stat-value">{participant.uniqueSpecies || 0}</div>
+                                <div className="stat-label">espécies</div>
+                              </div>
+                            </div>
+                          )}
+                          
+                          {rankingType === 'weight' && (
+                            <div className={`stat-item ${
+                              isPodium ? 'podium-stat' : 'regular-stat'
+                            }`}>
+                              <Award size={16} className="stat-icon" />
+                              <div className="stat-content">
+                                <div className="stat-value">{participant.averageWeight?.toFixed(1) || '0.0'}kg</div>
+                                <div className="stat-label">peso médio</div>
                               </div>
                             </div>
                           )}
@@ -371,13 +449,24 @@ const Ranking = () => {
                             : isPodium ? 'podium-score'
                             : 'regular-score'
                           }`}>
-                            {rankingType === 'weight' 
+                            {rankingType === 'score' 
+                              ? participant.score || 0
+                              : rankingType === 'weight' 
                               ? `${participant.totalWeight.toFixed(1)}kg`
+                              : rankingType === 'biggest'
+                              ? `${participant.biggestFish?.weight?.toFixed(1) || '0.0'}kg`
+                              : rankingType === 'species'
+                              ? participant.uniqueSpecies || 0
                               : participant.totalCatches
                             }
                           </div>
                           <div className="score-label">
-                            {rankingType === 'weight' ? 'PESO TOTAL' : 'CAPTURAS'}
+                            {rankingType === 'score' ? 'PONTUAÇÃO'
+                              : rankingType === 'weight' ? 'PESO TOTAL'
+                              : rankingType === 'biggest' ? 'MAIOR PEIXE'
+                              : rankingType === 'species' ? 'ESPÉCIES ÚNICAS'
+                              : 'CAPTURAS'
+                            }
                           </div>
                           
                           {isPodium && (

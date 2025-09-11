@@ -2616,6 +2616,26 @@ p {
   box-shadow: var(--shadow-lg);
 }
 
+/* Extra Small Mobile */
+@media (max-width: 360px) {
+  .header {
+    padding: var(--spacing-2) 0;
+  }
+  
+  .container {
+    padding: 0 var(--spacing-2);
+  }
+  
+  .logo-text {
+    font-size: 1.25rem;
+  }
+  
+  .mobile-menu-btn {
+    min-height: 40px;
+    min-width: 40px;
+  }
+}
+
 /* Mobile Responsive Styles */
 @media (max-width: 640px) {
   .app-container {
@@ -2874,16 +2894,14 @@ p {
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Enhanced Touch Interactions */
+  /* Enhanced Touch Interactions - Otimizado */
   .touch-enhanced {
     position: relative;
     overflow: hidden;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
+    will-change: transform;
   }
 
   .touch-enhanced::before {
@@ -2896,20 +2914,21 @@ p {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     transform: translate(-50%, -50%);
-    transition: width 0.3s ease, height 0.3s ease;
+    transition: width 0.2s ease, height 0.2s ease;
     pointer-events: none;
     z-index: 1;
   }
 
   .touch-enhanced:active::before {
-    width: 200px;
-    height: 200px;
+    width: 120px;
+    height: 120px;
   }
 
-  /* Touch Feedback */
+  /* Touch Feedback - Otimizado */
   .touch-feedback {
     position: relative;
     transition: transform 0.1s ease;
+    will-change: transform;
   }
 
   .touch-feedback:active {
@@ -3031,14 +3050,56 @@ p {
   .gap-2-mobile { gap: var(--spacing-2) !important; }
 }
 
+/* Small Tablets */
+@media (min-width: 641px) and (max-width: 768px) {
+  .header {
+    padding: var(--spacing-4) 0;
+  }
+  
+  .container {
+    padding: 0 var(--spacing-4);
+  }
+  
+  .nav-links {
+    gap: var(--spacing-4);
+  }
+  
+  .nav-link {
+    padding: var(--spacing-2) var(--spacing-3);
+    font-size: var(--font-size-sm);
+  }
+  
+  .user-info {
+    font-size: var(--font-size-sm);
+  }
+}
+
 /* Tablet Responsive Styles */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .main-content {
-    padding: var(--spacing-6);
+@media (min-width: 769px) and (max-width: 1024px) {
+  .header {
+    padding: var(--spacing-5) 0;
   }
   
   .container {
     padding: 0 var(--spacing-6);
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+  
+  .nav {
+    gap: var(--spacing-6);
+  }
+  
+  .nav-links {
+    gap: var(--spacing-5);
+  }
+  
+  .nav-link {
+    padding: var(--spacing-3) var(--spacing-4);
+  }
+  
+  .main-content {
+    padding: var(--spacing-6);
   }
   
   .grid {
@@ -3047,6 +3108,60 @@ p {
   
   .card {
     padding: var(--spacing-6);
+  }
+}
+
+/* Notebooks and Desktop */
+@media (min-width: 1025px) {
+  .header {
+    padding: var(--spacing-6) 0;
+  }
+  
+  .container {
+    padding: 0 var(--spacing-8);
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .nav {
+    gap: var(--spacing-8);
+  }
+  
+  .nav-links {
+    gap: var(--spacing-6);
+  }
+  
+  .nav-link {
+    padding: var(--spacing-3) var(--spacing-5);
+    font-size: var(--font-size-base);
+  }
+  
+  .logo-text {
+    font-size: 1.75rem;
+  }
+  
+  .user-info {
+    font-size: var(--font-size-base);
+  }
+}
+
+/* Large Desktop */
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1400px;
+    padding: 0 var(--spacing-10);
+  }
+  
+  .header {
+    padding: var(--spacing-8) 0;
+  }
+  
+  .nav {
+    gap: var(--spacing-10);
+  }
+  
+  .nav-links {
+    gap: var(--spacing-8);
   }
 }
 

@@ -190,7 +190,22 @@ const Profile = () => {
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
+    try {
+      if (!dateString) {
+        return 'Data não disponível'
+      }
+      
+      const date = new Date(dateString)
+      
+      if (isNaN(date.getTime())) {
+        return 'Data não disponível'
+      }
+      
+      return date.toLocaleDateString('pt-BR')
+    } catch (error) {
+      console.error('Erro ao formatar data:', error)
+      return 'Data não disponível'
+    }
   }
 
   const getExperienceLevel = (totalFish) => {

@@ -248,7 +248,265 @@
   100% { transform: rotate(360deg); }
 }
 
+/* Feed Instagram Style */
+.feed-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-width: 614px;
+  margin: 0 auto;
+}
+
+.instagram-post {
+  background: white;
+  border: 1px solid #dbdbdb;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.post-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border-bottom: 1px solid #efefef;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.user-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.username {
+  font-weight: 600;
+  font-size: 14px;
+  color: #262626;
+  line-height: 1.2;
+}
+
+.location {
+  font-size: 12px;
+  color: #8e8e8e;
+  line-height: 1.2;
+}
+
+.post-options {
+  cursor: pointer;
+  padding: 8px;
+}
+
+.three-dots {
+  font-size: 16px;
+  color: #262626;
+  font-weight: bold;
+}
+
+.post-image {
+  width: 100%;
+  aspect-ratio: 1/1;
+  position: relative;
+  overflow: hidden;
+}
+
+.post-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder-image {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  position: relative;
+}
+
+.catch-info {
+  text-align: center;
+  margin-top: 12px;
+}
+
+.species {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.weight {
+  font-size: 18px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.post-actions {
+  padding: 8px 16px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+  color: #262626;
+}
+
+.action-btn:hover {
+  background: #f5f5f5;
+}
+
+.like-btn.liked {
+  color: #ed4956;
+  animation: likeAnimation 0.3s ease;
+}
+
+@keyframes likeAnimation {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+.likes-section {
+  padding: 0 16px 8px;
+}
+
+.likes-count {
+  font-weight: 600;
+  font-size: 14px;
+  color: #262626;
+}
+
+.caption-section {
+  padding: 0 16px 8px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.caption-section .username {
+  font-weight: 600;
+  color: #262626;
+  margin-right: 8px;
+}
+
+.caption-text {
+  color: #262626;
+}
+
+.timestamp {
+  padding: 0 16px 16px;
+  font-size: 10px;
+  color: #8e8e8e;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.comments-section {
+  border-top: 1px solid #efefef;
+  padding: 12px 16px 16px;
+}
+
+.comment-item {
+  margin-bottom: 8px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.comment-author {
+  font-weight: 600;
+  color: #262626;
+  margin-right: 8px;
+}
+
+.comment-text {
+  color: #262626;
+}
+
+.comment-input-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #efefef;
+}
+
+.comment-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 14px;
+  padding: 8px 0;
+  background: transparent;
+  color: #262626;
+}
+
+.comment-input::placeholder {
+  color: #8e8e8e;
+}
+
+.comment-submit {
+  background: none;
+  border: none;
+  color: #0095f6;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+.comment-submit:disabled {
+  color: #c7c7c7;
+  cursor: default;
+}
+
 /* Responsive Design */
+
+/* Small Tablets */
+@media (min-width: 640px) {
+  .home {
+    padding: 1.25rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .quick-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 
 /* Tablets */
 @media (min-width: 768px) {
@@ -265,11 +523,12 @@
   }
   
   .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(4, 1fr);
   }
   
   .content-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
   }
   
   .content-card {
@@ -285,20 +544,57 @@
     height: 100px;
     font-size: 2.5rem;
   }
-}
-
-/* Desktop */
-@media (min-width: 1024px) {
-  .home {
-    padding: 2rem;
-  }
   
-  .stats-grid {
-    grid-template-columns: repeat(4, 1fr);
+  .feed-container {
+    max-width: 614px;
   }
   
   .quick-actions {
     grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Notebooks */
+@media (min-width: 1024px) {
+  .home {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .content-grid {
+    grid-template-columns: 2fr 1fr;
+    gap: 2.5rem;
+  }
+  
+  .quick-actions {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .feed-container {
+    max-width: 700px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1280px) {
+  .home {
+    padding: 2.5rem;
+    max-width: 1400px;
+  }
+  
+  .content-grid {
+    gap: 3rem;
+  }
+  
+  .stats-grid {
+    gap: 2rem;
   }
 }
 
@@ -321,6 +617,42 @@
   }
 }
 
+/* Extra Small Mobile */
+@media (max-width: 360px) {
+  .home {
+    padding: 0.5rem;
+  }
+  
+  .home-title {
+    font-size: 1.25rem;
+  }
+  
+  .home-subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .stat-card {
+    padding: 0.75rem;
+  }
+  
+  .stat-value {
+    font-size: 1.25rem;
+  }
+  
+  .content-card {
+    padding: 0.75rem;
+  }
+  
+  .card-title {
+    font-size: 1rem;
+  }
+}
+
 /* Mobile Specific */
 @media (max-width: 480px) {
   .home {
@@ -336,7 +668,7 @@
   }
   
   .stats-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
   }
   
@@ -382,5 +714,16 @@
   
   .action-card {
     padding: 1rem;
+  }
+  
+  .instagram-post {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-bottom: 16px;
+  }
+  
+  .feed-container {
+    max-width: 100%;
   }
 }
