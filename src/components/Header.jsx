@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Fish, Trophy, Users, MessageCircle, User, LogOut, Award, Menu, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
@@ -8,17 +8,6 @@ const Header = () => {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-
-  useEffect(() => {
-    if (isMenuOpen) {
-      document.body.classList.add('no-scroll')
-    } else {
-      document.body.classList.remove('no-scroll')
-    }
-    return () => {
-      document.body.classList.remove('no-scroll')
-    }
-  }, [isMenuOpen])
 
   const handleLogout = async () => {
     try {
