@@ -84,9 +84,7 @@ const FishingProvider = ({ children }) => {
           return
         }
         
-        console.log('🔄 [SYNC] Iniciando sincronização para usuário:', user.uid)
-        console.log('🔄 [SYNC] Status online:', isOnline)
-        console.log('🔄 [SYNC] Timestamp:', new Date().toISOString())
+        // Sincronização para usuário iniciada
         
         // Primeiro, carregar do cache para resposta imediata
         const cached = loadFromCache()

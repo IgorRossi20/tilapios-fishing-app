@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Users, Plus, Trophy, Calendar, Clock, Star, Shield, Award, Target } from 'lucide-react'
+import { Users, Plus, Trophy, Calendar, Clock, Star, Shield, Award, Target, User, Globe, Mail } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useFishing } from '../contexts/FishingContext'
 import { useNavigate } from 'react-router-dom'
