@@ -68,56 +68,9 @@
   color: #007bff;
 }
 
-.catch-registration .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
 
-.catch-registration .stat-card {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  animation: fadeInUp 0.5s ease-out forwards;
-}
 
-.catch-registration .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.catch-registration .stat-icon {
-  margin-bottom: 0.75rem;
-  color: #007bff;
-}
-
-.catch-registration .stat-value {
-  margin: 0.75rem 0 0.5rem 0;
-  font-size: 1.75rem;
-  font-weight: bold;
-  color: #2c3e50;
-}
-
-.catch-registration .stat-label {
-  margin: 0;
-  color: #7f8c8d;
-  font-size: 0.875rem;
-}
 
 .catch-registration .form-section {
   background: white;
@@ -289,15 +242,38 @@
 .catch-registration .form-input,
 .catch-registration .form-select,
 .catch-registration .form-textarea {
-  padding: 0.75rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 1rem;
+  padding: var(--spacing-3);
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-base);
   width: 100%;
-  transition: all 0.2s ease;
-  background-color: #f8fafc;
-  min-height: 44px;
+  transition: var(--transition-all);
+  background-color: var(--gray-50);
+  min-height: var(--touch-target-md);
   -webkit-appearance: none;
+  }
+
+.catch-registration .form-input:focus,
+.catch-registration .form-select:focus,
+.catch-registration .form-textarea:focus {
+  outline: none;
+  border-color: var(--primary-500);
+  background-color: var(--white);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.catch-registration .form-input:hover,
+.catch-registration .form-select:hover,
+.catch-registration .form-textarea:hover {
+  border-color: var(--gray-400);
+  background-color: var(--white);
+}
+
+.catch-registration .form-textarea {
+  min-height: calc(var(--touch-target-md) * 2);
+  resize: vertical;
+}  touch-action: manipulation;
+  cursor: pointer;
   appearance: none;
   box-sizing: border-box;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -340,45 +316,67 @@
 }
 
 .catch-registration .btn {
-  padding: 1rem 2rem;
+  padding: var(--spacing-4) var(--spacing-8);
   border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-all);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  min-height: 48px;
+  gap: var(--spacing-2);
+  min-height: var(--touch-target-lg);
   touch-action: manipulation;
   width: 100%;
   max-width: 300px;
-  margin: 1rem auto;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: var(--spacing-4) auto;
+  box-shadow: var(--shadow-md);
   letter-spacing: 0.25px;
   text-transform: none;
+  user-select: none;
+  position: relative;
+  overflow: hidden;
 }
 
 .catch-registration .btn-primary,
 .catch-registration .submit-btn {
-  background: #007bff;
+  background: #2563eb;
   color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.25);
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 100%;
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
 }
 
 .catch-registration .btn-primary:hover:not(:disabled),
 .catch-registration .submit-btn:hover:not(:disabled) {
-  background: #0056b3;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 10px rgba(37, 99, 235, 0.3);
+}
+
+.catch-registration .btn-primary:focus:not(:disabled),
+.catch-registration .submit-btn:focus:not(:disabled) {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 
 .catch-registration .btn-primary:active:not(:disabled),
 .catch-registration .submit-btn:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2);
-  background: #004085;
+  transform: translateY(0) scale(0.98);
+  box-shadow: var(--shadow-sm);
+  background: var(--primary-700);
 }
 
 .catch-registration .btn:disabled {

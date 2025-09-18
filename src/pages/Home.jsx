@@ -303,29 +303,37 @@ const Home = () => {
             {/* Estatísticas Principais */}
             <div className="card">
               <h3 className="text-lg font-semibold mb-4 text-gray-800">📊 Suas Estatísticas</h3>
-              <div className="grid grid-2 gap-3">
-                <div className="text-center p-3 bg-blue-50 rounded-lg">
-                  <Fish size={24} className="text-primary mx-auto mb-2" />
-                  <div className="text-xl font-bold text-primary">{stats.totalFish}</div>
-                  <div className="text-xs text-gray-600">Peixes</div>
-                </div>
-                
-                <div className="text-center p-3 bg-green-50 rounded-lg">
-                  <TrendingUp size={24} className="text-secondary mx-auto mb-2" />
-                  <div className="text-xl font-bold text-secondary">{stats.totalWeight}kg</div>
-                  <div className="text-xs text-gray-600">Peso Total</div>
-                </div>
-                
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <Users size={24} className="text-purple-600 mx-auto mb-2" />
-                  <div className="text-xl font-bold text-purple-600">{stats.tournaments}</div>
-                  <div className="text-xs text-gray-600">Campeonatos</div>
-                </div>
-                
-                <div className="text-center p-3 bg-yellow-50 rounded-lg">
-                  <Trophy size={24} className="text-warning mx-auto mb-2" />
-                  <div className="text-xl font-bold text-warning">#{stats.ranking}</div>
-                  <div className="text-xs text-gray-600">Posição</div>
+              <div className="stats-container" style={{ 
+                border: '1px solid var(--gray-200)', 
+                borderRadius: 'var(--radius-xl)', 
+                padding: 'var(--spacing-3)', 
+                backgroundColor: 'white',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                <div className="grid grid-2 gap-3">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <Fish size={24} className="text-primary mx-auto mb-2" />
+                    <div className="text-xl font-bold text-primary">{stats.totalFish}</div>
+                    <div className="text-xs text-gray-600">Peixes</div>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <TrendingUp size={24} className="text-secondary mx-auto mb-2" />
+                    <div className="text-xl font-bold text-secondary">{stats.totalWeight}kg</div>
+                    <div className="text-xs text-gray-600">Peso Total</div>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-purple-50 rounded-lg">
+                    <Users size={24} className="text-purple-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-purple-600">{stats.tournaments}</div>
+                    <div className="text-xs text-gray-600">Campeonatos</div>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                    <Trophy size={24} className="text-warning mx-auto mb-2" />
+                    <div className="text-xl font-bold text-warning">#{stats.ranking}</div>
+                    <div className="text-xs text-gray-600">Posição</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -379,7 +387,15 @@ const Home = () => {
                  </h3>
                  <button 
                    onClick={() => navigate('/catch')}
-                   className="btn btn-primary btn-sm d-flex align-center gap-2"
+                   className="btn btn-sm d-flex align-center gap-2"
+                   style={{
+                     background: 'linear-gradient(135deg, #1E88E5, #0D47A1)',
+                     color: 'white',
+                     boxShadow: '0 2px 4px rgba(13, 71, 161, 0.3)',
+                     border: 'none',
+                     borderRadius: '8px',
+                     padding: '8px 16px'
+                   }}
                  >
                    <Plus size={16} />
                    Nova Captura
@@ -567,47 +583,55 @@ const Home = () => {
             👑 Rei do Lago
           </h2>
           
-          {monthlyKing ? (
-            <div style={{ textAlign: 'center', padding: '20px' }}>
-              <div style={{ 
-                width: '80px', 
-                height: '80px', 
-                background: 'linear-gradient(135deg, #FFD700, #FFA500)',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 15px auto'
-              }}>
-                <Trophy size={40} style={{ color: 'white' }} />
-              </div>
-              <h3 style={{ color: '#FF9800', marginBottom: '10px' }}>{monthlyKing.name}</h3>
-              <p style={{ color: '#666', margin: '5px 0' }}>
-                <strong>{monthlyKing.totalFish}</strong> peixes capturados
-              </p>
-              <p style={{ color: '#666', margin: '5px 0' }}>
-                <strong>{monthlyKing.totalWeight.toFixed(1)}kg</strong> peso total
-              </p>
-              {monthlyKing.biggestFish && monthlyKing.biggestFish.weight > 0 && (
+          <div style={{ 
+            border: '1px solid var(--gray-200)', 
+            borderRadius: 'var(--radius-xl)', 
+            padding: 'var(--spacing-3)', 
+            backgroundColor: 'white',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
+            {monthlyKing ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <div style={{ 
+                  width: '80px', 
+                  height: '80px', 
+                  background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 15px auto'
+                }}>
+                  <Trophy size={40} style={{ color: 'white' }} />
+                </div>
+                <h3 style={{ color: '#FF9800', marginBottom: '10px' }}>{monthlyKing.name}</h3>
                 <p style={{ color: '#666', margin: '5px 0' }}>
-                  🐟 Maior peixe: <strong>{monthlyKing.biggestFish.weight.toFixed(1)}kg</strong>
+                  <strong>{monthlyKing.totalFish}</strong> peixes capturados
                 </p>
-              )}
-              <div style={{ 
-                marginTop: '15px', 
-                padding: '8px 12px', 
-                background: '#FFF3E0', 
-                borderRadius: '20px', 
-                fontSize: '12px', 
-                color: '#FF9800',
-                fontWeight: 'bold'
-              }}>
-                🏆 TOP 1 DO RANKING GERAL
+                <p style={{ color: '#666', margin: '5px 0' }}>
+                  <strong>{monthlyKing.totalWeight.toFixed(1)}kg</strong> peso total
+                </p>
+                {monthlyKing.biggestFish && monthlyKing.biggestFish.weight > 0 && (
+                  <p style={{ color: '#666', margin: '5px 0' }}>
+                    🐟 Maior peixe: <strong>{monthlyKing.biggestFish.weight.toFixed(1)}kg</strong>
+                  </p>
+                )}
+                <div style={{ 
+                  marginTop: '15px', 
+                  padding: '8px 12px', 
+                  background: '#FFF3E0', 
+                  borderRadius: '20px', 
+                  fontSize: '12px', 
+                  color: '#FF9800',
+                  fontWeight: 'bold'
+                }}>
+                  🏆 TOP 1 DO RANKING GERAL
+                </div>
               </div>
-            </div>
-          ) : (
-            <p style={{ textAlign: 'center', color: '#666' }}>Nenhum rei coroado ainda!</p>
-          )}
+            ) : (
+              <p style={{ textAlign: 'center', color: '#666' }}>Nenhum rei coroado ainda!</p>
+            )}
+          </div>
         </div>
 
         {/* Capturas Recentes */}
@@ -617,6 +641,13 @@ const Home = () => {
             Capturas Recentes
           </h2>
           
+          <div style={{ 
+            border: '1px solid var(--gray-200)', 
+            borderRadius: 'var(--radius-xl)', 
+            padding: 'var(--spacing-3)', 
+            backgroundColor: 'white',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
           {recentCatches.length > 0 ? (
             <div>
               {recentCatches.map((catch_, index) => {
@@ -665,6 +696,7 @@ const Home = () => {
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
 

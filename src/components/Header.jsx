@@ -2,7 +2,6 @@ import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Fish, Trophy, Users, MessageCircle, User, LogOut, Award, Menu, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import SyncStatus from './SyncStatus'
 
 const Header = () => {
   const { user, logout } = useAuth()
@@ -37,7 +36,7 @@ const Header = () => {
             <div className="logo-icon">
               <Fish size={28} />
             </div>
-            <span className="logo-text">Tilapios</span>
+            <span className="logo-text hide-on-small">Tilapios</span>
           </Link>
           
           {/* Mobile menu button */}
@@ -61,7 +60,7 @@ const Header = () => {
                 onClick={closeMenu}
                 aria-current={location.pathname === '/ranking' ? 'page' : undefined}
               >
-                <Trophy size={18} />
+                <Trophy size={16} />
                 <span>Ranking</span>
               </Link>
             </li>
@@ -72,7 +71,7 @@ const Header = () => {
                 onClick={closeMenu}
                 aria-current={location.pathname === '/tournaments' ? 'page' : undefined}
               >
-                <Users size={18} />
+                <Users size={16} />
                 <span>Campeonatos</span>
               </Link>
             </li>
@@ -84,7 +83,7 @@ const Header = () => {
                 onClick={closeMenu}
                 aria-current={location.pathname === '/profile' ? 'page' : undefined}
               >
-                <User size={18} />
+                <User size={16} />
                 <span>Perfil</span>
               </Link>
             </li>
@@ -100,10 +99,9 @@ const Header = () => {
             </li>
           </ul>
           
-          {/* User info and sync status - hidden on mobile */}
+          {/* User info - hidden on mobile */}
           <div className="user-info">
-            <SyncStatus />
-            <span className="user-greeting">
+            <span className="user-greeting" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>
               Olá, {user?.displayName || user?.email?.split('@')[0]}!
             </span>
           </div>

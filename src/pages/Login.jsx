@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Fish, Mail, Lock, User } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Fish, Mail, Lock, User, Check, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import './Login.css'
 
@@ -15,14 +15,52 @@ const Login = () => {
   const [success, setSuccess] = useState('')
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
 
   const { login, register, resetPassword } = useAuth()
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     })
+    
+    // Validação em tempo real para feedback visual
+    const input = e.target;
+    
+    // Remover classes anteriores
+    input.classList.remove('valid', 'invalid');
+    
+    if (value.trim() === '') return;
+    
+    // Validar email
+    if (name === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(value)) {
+        input.classList.add('valid');
+      } else {
+        input.classList.add('invalid');
+      }
+    }
+    
+    // Validar senha
+    if (name === 'password') {
+      if (value.length >= 6) {
+        input.classList.add('valid');
+      } else {
+        input.classList.add('invalid');
+      }
+    }
+    
+    // Validar nome completo
+    if (name === 'displayName' && !isLogin) {
+      if (value.trim().length >= 3) {
+        input.classList.add('valid');
+      } else {
+        input.classList.add('invalid');
+      }
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -35,18 +73,33 @@ const Login = () => {
     if (!formData.email || !formData.password) {
       setError('Por favor, preencha todos os campos obrigatórios.')
       setLoading(false)
+      // Feedback visual para erro
+      document.querySelector('.login-card').classList.add('error-animation')
+      setTimeout(() => {
+        document.querySelector('.login-card').classList.remove('error-animation')
+      }, 1000)
       return
     }
 
     if (!isLogin && !formData.displayName) {
       setError('Por favor, informe seu nome para criar a conta.')
       setLoading(false)
+      // Feedback visual para erro
+      document.querySelector('.login-card').classList.add('error-animation')
+      setTimeout(() => {
+        document.querySelector('.login-card').classList.remove('error-animation')
+      }, 1000)
       return
     }
 
     if (formData.password.length < 6) {
       setError('A senha deve ter pelo menos 6 caracteres.')
       setLoading(false)
+      // Feedback visual para erro
+      document.querySelector('.login-card').classList.add('error-animation')
+      setTimeout(() => {
+        document.querySelector('.login-card').classList.remove('error-animation')
+      }, 1000)
       return
     }
 
@@ -54,13 +107,28 @@ const Login = () => {
       if (isLogin) {
         await login(formData.email, formData.password)
         setSuccess('Login realizado com sucesso!')
+        // Feedback visual para login bem-sucedido
+        document.querySelector('.login-card').classList.add('success-animation')
+        setTimeout(() => {
+          document.querySelector('.login-card').classList.remove('success-animation')
+        }, 1000)
       } else {
         await register(formData.email, formData.password, formData.displayName)
         setSuccess('Conta criada com sucesso! Redirecionando...')
+        // Feedback visual para registro bem-sucedido
+        document.querySelector('.login-card').classList.add('success-animation')
+        setTimeout(() => {
+          document.querySelector('.login-card').classList.remove('success-animation')
+        }, 1000)
       }
     } catch (error) {
       console.error('Erro no formulário:', error)
       setError(error.message || getErrorMessage(error.code) || 'Erro inesperado. Tente novamente.')
+      // Feedback visual para erro
+      document.querySelector('.login-card').classList.add('error-animation')
+      setTimeout(() => {
+        document.querySelector('.login-card').classList.remove('error-animation')
+      }, 1000)
     } finally {
       setLoading(false)
     }
@@ -112,11 +180,14 @@ const Login = () => {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <Fish size={48} className="login-logo" />
+          <div className="login-logo">
+            <Fish size={40} />
+          </div>
           <h1 className="login-title">Tilapios</h1>
           <p className="login-subtitle">
             {isLogin ? 'Entre na sua conta' : 'Crie sua conta'}
           </p>
+          <div className="login-divider"></div>
         </div>
 
         {error && (
@@ -134,52 +205,94 @@ const Login = () => {
         <form onSubmit={handleSubmit} className="login-form">
           {!isLogin && (
             <div className="form-group">
-              <label className="form-label">
-                <User size={16} />
-                Nome
+              <label className="form-label" htmlFor="displayName">
+                <User size={16} aria-hidden="true" />
+                <span>Nome Completo</span>
               </label>
-              <input
-                type="text"
-                name="displayName"
-                value={formData.displayName}
-                onChange={handleChange}
-                className="form-input"
-                placeholder="Seu nome"
-                required={!isLogin}
-              />
+              <div className="input-wrapper">
+                <input
+                  id="displayName"
+                  type="text"
+                  name="displayName"
+                  value={formData.displayName}
+                  onChange={handleChange}
+                  className={`form-input ${formData.displayName.length >= 2 ? 'valid' : formData.displayName.length > 0 ? 'invalid' : ''}`}
+                  placeholder="Digite seu nome completo"
+                  required={!isLogin}
+                  autoComplete="name"
+                  minLength="2"
+                />
+                {formData.displayName.length >= 2 && (
+                  <div className="input-success-icon">
+                    <Check size={16} />
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           <div className="form-group">
-            <label className="form-label">
-              <Mail size={16} />
-              Email
+            <label className="form-label" htmlFor="email">
+              <Mail size={16} aria-hidden="true" />
+              <span>Endereço de Email</span>
             </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="seu@email.com"
-              required
-            />
+            <div className="input-wrapper">
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className={`form-input ${formData.email.includes('@') && formData.email.includes('.') ? 'valid' : formData.email.length > 0 ? 'invalid' : ''}`}
+                placeholder="exemplo@email.com"
+                required
+                autoComplete="email"
+              />
+              {formData.email.includes('@') && formData.email.includes('.') && (
+                <div className="input-success-icon">
+                  <Check size={16} />
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">
-              <Lock size={16} />
-              Senha
+            <label className="form-label" htmlFor="password">
+              <Lock size={16} aria-hidden="true" />
+              <span>{isLogin ? 'Senha' : 'Senha (mín. 6 caracteres)'}</span>
             </label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="form-input"
-              placeholder="Sua senha"
-              required
-            />
+            <div className="input-wrapper">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className={`form-input ${formData.password.length >= 6 ? 'valid' : formData.password.length > 0 ? 'invalid' : ''}`}
+                placeholder={isLogin ? "Digite sua senha" : "Crie uma senha segura"}
+                required
+                autoComplete={isLogin ? "current-password" : "new-password"}
+                minLength="6"
+              />
+              <button 
+                type="button" 
+                className="password-toggle" 
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+              {formData.password.length >= 6 && (
+                <div className="input-success-icon">
+                  <Check size={16} />
+                </div>
+              )}
+            </div>
+            {!isLogin && formData.password.length > 0 && formData.password.length < 6 && (
+              <div className="input-hint">
+                A senha deve ter pelo menos 6 caracteres
+              </div>
+            )}
           </div>
 
           <button 
@@ -190,7 +303,10 @@ const Login = () => {
             {loading ? (
               <div className="login-spinner"></div>
             ) : (
-              isLogin ? 'Entrar' : 'Criar Conta'
+              <>
+                {isLogin ? 'Entrar' : 'Criar Conta'}
+                <ArrowRight size={20} className="btn-icon" />
+              </>
             )}
           </button>
 
@@ -261,10 +377,26 @@ const Login = () => {
           </p>
           <button 
             onClick={() => {
-              setIsLogin(!isLogin)
-              setError('')
-              setSuccess('')
-              setFormData({ email: '', password: '', displayName: '' })
+              // Adicionar classe para animação de saída
+              const formElement = document.querySelector('.login-form');
+              formElement.classList.add('form-exit');
+              
+              // Aguardar a animação terminar antes de mudar o estado
+              setTimeout(() => {
+                setIsLogin(!isLogin)
+                setError('')
+                setSuccess('')
+                setFormData({ email: '', password: '', displayName: '' })
+                
+                // Remover classe de saída e adicionar classe de entrada
+                formElement.classList.remove('form-exit');
+                formElement.classList.add('form-enter');
+                
+                // Remover classe de entrada após a animação
+                setTimeout(() => {
+                  formElement.classList.remove('form-enter');
+                }, 500);
+              }, 300);
             }}
             className="switch-mode-btn"
           >

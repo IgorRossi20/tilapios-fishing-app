@@ -94,6 +94,9 @@ const Ranking = () => {
     <div className="page">
       <div className="container">
         <div className="page-header">
+          <div className="page-brand">
+            <span className="brand-name">Tilapios</span>
+          </div>
           <h1 className="page-title">
             <Trophy size={32} />
             Ranking

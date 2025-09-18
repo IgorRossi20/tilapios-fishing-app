@@ -167,11 +167,11 @@ const Tournaments = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'active':
-        return <span className="badge badge-success">Ativo</span>
+        return <span className="status-badge badge badge-success">Ativo</span>
       case 'upcoming':
-        return <span className="badge badge-warning">Em Breve</span>
+        return <span className="status-badge badge badge-warning">Em breve</span>
       case 'finished':
-        return <span className="badge">Finalizado</span>
+        return <span className="status-badge badge">Finalizado</span>
       default:
         return <span className="badge">Desconhecido</span>
     }
@@ -194,11 +194,11 @@ const Tournaments = () => {
       <div className="container">
         <div className="header">
           <h1>
-            <Users size={32} />
+            <Trophy size={32} />
             Campeonatos de Pesca
           </h1>
           <p>
-            Participe de campeonatos de pesca e mostre suas habilidades! 🎣
+            Participe de campeonatos de pesca, mostre suas habilidades e conquiste prêmios! 🎣
           </p>
         </div>
 
@@ -206,9 +206,10 @@ const Tournaments = () => {
         <button 
           onClick={() => setShowCreateForm(!showCreateForm)}
           className="create-btn"
+          aria-label="Criar novo campeonato"
         >
           <Plus size={20} />
-          Criar Novo Campeonato
+          {showCreateForm ? 'Cancelar' : 'Criar Novo Campeonato'}
         </button>
 
         {/* Formulário de Criação */}
@@ -343,26 +344,23 @@ const Tournaments = () => {
         {/* Tabs de Navegação */}
         <div className="tabs">
           <div className="tabs-nav">
-            <button 
-              onClick={() => setActiveTab('my-tournaments')}
+            <button
               className={`tab-btn ${activeTab === 'my-tournaments' ? 'active' : ''}`}
+              onClick={() => setActiveTab('my-tournaments')}
             >
-              <Trophy size={18} />
-              Meus Campeonatos
+              <User size={20} /> <span>Meus Campeonatos</span> <span className="tab-count">{userTournaments.length}</span>
             </button>
-            <button 
-              onClick={() => setActiveTab('public-tournaments')}
+            <button
               className={`tab-btn ${activeTab === 'public-tournaments' ? 'active' : ''}`}
+              onClick={() => setActiveTab('public-tournaments')}
             >
-              <Users size={18} />
-              Públicos
+              <Globe size={20} /> <span>Campeonatos Públicos</span> <span className="tab-count">{publicTournaments.length}</span>
             </button>
-            <button 
-              onClick={() => setActiveTab('invitations')}
+            <button
               className={`tab-btn ${activeTab === 'invitations' ? 'active' : ''}`}
+              onClick={() => setActiveTab('invitations')}
             >
-              <Star size={18} />
-              Convites (0)
+              <Mail size={20} /> <span>Convites</span> <span className="tab-count">0</span>
             </button>
           </div>
         </div>
@@ -378,22 +376,30 @@ const Tournaments = () => {
               return (
                 <div key={tournament.id} className="tournament-card">
                   <div className="tournament-header">
-                    <h3>{tournament.name}</h3>
+                    <h3 className="tournament-title">
+                      <Trophy size={20} />
+                      {tournament.name}
+                    </h3>
                     <div className="tournament-badges">
                       {getStatusBadge(currentStatus)}
-                      {isOwnerOfTournament && <span className="badge badge-owner">Criador</span>}
+                      {isOwnerOfTournament && <span className="badge badge-owner">Proprietário</span>}
+                      {tournament.isPrivate && (
+                        <span className="badge badge-private">
+                          <Lock size={14} /> Privado
+                        </span>
+                      )}
                     </div>
                   </div>
                   
-                  <div className="tournament-details">
-                    <div className="detail-item">
-                      <Calendar size={16} />
+                  <div className="tournament-info">
+                    <div className="info-item">
+                      <Calendar size={18} />
                       <span>
                         {formatDate(tournament.startDate)} - {formatDate(tournament.endDate)}
                       </span>
                     </div>
-                    <div className="detail-item">
-                      <Users size={16} />
+                    <div className="info-item">
+                      <Users size={18} />
                       <span>
                         {tournament.participants?.length || 0}/{tournament.maxParticipants} pescadores
                       </span>
@@ -480,14 +486,18 @@ const Tournaments = () => {
             
             {userTournaments.length === 0 && (
               <div className="empty-state">
-                <Shield size={48} />
-                <p>Você ainda não participa de nenhum campeonato de pesca.</p>
+                <div className="empty-icon">
+                   <Trophy size={64} />
+                 </div>
+                <h3>Nenhum campeonato encontrado</h3>
+                <p>Você ainda não tem campeonatos. Crie um novo ou participe de campeonatos públicos.</p>
                 <button 
-                  onClick={() => setShowCreateForm(true)}
-                  className="btn"
-                >
-                  Criar Primeiro Campeonato
-                </button>
+                   onClick={() => setShowForm(true)}
+                   className="btn btn-primary"
+                 >
+                   <Plus size={20} />
+                   Criar Campeonato
+                 </button>
               </div>
             )}
           </div>

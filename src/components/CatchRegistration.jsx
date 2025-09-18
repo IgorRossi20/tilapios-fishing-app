@@ -19,18 +19,14 @@ const CatchRegistration = () => {
 
   // Espécies de peixes comuns
   const fishSpecies = [
-    'Tucunaré',
-    'Dourado',
-    'Pintado',
-    'Pacu',
-    'Traíra',
-    'Lambari',
     'Tilápia',
-    'Bagre',
-    'Piau',
-    'Corvina',
-    'Robalo',
-    'Outro'
+    'Tambacu',
+    'Tambaqui',
+    'Pintado',
+    'Pirarucu',
+    'Pirarara',
+    'Dourado',
+    'Pacu'
   ]
 
   useEffect(() => {
@@ -108,42 +104,6 @@ const CatchRegistration = () => {
           <h1><Fish size={24} /> Registrar Pesca</h1>
           <p>Registre suas capturas e acompanhe seu progresso</p>
         </div>
-        
-        {userStats && (
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon">
-                <Fish size={24} />
-              </div>
-              <div className="stat-value">{userStats.totalCatches || 0}</div>
-              <div className="stat-label">Total de Capturas</div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">
-                <Weight size={24} />
-              </div>
-              <div className="stat-value">{userStats.totalWeight ? userStats.totalWeight.toFixed(2) : '0'} kg</div>
-              <div className="stat-label">Peso Total</div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">
-                <TrendingUp size={24} />
-              </div>
-              <div className="stat-value">{userStats.averageWeight ? userStats.averageWeight.toFixed(2) : '0'} kg</div>
-              <div className="stat-label">Média por Captura</div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">
-                <Award size={24} />
-              </div>
-              <div className="stat-value">{userStats.biggestCatch ? userStats.biggestCatch.weight.toFixed(2) : '0'} kg</div>
-              <div className="stat-label">Maior Captura</div>
-            </div>
-          </div>
-        )}
 
         {message && (
           <div className={`message ${messageType}`}>

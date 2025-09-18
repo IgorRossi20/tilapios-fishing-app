@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Heart, MessageCircle, Share2, Camera, MapPin, Clock, Fish, Trophy, User, Send } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Heart, MessageCircle, Share2, Camera, MapPin, Clock, Fish, Trophy, User, Send, Image, Calendar, Award, ThumbsUp, Bookmark, AlertCircle } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useFishing } from '../contexts/FishingContext'
 import './Feed.css'
@@ -275,72 +275,81 @@ const Feed = () => {
   }
 
   return (
-    <div className="container" style={{ paddingTop: '20px', maxWidth: '600px', margin: '0 auto' }}>
-      <div className="mb-3">
-        <h1 style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
-          <Fish size={32} className="text-primary" style={{ marginRight: '15px' }} />
+    <div className="feed">
+      <div className="feed-header">
+        <h1 className="feed-title">
+          <Fish size={40} className="feed-icon" />
           Feed da Comunidade
         </h1>
-        <p style={{ color: '#666', fontSize: '18px' }}>
+        <p className="feed-subtitle">
           Compartilhe suas capturas e veja as pescarias dos amigos! 🎣
         </p>
       </div>
 
       {/* Botão Criar Post */}
-      <div className="card mb-3">
+      <div className="create-post-container">
         <button 
           onClick={() => setShowCreatePost(!showCreatePost)}
-          className="btn"
-          style={{ 
-            width: '100%', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            padding: '15px'
-          }}
+          className="create-post-button"
         >
-          <Camera size={20} style={{ marginRight: '10px' }} />
-          Compartilhar Nova Captura
+          <div className="button-icon">
+            <Camera size={22} />
+          </div>
+          <span>Compartilhar Nova Captura</span>
         </button>
       </div>
 
       {/* Formulário de Criação de Post */}
       {showCreatePost && (
-        <div className="card mb-3">
-          <h2 style={{ marginBottom: '20px' }}>Nova Captura</h2>
+        <div className="create-post-form">
+          <h2 className="form-title">
+            <Camera size={22} style={{ marginRight: '8px' }} />
+            Nova Captura
+          </h2>
           <form onSubmit={handleCreatePost}>
             <div className="form-group">
-              <label className="form-label">Conte sobre sua pescaria</label>
+              <label className="form-label">
+                <MessageCircle size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Conte sobre sua pescaria
+              </label>
               <textarea
                 className="form-textarea"
                 value={newPost.description}
                 onChange={(e) => setNewPost({...newPost, description: e.target.value})}
                 placeholder="Descreva sua pescaria, como foi a experiência..."
                 rows="3"
-                required
+                maxLength={300}
               />
+              <small className="form-hint">{newPost.description.length}/300 caracteres</small>
             </div>
             
             <div className="grid grid-2">
               <div className="form-group">
-              <label className="form-label">Espécie do Peixe</label>
-              <select
-                className="form-input"
-                value={newPost.fishSpecies}
-                onChange={(e) => setNewPost({...newPost, fishSpecies: e.target.value})}
-                required
-              >
-                <option value="">Selecione a espécie</option>
-                {fishSpecies.map((species, index) => (
-                  <option key={index} value={species}>{species}</option>
-                ))}
-              </select>
-            </div>
+                <label className="form-label">
+                  <Fish size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Espécie do Peixe
+                </label>
+                <select
+                  className="form-input"
+                  value={newPost.fishSpecies}
+                  onChange={(e) => setNewPost({...newPost, fishSpecies: e.target.value})}
+                  required
+                >
+                  <option value="">Selecione a espécie</option>
+                  {fishSpecies.map((species, index) => (
+                    <option key={index} value={species}>{species}</option>
+                  ))}
+                </select>
+              </div>
               <div className="form-group">
-                <label className="form-label">Peso (kg)</label>
+                <label className="form-label">
+                  <Trophy size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                  Peso (kg)
+                </label>
                 <input
                   type="number"
                   step="0.1"
+                  min="0.1"
                   className="form-input"
                   value={newPost.weight}
                   onChange={(e) => setNewPost({...newPost, weight: e.target.value})}
@@ -351,7 +360,10 @@ const Feed = () => {
             </div>
             
             <div className="form-group">
-              <label className="form-label">Local da Pescaria</label>
+              <label className="form-label">
+                <MapPin size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Local da Pescaria
+              </label>
               <input
                 type="text"
                 className="form-input"
@@ -363,28 +375,66 @@ const Feed = () => {
             </div>
             
             <div className="form-group">
-              <label className="form-label">Foto do Peixe</label>
-              <input
-                type="file"
-                className="form-input"
-                accept="image/*"
-                onChange={handleImageChange}
-              />
-              <small style={{ color: '#666', fontSize: '12px' }}>Adicione uma foto para mostrar sua captura!</small>
+              <label className="form-label">
+                <Image size={16} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+                Foto do Peixe
+              </label>
+              <div className="file-input-container">
+                <input
+                  type="file"
+                  id="fish-photo"
+                  className="file-input"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                />
+                <label htmlFor="fish-photo" className="file-input-label">
+                  <Camera size={18} />
+                  {imagePreview ? 'Trocar foto' : 'Escolher foto'}
+                </label>
+                <small className="form-hint">Adicione uma foto para mostrar sua captura!</small>
+              </div>
               {imagePreview && (
                 <div className="image-preview">
-                  <img src={imagePreview} alt="Preview" style={{ maxWidth: '100%', maxHeight: '200px', marginTop: '10px', borderRadius: '8px' }} />
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    loading="lazy"
+                  />
+                  <button 
+                    type="button" 
+                    className="remove-image-btn"
+                    onClick={() => {
+                      setImagePreview(null);
+                      setNewPost({...newPost, image: null});
+                    }}
+                  >
+                    <AlertCircle size={16} />
+                    Remover
+                  </button>
                 </div>
               )}
             </div>
             
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button type="submit" className="btn" style={{ flex: 1 }}>Publicar</button>
+            <div className="form-actions">
+              <button type="submit" className="form-btn form-btn-primary">
+                <Send size={18} style={{ marginRight: '8px' }} />
+                Publicar
+              </button>
               <button 
                 type="button" 
-                onClick={() => setShowCreatePost(false)}
-                className="btn btn-secondary"
-                style={{ flex: 1 }}
+                onClick={() => {
+                  setShowCreatePost(false);
+                  setNewPost({
+                    description: '',
+                    fishSpecies: '',
+                    weight: '',
+                    location: '',
+                    date: new Date().toISOString().split('T')[0],
+                    image: null
+                  });
+                  setImagePreview(null);
+                }}
+                className="form-btn form-btn-secondary"
               >
                 Cancelar
               </button>
@@ -395,22 +445,42 @@ const Feed = () => {
 
       {/* Lista de Posts */}
       <div className="posts-container">
-        {posts.map(post => (
+        {posts.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <Fish size={80} />
+            </div>
+            <h3 className="empty-text">Nenhuma captura ainda</h3>
+            <p className="empty-subtext">Seja o primeiro a compartilhar sua pescaria e inspire outros pescadores!</p>
+            <button 
+              onClick={() => setShowCreatePost(true)}
+              className="empty-button"
+            >
+              <div className="empty-button-icon">
+                <Camera size={24} />
+              </div>
+              <span>Compartilhar Primeira Captura</span>
+            </button>
+          </div>
+        ) : posts.map(post => (
           <div key={post.id} className="post-card">
-            {/* Header do Post - Estilo Instagram */}
+            {/* Header do Post */}
             <div className="post-header">
               <div className="post-avatar">
                 {post.authorAvatar || '👤'}
               </div>
               <div className="post-user-info">
-                <h3 className="post-user-name">{post.authorName}</h3>
-                <div className="post-timestamp">
-                  <Clock size={12} />
+                <h3 className="post-username">
+                  {post.authorName}
+                  {post.verified && <span className="verified">✓</span>}
+                </h3>
+                <div className="post-time">
+                  <Clock size={14} />
                   {formatTimeAgo(post.createdAt)}
                 </div>
               </div>
-              <div className="post-user-level">
-                Pescador
+              <div className="post-badge">
+                Pescador Pro
               </div>
             </div>
 
@@ -423,60 +493,40 @@ const Feed = () => {
               {/* Informações do Peixe */}
               <div className="post-details">
                 <div className="post-detail">
-                  <Fish size={16} />
+                  <Fish size={18} className="post-detail-icon" />
                   <div>
-                    <div className="detail-value">{post.fishSpecies}</div>
-                    <div className="detail-label">Espécie</div>
+                    <div className="post-detail-value">{post.fishSpecies}</div>
+                    <div className="post-detail-label">Espécie</div>
                   </div>
                 </div>
                 <div className="post-detail">
-                  <Trophy size={16} />
+                  <Trophy size={18} className="post-detail-icon" />
                   <div>
-                    <div className="detail-value">{post.weight}kg</div>
-                    <div className="detail-label">Peso</div>
+                    <div className="post-detail-value">{post.weight}kg</div>
+                    <div className="post-detail-label">Peso</div>
                   </div>
                 </div>
                 <div className="post-detail">
-                  <MapPin size={16} />
+                  <MapPin size={18} className="post-detail-icon" />
                   <div>
-                    <div className="detail-value">{post.location}</div>
-                    <div className="detail-label">Local</div>
+                    <div className="post-detail-value">{post.location}</div>
+                    <div className="post-detail-label">Local</div>
                   </div>
                 </div>
               </div>
               
-              {/* Imagem do Peixe - Estilo Instagram */}
-              <div style={{ 
-                width: '100%',
-                aspectRatio: '1/1',
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                overflow: 'hidden',
-                marginBottom: '8px'
-              }}>
-                <div style={{ 
-                  fontSize: '64px', 
-                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))',
-                  animation: 'float 3s ease-in-out infinite'
-                }}>
-                  {post.image}
-                </div>
-                <div style={{
-                  position: 'absolute',
-                  bottom: '12px',
-                  right: '12px',
-                  background: 'rgba(0,0,0,0.7)',
-                  color: 'white',
-                  padding: '4px 8px',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: '600'
-                }}>
-                  📸 Captura
+              {/* Imagem do Peixe */}
+              <div className="post-image-container">
+                {post.image ? (
+                  <img src={post.image} alt="Captura de peixe" className="post-image" />
+                ) : (
+                  <div className="post-image-placeholder">
+                    <Fish size={64} className="placeholder-icon" />
+                    <span>Sem imagem</span>
+                  </div>
+                )}
+                <div className="post-image-badge">
+                  <Camera size={14} style={{ marginRight: '4px' }} /> Captura
                 </div>
               </div>
             </div>
@@ -586,18 +636,7 @@ const Feed = () => {
           </div>
         ))}
         
-        {posts.length === 0 && (
-          <div className="card" style={{ textAlign: 'center', padding: '40px' }}>
-            <Fish size={48} style={{ color: '#ddd', marginBottom: '15px' }} />
-            <p style={{ color: '#666', marginBottom: '20px' }}>Nenhuma captura compartilhada ainda.</p>
-            <button 
-              onClick={() => setShowCreatePost(true)}
-              className="btn"
-            >
-              Compartilhar Primeira Captura
-            </button>
-          </div>
-        )}
+        {/* Removido estado vazio duplicado */}
       </div>
     </div>
   )

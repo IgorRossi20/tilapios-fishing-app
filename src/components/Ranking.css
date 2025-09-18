@@ -64,22 +64,37 @@
 }
 
 .ranking .control-select {
-  padding: 0.75rem;
+  padding: var(--spacing-3);
   border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  font-size: 1rem;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-base);
   background: rgba(255, 255, 255, 0.1);
   color: white;
   backdrop-filter: blur(10px);
-  min-height: 44px;
+  min-height: var(--touch-target-md);
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
   box-sizing: border-box;
+  transition: var(--transition-all);
+  cursor: pointer;
+  touch-action: manipulation;
 }
 
 .ranking .control-select:focus {
   outline: none;
+  border-color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+}
+
+.ranking .control-select:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.ranking .control-select:active {
+  transform: scale(0.98);
   border-color: rgba(255, 255, 255, 0.5);
 }
 
@@ -96,27 +111,46 @@
 .ranking .ranking-type-btn {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
+  gap: var(--spacing-2);
+  padding: var(--spacing-3) var(--spacing-4);
   border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.1);
   color: white;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: var(--transition-all);
   backdrop-filter: blur(10px);
+  min-height: var(--touch-target-md);
+  touch-action: manipulation;
+  user-select: none;
+  white-space: nowrap;
 }
 
 .ranking .ranking-type-btn:hover {
   background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.ranking .ranking-type-btn:active {
+  transform: translateY(0) scale(0.98);
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ranking .ranking-type-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
 }
 
 .ranking .ranking-type-btn.active {
-  background: white;
-  color: #667eea;
-  border-color: white;
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.7);
+  color: white;
+  font-weight: var(--font-weight-bold);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .ranking .tournament-info {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { User, Trophy, Fish, MapPin, Calendar, Settings, Edit3, Camera, Award, Target, TrendingUp } from 'lucide-react'
+import { User, Trophy, Fish, MapPin, Calendar, Settings, Edit3, Camera, Award, Target, TrendingUp, CheckCircle, Star, Compass, Anchor, Save, Activity, BarChart2, Heart } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useFishing } from '../contexts/FishingContext'
 import './Profile.css'
@@ -226,84 +226,67 @@ const Profile = () => {
   const experienceLevel = getExperienceLevel(userStats?.totalFish || 0)
 
   return (
-    <div className="container" style={{ paddingTop: '20px' }}>
+    <div className="profile-container">
       {/* Header do Perfil */}
-      <div className="card" style={{ marginBottom: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '20px' }}>
-          <div style={{ 
-            width: '80px', 
-            height: '80px', 
-            borderRadius: '50%', 
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '32px',
-            fontWeight: 'bold'
-          }}>
+      <div className="profile-header-card">
+        <div className="profile-header-content">
+          <div className="profile-avatar">
             {user?.displayName?.charAt(0) || 'U'}
+            <div className="avatar-glow"></div>
           </div>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>{profileData.displayName}</h2>
+          <div className="profile-info">
+            <div className="profile-name-container">
+              <h2 className="profile-name">{profileData.displayName}</h2>
+              <span className="profile-badge">
+                <Star size={14} className="badge-icon" />
+                {experienceLevel.level}
+              </span>
+            </div>
             {editMode ? (
               <textarea
                 value={profileData.bio}
                 onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
                 placeholder="Conte um pouco sobre você e sua paixão pela pesca..."
-                style={{
-                  width: '100%',
-                  minHeight: '60px',
-                  margin: '0 0 10px 0',
-                  padding: '8px',
-                  border: '2px solid #3498db',
-                  borderRadius: '4px',
-                  fontSize: '14px',
-                  color: '#7f8c8d',
-                  resize: 'vertical',
-                  fontFamily: 'inherit'
-                }}
+                className="profile-bio-textarea"
+                maxLength={150}
               />
             ) : (
-              <p style={{ margin: '0 0 10px 0', color: '#7f8c8d', minHeight: '20px' }}>
-                {profileData.bio || 'Clique em "Editar" para adicionar uma descrição sobre você...'}
+              <p className="profile-bio">
+                {profileData.bio || 'Clique em "Editar" para adicionar uma descrição sobre você e sua paixão pela pesca...'}
               </p>
             )}
-            <div style={{ display: 'flex', gap: '15px', fontSize: '14px', color: '#95a5a6' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <MapPin size={16} />
+            <div className="profile-meta">
+              <span className="profile-meta-item">
+                <MapPin size={16} className="meta-icon" />
                 {profileData.location}
               </span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Fish size={16} />
+              <span className="profile-meta-item">
+                <Anchor size={16} className="meta-icon" />
                 {profileData.favoriteSpot}
+              </span>
+              <span className="profile-meta-item">
+                <Trophy size={16} className="meta-icon" />
+                {userStats?.tournamentsWon || 0} torneios vencidos
+              </span>
+              <span className="profile-meta-item">
+                <Activity size={16} className="meta-icon" />
+                {userStats?.totalFish || 0} capturas
               </span>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div className="profile-actions">
             {editMode && (
               <button 
-                className="btn"
+                className="profile-btn save-btn"
                 onClick={handleSaveProfile}
-                style={{ 
-                  background: '#27ae60',
-                  border: '2px solid #27ae60',
-                  color: 'white',
-                  padding: '8px 16px'
-                }}
               >
+                <Save size={16} />
                 Salvar
               </button>
             )}
             <button 
-              className="btn"
+              className="profile-btn edit-btn"
               onClick={() => setEditMode(!editMode)}
-              style={{ 
-                background: 'transparent',
-                border: '2px solid #3498db',
-                color: '#3498db',
-                padding: '8px 16px'
-              }}
             >
               <Edit3 size={16} />
               {editMode ? 'Cancelar' : 'Editar'}
@@ -312,25 +295,31 @@ const Profile = () => {
         </div>
 
         {/* Nível de Experiência */}
-        <div style={{ 
-          background: `linear-gradient(90deg, ${experienceLevel.color}20 0%, transparent 100%)`,
-          padding: '15px',
-          borderRadius: '8px',
-          border: `1px solid ${experienceLevel.color}30`
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontWeight: 'bold', color: experienceLevel.color }}>
-              {experienceLevel.level}
-            </span>
-            <span style={{ fontSize: '14px', color: '#7f8c8d' }}>
-              {userStats?.totalFish || 0} peixes pescados
-            </span>
+        <div className="experience-bar-container">
+          <div className="experience-progress" style={{ 
+            width: `${Math.min((userStats?.totalFish || 0) / (experienceLevel.level === 'Iniciante' ? 10 : experienceLevel.level === 'Intermediário' ? 50 : experienceLevel.level === 'Avançado' ? 100 : 200) * 100, 100)}%`,
+            background: `linear-gradient(90deg, ${experienceLevel.color} 0%, ${experienceLevel.color}90 100%)`
+          }}></div>
+          <div className="experience-details">
+            <div className="experience-info">
+              <span className="experience-level" style={{ color: experienceLevel.color }}>
+                {experienceLevel.level}
+              </span>
+              <span className="experience-count">
+                {userStats?.totalFish || 0} peixes pescados
+              </span>
+            </div>
+            {experienceLevel.level !== 'Mestre' && (
+              <div className="experience-next-level">
+                Próximo nível: {experienceLevel.level === 'Iniciante' ? 10 : experienceLevel.level === 'Intermediário' ? 50 : 100} peixes
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Navegação por Abas */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+      <div className="profile-tabs">
         {[
           { id: 'stats', label: 'Estatísticas', icon: TrendingUp },
           { id: 'catches', label: 'Capturas', icon: Fish },
@@ -340,18 +329,10 @@ const Profile = () => {
           return (
             <button
               key={tab.id}
-              className="btn"
+              className={`tab-btn ${activeTab === tab.id ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
-              style={{
-                background: activeTab === tab.id ? '#3498db' : 'transparent',
-                color: activeTab === tab.id ? 'white' : '#3498db',
-                border: '2px solid #3498db',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}
             >
-              <Icon size={16} />
+              <Icon size={18} className="tab-icon" />
               {tab.label}
             </button>
           )
@@ -360,84 +341,155 @@ const Profile = () => {
 
       {/* Conteúdo das Abas */}
       {activeTab === 'stats' && (
-        <div className="card">
-          <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>📊 Estatísticas</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
-            <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-              <Fish size={32} style={{ color: '#3498db', marginBottom: '10px' }} />
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2c3e50' }}>
+        <div className="profile-content">
+          <h3 className="content-title"><BarChart2 size={20} className="title-icon" /> Estatísticas</h3>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon-container fish-icon">
+                <Fish size={32} className="stat-icon" />
+              </div>
+              <div className="stat-value">
                 {userStats?.totalFish || 0}
               </div>
-              <div style={{ color: '#7f8c8d' }}>Total de Peixes</div>
+              <div className="stat-label">Total de Peixes</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar" style={{ width: `${Math.min((userStats?.totalFish || 0) / 100 * 100, 100)}%` }}></div>
+              </div>
             </div>
-            <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-              <Trophy size={32} style={{ color: '#f39c12', marginBottom: '10px' }} />
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2c3e50' }}>
+            <div className="stat-card">
+              <div className="stat-icon-container trophy-icon">
+                <Trophy size={32} className="stat-icon" />
+              </div>
+              <div className="stat-value">
                 {userStats?.totalWeight?.toFixed(1) || '0.0'}kg
               </div>
-              <div style={{ color: '#7f8c8d' }}>Peso Total</div>
+              <div className="stat-label">Peso Total</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar" style={{ width: `${Math.min((userStats?.totalWeight || 0) / 100 * 100, 100)}%` }}></div>
+              </div>
             </div>
-            <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-              <Target size={32} style={{ color: '#e74c3c', marginBottom: '10px' }} />
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2c3e50' }}>
+            <div className="stat-card">
+              <div className="stat-icon-container target-icon">
+                <Target size={32} className="stat-icon" />
+              </div>
+              <div className="stat-value">
                 {userStats?.biggestFish?.weight?.toFixed(1) || '0.0'}kg
               </div>
-              <div style={{ color: '#7f8c8d' }}>Maior Peixe</div>
+              <div className="stat-label">Maior Peixe</div>
+              {userStats?.biggestFish?.species && (
+                <div className="stat-detail">{userStats.biggestFish.species}</div>
+              )}
+              <div className="stat-progress">
+                <div className="stat-progress-bar" style={{ width: `${Math.min((userStats?.biggestFish?.weight || 0) / 20 * 100, 100)}%` }}></div>
+              </div>
             </div>
-            <div style={{ textAlign: 'center', padding: '20px', background: '#f8f9fa', borderRadius: '8px' }}>
-              <Calendar size={32} style={{ color: '#9b59b6', marginBottom: '10px' }} />
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#2c3e50' }}>
+            <div className="stat-card">
+              <div className="stat-icon-container calendar-icon">
+                <Calendar size={32} className="stat-icon" />
+              </div>
+              <div className="stat-value">
                 {userStats?.fishingDays || 0}
               </div>
-              <div style={{ color: '#7f8c8d' }}>Dias Pescando</div>
+              <div className="stat-label">Dias Pescando</div>
+              <div className="stat-progress">
+                <div className="stat-progress-bar" style={{ width: `${Math.min((userStats?.fishingDays || 0) / 30 * 100, 100)}%` }}></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="additional-stats">
+            <div className="additional-stat-item">
+              <Compass size={20} className="additional-stat-icon" />
+              <div className="additional-stat-content">
+                <div className="additional-stat-label">Espécie Favorita</div>
+                <div className="additional-stat-value">{userStats?.favoriteSpecies || 'Nenhuma'}</div>
+              </div>
+            </div>
+            <div className="additional-stat-item">
+              <Trophy size={20} className="additional-stat-icon" />
+              <div className="additional-stat-content">
+                <div className="additional-stat-label">Ranking Mensal</div>
+                <div className="additional-stat-value">{userStats?.monthlyRanking || '-'}º lugar</div>
+              </div>
+            </div>
+            <div className="additional-stat-item">
+              <Heart size={20} className="additional-stat-icon" />
+              <div className="additional-stat-content">
+                <div className="additional-stat-label">Média por Captura</div>
+                <div className="additional-stat-value">{userStats?.averageWeight?.toFixed(2) || '0.00'}kg</div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {activeTab === 'catches' && (
-        <div className="card">
-          <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🎣 Capturas Recentes</h3>
+        <div className="profile-content">
+          <h3 className="content-title"><Fish size={20} className="title-icon" /> Capturas Recentes</h3>
           {recentCatches.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#7f8c8d' }}>
-              <Fish size={48} style={{ marginBottom: '15px', opacity: 0.5 }} />
-              <p>Nenhuma captura registrada ainda.</p>
-              <p>Que tal registrar sua primeira captura?</p>
+            <div className="empty-state">
+              <Fish size={48} className="empty-icon" />
+              <p className="empty-title">Nenhuma captura registrada ainda</p>
+              <p className="empty-subtitle">Que tal registrar sua primeira captura?</p>
+              <button className="empty-action-btn">
+                <Camera size={18} />
+                Registrar Captura
+              </button>
             </div>
           ) : (
-            <div style={{ display: 'grid', gap: '15px' }}>
+            <div className="catches-grid">
               {recentCatches.map((capture, index) => {
                 const fallbackKey = `capture-${index}-${capture.species || 'unknown'}-${capture.weight || 0}-${capture.registeredAt || capture.timestamp || Date.now()}`
                 return (
-                <div key={capture.id || fallbackKey} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '15px',
-                  padding: '15px',
-                  background: '#f8f9fa',
-                  borderRadius: '8px',
-                  border: '1px solid #e9ecef'
-                }}>
-                  {capture.photo && (
-                    <img 
-                      src={capture.photo} 
-                      alt={capture.species}
-                      style={{ 
-                        width: '60px', 
-                        height: '60px', 
-                        borderRadius: '8px', 
-                        objectFit: 'cover' 
-                      }}
-                    />
-                  )}
-                  <div style={{ flex: 1 }}>
-                    <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>{capture.species}</h4>
-                    <p style={{ margin: '0 0 5px 0', color: '#7f8c8d', fontSize: '14px' }}>
-                      {capture.weight}kg • {capture.location}
-                    </p>
-                    <p style={{ margin: 0, color: '#95a5a6', fontSize: '12px' }}>
+                <div key={capture.id || fallbackKey} className="catch-card">
+                  <div className="catch-header">
+                    <h4 className="catch-species">{capture.species}</h4>
+                    <span className="catch-date">
                       {formatDate(capture.registeredAt || capture.date)}
-                    </p>
+                    </span>
+                  </div>
+                  
+                  <div className="catch-content">
+                    {capture.photo ? (
+                      <div className="catch-photo-container">
+                        <img 
+                          src={capture.photo} 
+                          alt={capture.species}
+                          className="catch-photo"
+                          loading="lazy"
+                        />
+                        <div className="catch-weight-badge">{capture.weight}kg</div>
+                      </div>
+                    ) : (
+                      <div className="catch-no-photo">
+                        <Fish size={32} className="catch-no-photo-icon" />
+                        <span className="no-photo-text">Sem foto</span>
+                      </div>
+                    )}
+                    
+                    <div className="catch-details">
+                      <div className="catch-detail-item">
+                        <MapPin size={16} className="catch-detail-icon" />
+                        <span className="catch-location">{capture.location || 'Local não informado'}</span>
+                      </div>
+                      {capture.description ? (
+                        <p className="catch-description">{capture.description}</p>
+                      ) : (
+                        <p className="catch-description catch-no-description">Sem descrição</p>
+                      )}
+                      <div className="catch-stats">
+                        <div className="catch-stat">
+                          <span className="catch-stat-label">Peso:</span>
+                          <span className="catch-stat-value">{capture.weight}kg</span>
+                        </div>
+                        {capture.length && (
+                          <div className="catch-stat">
+                            <span className="catch-stat-label">Tamanho:</span>
+                            <span className="catch-stat-value">{capture.length}cm</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 )
@@ -448,49 +500,61 @@ const Profile = () => {
       )}
 
       {activeTab === 'achievements' && (
-        <div className="card">
-          <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🏆 Conquistas</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
+        <div className="profile-content">
+          <h3 className="content-title"><Award size={20} className="title-icon" /> Conquistas</h3>
+          <div className="achievements-summary">
+            <div className="achievements-stats">
+              <div className="achievement-stat">
+                <span className="achievement-stat-value">{achievements.filter(a => a.unlocked).length}</span>
+                <span className="achievement-stat-label">Desbloqueadas</span>
+              </div>
+              <div className="achievement-stat">
+                <span className="achievement-stat-value">{achievements.length}</span>
+                <span className="achievement-stat-label">Total</span>
+              </div>
+              <div className="achievement-stat">
+                <span className="achievement-stat-value">
+                  {Math.round((achievements.filter(a => a.unlocked).length / achievements.length) * 100)}%
+                </span>
+                <span className="achievement-stat-label">Completado</span>
+              </div>
+            </div>
+          </div>
+          <div className="achievements-grid">
             {achievements.map(achievement => (
               <div 
                 key={achievement.id} 
-                style={{ 
-                  padding: '20px',
-                  background: achievement.unlocked ? '#f8f9fa' : '#f5f5f5',
-                  borderRadius: '8px',
-                  border: achievement.unlocked ? '2px solid #27ae60' : '2px solid #bdc3c7',
-                  opacity: achievement.unlocked ? 1 : 0.6
-                }}
+                className={`achievement-card ${achievement.unlocked ? 'unlocked' : 'locked'}`}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '32px' }}>{achievement.icon}</span>
-                  <div>
-                    <h4 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>{achievement.title}</h4>
-                    <p style={{ margin: 0, color: '#7f8c8d', fontSize: '14px' }}>{achievement.description}</p>
+                <div className="achievement-header">
+                  <div className="achievement-icon-container">
+                    <span className="achievement-icon">{achievement.icon}</span>
+                    {achievement.unlocked && (
+                      <div className="achievement-check">
+                        <CheckCircle size={16} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="achievement-info">
+                    <h4 className="achievement-title">{achievement.title}</h4>
+                    <p className="achievement-description">{achievement.description}</p>
                   </div>
                 </div>
                 {achievement.unlocked ? (
-                  <div style={{ fontSize: '12px', color: '#27ae60', fontWeight: 'bold' }}>
-                    ✅ Desbloqueado!
+                  <div className="achievement-unlocked-status">
+                    <CheckCircle size={14} className="unlocked-icon" />
+                    Desbloqueado!
                   </div>
                 ) : (
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#95a5a6', marginBottom: '5px' }}>
-                      🔒 Progresso: {Math.round(achievement.progress * 100)}%
+                  <div className="achievement-progress-container">
+                    <div className="achievement-progress-text">
+                      Progresso: {Math.round(achievement.progress * 100)}%
                     </div>
-                    <div style={{ 
-                      width: '100%', 
-                      height: '6px', 
-                      background: '#e9ecef', 
-                      borderRadius: '3px',
-                      overflow: 'hidden'
-                    }}>
-                      <div style={{
-                        width: `${achievement.progress * 100}%`,
-                        height: '100%',
-                        background: '#3498db',
-                        transition: 'width 0.3s ease'
-                      }} />
+                    <div className="achievement-progress-bar">
+                      <div 
+                        className="achievement-progress-fill"
+                        style={{ width: `${achievement.progress * 100}%` }}
+                      />
                     </div>
                   </div>
                 )}
