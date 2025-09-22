@@ -17,12 +17,25 @@ const firebaseConfig = {
 }
 
 // Inicializar Firebase
+console.log('🔧 Inicializando Firebase com config:', {
+  projectId: firebaseConfig.projectId,
+  storageBucket: firebaseConfig.storageBucket,
+  authDomain: firebaseConfig.authDomain
+})
+
 const app = initializeApp(firebaseConfig)
 
 // Inicializar serviços
 export const auth = getAuth(app)
 export const db = getFirestore(app)
 export const storage = getStorage(app)
+
+console.log('✅ Firebase inicializado:', {
+  app: !!app,
+  auth: !!auth,
+  db: !!db,
+  storage: !!storage
+})
 
 export default app
 

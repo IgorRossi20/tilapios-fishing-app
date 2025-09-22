@@ -6,7 +6,7 @@ import './Feed.css'
 
 const Feed = () => {
   const { user } = useAuth()
-  const { createPost, loadPosts, likePost, addComment, sharePost } = useFishing()
+  const { createPost, loadPosts, likePost, addComment, sharePost, registerCatch } = useFishing()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreatePost, setShowCreatePost] = useState(false)
@@ -62,6 +62,23 @@ const Feed = () => {
     try {
       setLoading(true)
       const postsData = await loadPosts()
+      console.log('🔍 Posts carregados no Feed:', postsData)
+      console.log('📊 Total de posts:', postsData.length)
+      
+      // Debug: verificar se as imagens estão presentes
+      postsData.forEach((post, index) => {
+        console.log(`📋 Post ${index + 1} (ID: ${post.id}):`, {
+          completePost: post,
+          image: post.image,
+          photo: post.photo,
+          hasImage: !!post.image,
+          hasPhoto: !!post.photo,
+          imageType: typeof post.image,
+          photoType: typeof post.photo,
+          imageValue: post.image,
+          photoValue: post.photo
+        })
+      })
       setPosts(postsData)
     } catch (error) {
       console.error('Erro ao carregar posts:', error)
@@ -87,14 +104,6 @@ const Feed = () => {
     try {
       setLoading(true)
       
-      // Processar imagem se existir
-      let imageUrl = '🐟' // Emoji padrão se não tiver imagem
-      if (newPost.image && typeof newPost.image !== 'string') {
-        // Em um app real, aqui faria upload da imagem para um servidor
-        // e obteria a URL. Por enquanto, usamos o preview como URL
-        imageUrl = imagePreview
-      }
-      
       // Criar dados da captura no formato esperado pelo registerCatch
       const captureData = {
         species: newPost.fishSpecies,
@@ -102,12 +111,20 @@ const Feed = () => {
         location: newPost.location,
         date: newPost.date || new Date().toISOString().split('T')[0],
         description: newPost.description,
-        image: imageUrl
+        photo: newPost.image // Usar 'photo' em vez de 'image' para o registerCatch
       }
       
       // Registrar a captura usando a função do contexto
-      const { registerCatch } = useFishing()
-      await registerCatch(captureData)
+      const registeredCatch = await registerCatch(captureData)
+      
+      // Debug: verificar o que foi retornado
+      console.log('🔍 Resultado do registerCatch:', registeredCatch)
+      
+      // Obter a URL da imagem do resultado do registerCatch
+      const imageUrl = registeredCatch?.photo || null
+      console.log('🖼️ URL da imagem obtida:', imageUrl)
+      console.log('🖼️ Tipo da URL da imagem:', typeof imageUrl)
+      console.log('🖼️ Imagem é válida?', imageUrl && imageUrl !== '🐟')
       
       // Criar post para o feed com os mesmos dados
       const postData = {
@@ -115,10 +132,15 @@ const Feed = () => {
         fishSpecies: newPost.fishSpecies,
         weight: parseFloat(newPost.weight),
         location: newPost.location,
-        image: imageUrl
+        date: newPost.date,
+        image: imageUrl, // Mapear photo -> image para o Feed
+        photo: imageUrl  // Manter ambos para compatibilidade
       }
       
+      console.log('📝 Dados do post a ser criado:', postData)
+      
       const createdPost = await createPost(postData)
+      console.log('✅ Post criado:', createdPost)
       
       // Atualizar lista de posts
       setPosts([createdPost, ...posts])
@@ -517,14 +539,46 @@ const Feed = () => {
               
               {/* Imagem do Peixe */}
               <div className="post-image-container">
-                {post.image ? (
-                  <img src={post.image} alt="Captura de peixe" className="post-image" />
-                ) : (
-                  <div className="post-image-placeholder">
-                    <Fish size={64} className="placeholder-icon" />
-                    <span>Sem imagem</span>
-                  </div>
-                )}
+                {(() => {
+                  // Verificar se há imagem válida (tanto image quanto photo)
+                  const imageUrl = post.image || post.photo
+                  const hasValidImage = imageUrl && 
+                    imageUrl !== '🐟' && 
+                    imageUrl !== 'null' && 
+                    imageUrl !== null && 
+                    imageUrl !== 'undefined' &&
+                    typeof imageUrl === 'string' &&
+                    imageUrl.trim() !== ''
+                  
+                  console.log(`🖼️ Verificando imagem do post ${post.id}:`, {
+                    imageUrl,
+                    hasValidImage,
+                    postImage: post.image,
+                    postPhoto: post.photo
+                  })
+                  
+                  if (hasValidImage) {
+                    return (
+                      <img 
+                        src={imageUrl} 
+                        alt="Captura de peixe" 
+                        className="post-image"
+                        onError={(e) => {
+                          console.log('❌ Erro ao carregar imagem:', imageUrl)
+                          e.target.style.display = 'none'
+                          e.target.nextSibling.style.display = 'flex'
+                        }}
+                      />
+                    )
+                  } else {
+                    return (
+                      <div className="post-image-placeholder">
+                        <Fish size={64} className="placeholder-icon" />
+                        <span>Sem imagem</span>
+                      </div>
+                    )
+                  }
+                })()}
                 <div className="post-image-badge">
                   <Camera size={14} style={{ marginRight: '4px' }} /> Captura
                 </div>

@@ -61,20 +61,28 @@ try {
   }
 }
 
-// Suprimir erros ERR_ABORTED conhecidos do Firestore que não afetam funcionalidade
+// Filtrar erros ERR_ABORTED que são comuns e não afetam a funcionalidade
 const originalConsoleError = console.error
 console.error = (...args) => {
   const message = args.join(' ')
-  if (message.includes('ERR_ABORTED') && message.includes('firestore.googleapis.com')) {
-    // Suprimir erro ERR_ABORTED do Firestore (problema conhecido que não afeta funcionalidade)
-    return
+  if (message.includes('ERR_ABORTED') || 
+      message.includes('net::ERR_ABORTED') ||
+      message.includes('firestore.googleapis.com') ||
+      message.includes('Failed to fetch') ||
+      message.includes('NetworkError')) {
+    return // Ignorar esses erros de rede comuns
   }
   originalConsoleError.apply(console, args)
 }
 
 // Interceptar erros de rede para suprimir ERR_ABORTED do Firestore
 window.addEventListener('error', (event) => {
-  if (event.message && event.message.includes('ERR_ABORTED') && event.filename && event.filename.includes('firestore')) {
+  if (event.message && (
+    event.message.includes('ERR_ABORTED') ||
+    event.message.includes('firestore.googleapis.com') ||
+    event.message.includes('Failed to fetch') ||
+    event.message.includes('NetworkError')
+  )) {
     event.preventDefault()
     return false
   }
@@ -84,6 +92,9 @@ window.addEventListener('error', (event) => {
 window.addEventListener('unhandledrejection', (event) => {
   if (event.reason && (
     event.reason.toString().includes('ERR_ABORTED') ||
+    event.reason.toString().includes('firestore.googleapis.com') ||
+    event.reason.toString().includes('Failed to fetch') ||
+    event.reason.toString().includes('NetworkError') ||
     event.reason.toString().includes('auth/network-request-failed') ||
     event.reason.toString().includes('auth/timeout')
   )) {

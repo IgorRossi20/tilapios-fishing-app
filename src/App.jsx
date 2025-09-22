@@ -12,6 +12,7 @@ import { useAuth } from './hooks/useAuth'
 import { FirebaseProvider } from './contexts/FirebaseContext'
 import useToast from './hooks/useToast'
 
+
 // Lazy loading para componentes pesados
 const Tournaments = lazy(() => import('./pages/Tournaments'))
 const TournamentDetails = lazy(() => import('./pages/TournamentDetails'))

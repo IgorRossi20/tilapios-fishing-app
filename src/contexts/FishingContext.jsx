@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { doc, setDoc, getDoc, collection, addDoc, query, where, getDocs, updateDoc, arrayUnion, orderBy } from 'firebase/firestore'
-import { db } from './FirebaseContext'
+import { db } from '../firebase/config'
 import { COLLECTIONS } from '../firebase/config'
+import { uploadImageToSupabase, isSupabaseConfigured } from '../supabase/config'
 import { useAuth } from './AuthContext'
 import { useNotification } from './NotificationContext'
 
@@ -1019,6 +1020,42 @@ const FishingProvider = ({ children }) => {
     }
   }
 
+  // Função para fazer upload de imagem usando Supabase Storage
+  const uploadImage = async (file, path) => {
+    if (!file) {
+      console.log('⚠️ Nenhum arquivo fornecido para upload')
+      return null
+    }
+    
+    try {
+      console.log('📤 Iniciando upload da imagem com Supabase...')
+      
+      // Verificar se o Supabase está configurado
+      if (!isSupabaseConfigured()) {
+        console.error('❌ Supabase não está configurado')
+        throw new Error('Supabase não está configurado. Verifique as variáveis de ambiente.')
+      }
+      
+      // Verificar se o usuário está autenticado
+      if (!user) {
+        console.error('❌ Usuário não está autenticado')
+        throw new Error('Usuário deve estar autenticado para fazer upload')
+      }
+      
+      console.log('👤 Usuário autenticado:', user.uid)
+      
+      // Usar a função do Supabase para upload
+      const imageUrl = await uploadImageToSupabase(file, user.uid, 'catches')
+      
+      console.log('✅ Upload concluído com Supabase:', imageUrl)
+      return imageUrl
+      
+    } catch (error) {
+      console.error('❌ Erro no upload da imagem:', error)
+      throw new Error('Erro ao fazer upload da imagem: ' + error.message)
+    }
+  }
+
   // Registrar nova captura com suporte offline
   const registerCatch = async (catchData) => {
     console.log('🎣 Iniciando registro de captura...')
@@ -1034,9 +1071,24 @@ const FishingProvider = ({ children }) => {
       console.error('❌ UID do usuário não encontrado!')
       throw new Error('UID do usuário não encontrado')
     }
+
+    // Fazer upload da imagem se existir
+    let photoURL = null
+    if (catchData.photo && catchData.photo instanceof File) {
+      try {
+        console.log('📸 Fazendo upload da foto...')
+        photoURL = await uploadImage(catchData.photo, `catches/${user.uid}`)
+        console.log('✅ Foto enviada com sucesso:', photoURL)
+      } catch (error) {
+        console.error('❌ Erro no upload da foto:', error)
+        // Continuar sem a foto em caso de erro
+        photoURL = null
+      }
+    }
     
     const newCatch = {
       ...catchData,
+      photo: photoURL, // Substituir o arquivo pela URL
       userId: user.uid,
       userName: user.displayName || user.email,
       registeredAt: new Date().toISOString(),
@@ -1064,6 +1116,9 @@ const FishingProvider = ({ children }) => {
         
         // Recarregar capturas após registro
         await loadUserCatches()
+        
+        // Retornar os dados da captura
+        return newCatch
       } else {
         // Se offline, salvar na lista de pendentes
         const pendingCatches = getFromLocalStorage('pending_catches', [])
@@ -1083,6 +1138,9 @@ const FishingProvider = ({ children }) => {
         notification.notifyCatchRegistered(newCatch.species || 'Peixe', newCatch.weight)
         
         console.log('Captura salva offline. Será sincronizada quando a conexão for restaurada.')
+        
+        // Retornar os dados da captura
+        return newCatch
       }
     } catch (error) {
       console.error('Erro ao registrar captura:', error)
@@ -1203,6 +1261,7 @@ const FishingProvider = ({ children }) => {
     try {
       // Carregar posts locais primeiro
       const localPosts = getFromLocalStorage('local_posts', [])
+      console.log('📱 Posts locais carregados:', localPosts)
       
       if (isOnline) {
         const postsQuery = query(
@@ -1212,13 +1271,18 @@ const FishingProvider = ({ children }) => {
         const snapshot = await getDocs(postsQuery)
         const posts = []
         snapshot.forEach((doc) => {
-          posts.push({ id: doc.id, ...doc.data() })
+          const postData = { id: doc.id, ...doc.data() }
+          console.log('🔍 Post carregado do Firestore:', postData)
+          posts.push(postData)
         })
         
         // Combinar com posts locais não sincronizados
         const tempPosts = localPosts.filter(post => post.isTemp)
-        return [...tempPosts, ...posts]
+        const allPosts = [...tempPosts, ...posts]
+        console.log('📋 Todos os posts combinados:', allPosts)
+        return allPosts
       } else {
+        console.log('📴 Modo offline - retornando apenas posts locais')
         return localPosts
       }
     } catch (error) {
@@ -1428,6 +1492,7 @@ const FishingProvider = ({ children }) => {
     deleteTournament,
     finishTournament,
     registerCatch,
+    uploadImage,
     loadUserTournaments,
     loadUserCatches,
     calculateUserStats,

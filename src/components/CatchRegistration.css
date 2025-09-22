@@ -411,6 +411,12 @@
   border: 1px solid #fca5a5;
 }
 
+.catch-registration .message.info {
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #93c5fd;
+}
+
 .catch-registration .stats-section {
   background: white;
   border-radius: 12px;

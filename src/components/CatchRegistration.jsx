@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Fish, Calendar, Weight, Camera, Trophy, TrendingUp, Award } from 'lucide-react'
 import { useFishing } from '../contexts/FishingContext'
+import { compressImage, validateImageFile } from '../utils/imageCompression'
 import './CatchRegistration.css'
 
 const CatchRegistration = () => {
@@ -90,11 +91,51 @@ const CatchRegistration = () => {
     }
   }
 
-  const handlePhotoChange = (e) => {
+  const handlePhotoChange = async (e) => {
     const file = e.target.files[0]
     if (file) {
-      setFormData({ ...formData, photo: file })
+      try {
+        setMessage('📸 Processando imagem...')
+        setMessageType('info')
+        
+        // Validar arquivo
+        validateImageFile(file)
+        
+        // Comprimir imagem para máximo 5MB
+        console.log('🔄 Iniciando compressão da imagem...')
+        const compressedFile = await compressImage(file)
+        
+        // Armazenar arquivo comprimido
+        setFormData({ ...formData, photo: compressedFile })
+        
+        setMessage(`✅ Imagem processada com sucesso! Tamanho final: ${formatFileSize(compressedFile.size)}`)
+        setMessageType('success')
+        
+        // Limpar mensagem após 3 segundos
+        setTimeout(() => {
+          setMessage('')
+          setMessageType('')
+        }, 3000)
+        
+      } catch (error) {
+        console.error('❌ Erro ao processar imagem:', error)
+        setMessage('Erro ao processar imagem: ' + error.message)
+        setMessageType('error')
+        
+        // Limpar seleção de arquivo em caso de erro
+        e.target.value = ''
+        setFormData({ ...formData, photo: null })
+      }
     }
+  }
+
+  // Função auxiliar para formatar tamanho do arquivo
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
   return (
