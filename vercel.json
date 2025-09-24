@@ -15,15 +15,16 @@
       "dest": "/assets/$1"
     },
     {
-      "src": "/",
-      "dest": "/login"
-    },
-    {
       "src": "/(.*)",
       "dest": "/index.html"
     }
   ],
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "functions": {
+    "src/pages/api/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }
