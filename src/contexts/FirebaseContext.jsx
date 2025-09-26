@@ -21,6 +21,16 @@ console.log('🔧 Configuração Firebase:', {
   hasProjectId: !!firebaseConfig.projectId && firebaseConfig.projectId !== 'demo-project'
 })
 
+// Detectar ambiente de produção
+const isProduction = import.meta.env.PROD || window.location.hostname.includes('vercel.app')
+const currentDomain = window.location.hostname
+
+console.log('🌍 Ambiente detectado:', {
+  isProduction,
+  currentDomain,
+  hostname: window.location.hostname
+})
+
 // Inicializar Firebase com tratamento de erros
 let app;
 try {
@@ -28,13 +38,47 @@ try {
   console.log('✅ Firebase inicializado com sucesso');
 } catch (error) {
   console.error('❌ Erro ao inicializar Firebase:', error);
+  
   // Verificar se o erro está relacionado ao domínio não autorizado
   if (error.code === 'auth/invalid-api-key' || error.code === 'auth/domain-not-authorized') {
-    console.error('🚨 Domínio não autorizado ou API Key inválida. Verifique a configuração do Firebase.');
+    console.error('🚨 Domínio não autorizado ou API Key inválida.');
+    
+    if (isProduction && currentDomain.includes('vercel.app')) {
+      console.error('🔧 SOLUÇÃO: Adicione o domínio no Firebase Console:');
+      console.error(`   1. Acesse: https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/settings`);
+      console.error(`   2. Vá para "Authorized domains"`);
+      console.error(`   3. Adicione: ${currentDomain}`);
+      console.error('   4. Aguarde alguns minutos para propagação');
+      
+      // Mostrar alerta visual para o usuário
+      if (typeof window !== 'undefined') {
+        const alertDiv = document.createElement('div');
+        alertDiv.innerHTML = `
+          <div style="
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            background: #ff4444; 
+            color: white; 
+            padding: 15px; 
+            text-align: center; 
+            z-index: 9999;
+            font-family: Arial, sans-serif;
+          ">
+            <strong>⚠️ Erro de Configuração</strong><br>
+            Domínio não autorizado no Firebase. Verifique a configuração.
+          </div>
+        `;
+        document.body.appendChild(alertDiv);
+      }
+    }
+    
     console.warn('⚠️ Continuando em modo de desenvolvimento...');
   } else {
     console.warn('⚠️ Continuando com configuração padrão...');
   }
+  
   // Não fazer throw do erro, continuar com configuração padrão
   try {
     app = initializeApp({

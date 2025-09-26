@@ -24,6 +24,7 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [authError, setAuthError] = useState(null)
 
   // Função para fazer login
   const login = async (email, password) => {
@@ -166,11 +167,31 @@ export const AuthProvider = ({ children }) => {
               ...user,
               ...userData
             })
+            setAuthError(null) // Limpar erro se autenticação for bem-sucedida
           } else {
             setUser(null)
           }
         } catch (error) {
           console.error('❌ Erro ao processar mudança de autenticação:', error)
+          
+          // Verificar se é erro de domínio não autorizado
+          if (error.code === 'auth/invalid-api-key' || 
+              error.code === 'auth/domain-not-authorized' ||
+              error.message?.includes('domain-not-authorized')) {
+            setAuthError({
+              type: 'domain-not-authorized',
+              code: error.code,
+              message: error.message,
+              domain: window.location.hostname
+            })
+          } else {
+            setAuthError({
+              type: 'general',
+              code: error.code,
+              message: error.message
+            })
+          }
+          
           setUser(null)
         } finally {
           setLoading(false)
@@ -178,6 +199,25 @@ export const AuthProvider = ({ children }) => {
       })
     } catch (error) {
       console.error('❌ Erro ao configurar listener de autenticação:', error)
+      
+      // Verificar se é erro de domínio não autorizado
+      if (error.code === 'auth/invalid-api-key' || 
+          error.code === 'auth/domain-not-authorized' ||
+          error.message?.includes('domain-not-authorized')) {
+        setAuthError({
+          type: 'domain-not-authorized',
+          code: error.code,
+          message: error.message,
+          domain: window.location.hostname
+        })
+      } else {
+        setAuthError({
+          type: 'general',
+          code: error.code,
+          message: error.message
+        })
+      }
+      
       setLoading(false)
     }
 
@@ -191,11 +231,13 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
+    authError,
     login,
     register,
     logout,
     resetPassword,
-    getUserData
+    getUserData,
+    clearAuthError: () => setAuthError(null)
   }
 
   return (

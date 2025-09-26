@@ -4,6 +4,7 @@ import Header from './components/Header'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import LoadingSpinner from './components/LoadingSpinner'
+import AuthError from './components/AuthError'
 import { ToastContainer } from './components/Toast'
 import { AuthProvider } from './contexts/AuthContext'
 import { FishingProvider } from './contexts/FishingContext'
@@ -21,11 +22,16 @@ const CatchRegistration = lazy(() => import('./components/CatchRegistration'))
 const Ranking = lazy(() => import('./components/Ranking'))
 
 function AppRoutes() {
-  const { user, loading } = useAuth()
+  const { user, loading, authError } = useAuth()
   const { toasts, removeToast } = useToast()
 
   if (loading) {
     return <LoadingSpinner message="Inicializando aplicação..." />
+  }
+
+  // Mostrar tela de erro se houver problema de autenticação
+  if (authError && authError.type === 'domain-not-authorized') {
+    return <AuthError error={authError} />
   }
 
   return (
