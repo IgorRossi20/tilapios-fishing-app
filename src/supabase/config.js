@@ -5,13 +5,30 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-// Verificar se as variáveis estão configuradas
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('⚠️ Variáveis do Supabase não configuradas. Storage de imagens não funcionará.')
+// Verificar se as variáveis estão configuradas corretamente
+const isValidUrl = (url) => {
+  try {
+    return url && url.startsWith('http') && !url.includes('your_supabase')
+  } catch {
+    return false
+  }
 }
 
-// Criar cliente do Supabase
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+const isValidKey = (key) => {
+  return key && key.length > 10 && !key.includes('your_supabase')
+}
+
+const isSupabaseProperlyConfigured = isValidUrl(supabaseUrl) && isValidKey(supabaseAnonKey)
+
+if (!isSupabaseProperlyConfigured) {
+  console.warn('⚠️ Variáveis do Supabase não configuradas corretamente. Storage de imagens não funcionará.')
+  console.warn('📝 Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env')
+}
+
+// Criar cliente do Supabase apenas se estiver configurado corretamente
+export const supabase = isSupabaseProperlyConfigured 
+  ? createClient(supabaseUrl, supabaseAnonKey)
+  : null
 
 // Configurações do Storage
 export const STORAGE_CONFIG = {
@@ -23,7 +40,7 @@ export const STORAGE_CONFIG = {
 
 // Função para verificar se o Supabase está configurado
 export const isSupabaseConfigured = () => {
-  return !!(supabaseUrl && supabaseAnonKey)
+  return isSupabaseProperlyConfigured && supabase !== null
 }
 
 // Função para fazer upload de imagem

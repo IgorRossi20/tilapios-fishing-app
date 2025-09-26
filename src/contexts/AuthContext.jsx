@@ -154,21 +154,38 @@ export const AuthProvider = ({ children }) => {
 
   // Monitorar mudanças no estado de autenticação
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Buscar dados adicionais do usuário
-        const userData = await getUserData(user.uid)
-        setUser({
-          ...user,
-          ...userData
-        })
-      } else {
-        setUser(null)
-      }
+    let unsubscribe;
+    
+    try {
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
+        try {
+          if (user) {
+            // Buscar dados adicionais do usuário
+            const userData = await getUserData(user.uid)
+            setUser({
+              ...user,
+              ...userData
+            })
+          } else {
+            setUser(null)
+          }
+        } catch (error) {
+          console.error('❌ Erro ao processar mudança de autenticação:', error)
+          setUser(null)
+        } finally {
+          setLoading(false)
+        }
+      })
+    } catch (error) {
+      console.error('❌ Erro ao configurar listener de autenticação:', error)
       setLoading(false)
-    })
+    }
 
-    return unsubscribe
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
   }, [])
 
   const value = {
