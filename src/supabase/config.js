@@ -8,27 +8,65 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 // Verificar se as variáveis estão configuradas corretamente
 const isValidUrl = (url) => {
   try {
-    return url && url.startsWith('http') && !url.includes('your_supabase')
+    return url && 
+           typeof url === 'string' && 
+           url.trim() !== '' &&
+           url.startsWith('http') && 
+           !url.includes('your_supabase') &&
+           !url.includes('YOUR_SUPABASE') &&
+           !url.includes('undefined')
   } catch {
     return false
   }
 }
 
 const isValidKey = (key) => {
-  return key && key.length > 10 && !key.includes('your_supabase')
+  try {
+    return key && 
+           typeof key === 'string' && 
+           key.trim() !== '' &&
+           key.length > 10 && 
+           !key.includes('your_supabase') &&
+           !key.includes('YOUR_SUPABASE') &&
+           !key.includes('undefined')
+  } catch {
+    return false
+  }
 }
 
 const isSupabaseProperlyConfigured = isValidUrl(supabaseUrl) && isValidKey(supabaseAnonKey)
 
+// Log detalhado para debug
+console.log('🔍 Verificação do Supabase:', {
+  hasUrl: !!supabaseUrl,
+  hasKey: !!supabaseAnonKey,
+  urlValid: isValidUrl(supabaseUrl),
+  keyValid: isValidKey(supabaseAnonKey),
+  configured: isSupabaseProperlyConfigured
+})
+
 if (!isSupabaseProperlyConfigured) {
   console.warn('⚠️ Variáveis do Supabase não configuradas corretamente. Storage de imagens não funcionará.')
   console.warn('📝 Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY no arquivo .env')
+  if (supabaseUrl) console.warn('URL atual:', supabaseUrl)
+  if (supabaseAnonKey) console.warn('Key atual:', supabaseAnonKey?.substring(0, 20) + '...')
 }
 
 // Criar cliente do Supabase apenas se estiver configurado corretamente
-export const supabase = isSupabaseProperlyConfigured 
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : null
+let supabase = null
+try {
+  if (isSupabaseProperlyConfigured) {
+    supabase = createClient(supabaseUrl, supabaseAnonKey)
+    console.log('✅ Cliente Supabase criado com sucesso')
+  } else {
+    console.log('⚠️ Cliente Supabase não criado - configuração inválida')
+  }
+} catch (error) {
+  console.error('❌ Erro ao criar cliente Supabase:', error)
+  supabase = null
+}
+
+export { supabase }
 
 // Configurações do Storage
 export const STORAGE_CONFIG = {
@@ -141,4 +179,13 @@ export const deleteImageFromSupabase = async (imagePath) => {
   }
 }
 
-export default supabase
+// Exportar apenas se configurado, caso contrário exportar um objeto mock
+export default isSupabaseProperlyConfigured ? supabase : {
+  storage: {
+    from: () => ({
+      upload: () => Promise.reject(new Error('Supabase não configurado')),
+      remove: () => Promise.reject(new Error('Supabase não configurado')),
+      getPublicUrl: () => ({ data: { publicUrl: null } })
+    })
+  }
+}
