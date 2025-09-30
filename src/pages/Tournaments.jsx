@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Users, Plus, Trophy, Calendar, Clock, Star, Shield, Award, Target, User, Globe, Mail } from 'lucide-react'
+import { Users, Plus, Trophy, Calendar, Clock, Star, Shield, Award, Target, User, Globe } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useFishing } from '../contexts/FishingContext'
 import { useNavigate } from 'react-router-dom'
-import TournamentInvites from '../components/TournamentInvites'
 import './Tournaments.css'
 
 const Tournaments = () => {
@@ -19,6 +18,13 @@ const Tournaments = () => {
     finishTournament,
     loadUserTournaments
   } = useFishing()
+  
+  // Redirecionar para login se não estiver autenticado
+  useEffect(() => {
+    if (!user) {
+      navigate('/login')
+    }
+  }, [user, navigate])
   
   const [activeTab, setActiveTab] = useState('my-tournaments')
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -90,11 +96,11 @@ const Tournaments = () => {
   const handleJoinTournament = async (tournamentId) => {
     try {
       await joinTournament(tournamentId)
-      setMessage('Você entrou no campeonato com sucesso!')
+      setMessage('Solicitação de participação enviada com sucesso!')
       await loadTournaments()
     } catch (error) {
-      console.error('Erro ao entrar no campeonato:', error)
-      setMessage('Erro ao entrar no campeonato: ' + error.message)
+      console.error('Erro ao solicitar participação no campeonato:', error)
+      setMessage('Erro ao solicitar participação no campeonato: ' + error.message)
     }
   }
 
@@ -356,12 +362,6 @@ const Tournaments = () => {
             >
               <Globe size={20} /> <span>Campeonatos Públicos</span> <span className="tab-count">{publicTournaments.length}</span>
             </button>
-            <button
-              className={`tab-btn ${activeTab === 'invitations' ? 'active' : ''}`}
-              onClick={() => setActiveTab('invitations')}
-            >
-              <Mail size={20} /> <span>Convites</span> <span className="tab-count">0</span>
-            </button>
           </div>
         </div>
 
@@ -425,13 +425,6 @@ const Tournaments = () => {
                   <p className="tournament-description">
                     {tournament.description}
                   </p>
-                  
-                  {/* Componente de convites */}
-                  <TournamentInvites 
-                    tournamentId={tournament.id}
-                    tournamentName={tournament.name}
-                    isCreator={isOwnerOfTournament}
-                  />
                   
                   <div className="tournament-actions">
                     <button 
