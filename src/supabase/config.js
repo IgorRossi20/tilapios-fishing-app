@@ -66,7 +66,20 @@ try {
   supabase = null
 }
 
-export { supabase }
+// Exportar um objeto mock se o Supabase não estiver configurado
+const supabaseMock = {
+  storage: {
+    from: () => ({
+      upload: () => Promise.reject(new Error('Supabase não configurado')),
+      remove: () => Promise.reject(new Error('Supabase não configurado')),
+      getPublicUrl: () => ({ data: { publicUrl: null } })
+    })
+  }
+}
+
+// Exportar o cliente real ou o mock
+const supabaseClient = isSupabaseProperlyConfigured && supabase ? supabase : supabaseMock
+export { supabaseClient as supabase }
 
 // Configurações do Storage
 export const STORAGE_CONFIG = {
