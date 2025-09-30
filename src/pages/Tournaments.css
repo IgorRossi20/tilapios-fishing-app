@@ -43,40 +43,28 @@
   margin: 0 0 0.5rem 0;
   font-size: 2rem;
   font-weight: 800;
-  background: linear-gradient(90deg, #0077b6, #00b4d8);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
+  color: #0077b6;
   display: inline-block;
-  text-shadow: 0 2px 10px rgba(0, 119, 182, 0.3);
   letter-spacing: -0.5px;
   padding: 0.25rem 0;
   margin-bottom: 0.75rem;
   line-height: 1.2;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.4);
   position: relative;
   z-index: 1;
-  letter-spacing: -0.5px;
 }
 
 .tournaments .header h1 svg {
   margin-right: 1rem;
   flex-shrink: 0;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-  animation: trophyShine 2s infinite alternate;
-}
-
-@keyframes trophyShine {
-  from { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-  to { filter: drop-shadow(0 4px 8px rgba(255,215,0,0.5)); }
+  filter: none;
 }
 
 .tournaments .header p {
-  color: rgba(255,255,255,0.95);
+  color: #444444;
   font-size: 1.1rem;
   margin: 0;
   line-height: 1.5;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  text-shadow: none;
   position: relative;
   z-index: 1;
   max-width: 80%;
