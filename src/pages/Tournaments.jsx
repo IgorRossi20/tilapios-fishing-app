@@ -43,6 +43,10 @@ const Tournaments = () => {
     rules: 'Regras padrão de pesca: Registre suas pescas com peso e espécie, ranking por peso total e quantidade de peixes.'
   })
 
+  // Estados para datas no formato brasileiro (para exibição)
+  const [startDateBR, setStartDateBR] = useState('')
+  const [endDateBR, setEndDateBR] = useState('')
+
   useEffect(() => {
     loadTournaments()
   }, [])
@@ -85,6 +89,9 @@ const Tournaments = () => {
         prizePool: 0,
         rules: 'Regras padrão de pesca: Registre suas pescas com peso e espécie, ranking por peso total e quantidade de peixes.'
       })
+      // Limpar também as datas brasileiras
+      setStartDateBR('')
+      setEndDateBR('')
       setShowCreateForm(false)
       loadTournaments()
     } catch (error) {
@@ -187,6 +194,91 @@ const Tournaments = () => {
     return new Date(dateString).toLocaleDateString('pt-BR')
   }
 
+  // Função para converter data do formato brasileiro (dd/mm/aaaa) para ISO (yyyy-mm-dd)
+  const convertBrazilianToISO = (brazilianDate) => {
+    if (!brazilianDate) return ''
+    const parts = brazilianDate.split('/')
+    if (parts.length !== 3) return ''
+    
+    const [day, month, year] = parts
+    
+    // Validar se os valores são números válidos
+    const dayNum = parseInt(day, 10)
+    const monthNum = parseInt(month, 10)
+    const yearNum = parseInt(year, 10)
+    
+    if (isNaN(dayNum) || isNaN(monthNum) || isNaN(yearNum)) return ''
+    if (dayNum < 1 || dayNum > 31) return ''
+    if (monthNum < 1 || monthNum > 12) return ''
+    if (yearNum < 2024 || yearNum > 2030) return ''
+    
+    // Criar data para validar se é uma data válida
+    const date = new Date(yearNum, monthNum - 1, dayNum)
+    if (date.getDate() !== dayNum || date.getMonth() !== monthNum - 1 || date.getFullYear() !== yearNum) {
+      return ''
+    }
+    
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+  }
+
+  // Função para converter data do formato ISO (yyyy-mm-dd) para brasileiro (dd/mm/aaaa)
+  const convertISOToBrazilian = (isoDate) => {
+    if (!isoDate) return ''
+    const parts = isoDate.split('-')
+    if (parts.length !== 3) return ''
+    const [year, month, day] = parts
+    return `${day}/${month}/${year}`
+  }
+
+  // Função para aplicar máscara de data brasileira
+  const applyDateMask = (value) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '')
+    
+    // Aplica a máscara dd/mm/aaaa
+    if (numbers.length <= 2) {
+      return numbers
+    } else if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2)}`
+    } else {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`
+    }
+  }
+
+  // Função para validar se a data brasileira está completa e válida
+  const isValidBrazilianDate = (brazilianDate) => {
+    if (!brazilianDate || brazilianDate.length !== 10) return false
+    return convertBrazilianToISO(brazilianDate) !== ''
+  }
+
+  // Função para lidar com mudança na data de início
+  const handleStartDateChange = (e) => {
+    const maskedValue = applyDateMask(e.target.value)
+    setStartDateBR(maskedValue)
+    
+    // Se a data estiver completa e válida, converte para ISO
+    if (isValidBrazilianDate(maskedValue)) {
+      const isoDate = convertBrazilianToISO(maskedValue)
+      setNewTournament({...newTournament, startDate: isoDate})
+    } else {
+      setNewTournament({...newTournament, startDate: ''})
+    }
+  }
+
+  // Função para lidar com mudança na data de fim
+  const handleEndDateChange = (e) => {
+    const maskedValue = applyDateMask(e.target.value)
+    setEndDateBR(maskedValue)
+    
+    // Se a data estiver completa e válida, converte para ISO
+    if (isValidBrazilianDate(maskedValue)) {
+      const isoDate = convertBrazilianToISO(maskedValue)
+      setNewTournament({...newTournament, endDate: isoDate})
+    } else {
+      setNewTournament({...newTournament, endDate: ''})
+    }
+  }
+
   if (loading) {
     return (
       <div className="loading">
@@ -250,20 +342,36 @@ const Tournaments = () => {
               <div className="form-group">
                 <label className="form-label">Data de Início</label>
                 <input
-                  type="date"
-                  className="form-input"
-                  value={newTournament.startDate}
-                  onChange={(e) => setNewTournament({...newTournament, startDate: e.target.value})}
+                  type="text"
+                  className={`form-input ${
+                    startDateBR.length > 0 
+                      ? isValidBrazilianDate(startDateBR) 
+                        ? 'date-valid' 
+                        : 'date-invalid'
+                      : ''
+                  }`}
+                  value={startDateBR}
+                  onChange={handleStartDateChange}
+                  placeholder="dd/mm/aaaa"
+                  maxLength="10"
                   required
                 />
               </div>
               <div className="form-group">
                 <label className="form-label">Data de Fim</label>
                 <input
-                  type="date"
-                  className="form-input"
-                  value={newTournament.endDate}
-                  onChange={(e) => setNewTournament({...newTournament, endDate: e.target.value})}
+                  type="text"
+                  className={`form-input ${
+                    endDateBR.length > 0 
+                      ? isValidBrazilianDate(endDateBR) 
+                        ? 'date-valid' 
+                        : 'date-invalid'
+                      : ''
+                  }`}
+                  value={endDateBR}
+                  onChange={handleEndDateChange}
+                  placeholder="dd/mm/aaaa"
+                  maxLength="10"
                   required
                 />
               </div>

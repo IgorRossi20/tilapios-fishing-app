@@ -130,12 +130,12 @@
 }
 
 .tournaments .form-card {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(240, 240, 240, 0.8));
+  background: linear-gradient(135deg, rgba(173, 216, 230, 0.3), rgba(135, 206, 235, 0.2));
   border-radius: 16px;
   padding: 2rem;
   margin-bottom: 2rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 30px rgba(0, 119, 182, 0.15);
+  border: 1px solid rgba(0, 119, 182, 0.1);
   transition: all 0.3s ease;
   animation: slideDown 0.4s ease-out;
   position: relative;
@@ -170,7 +170,7 @@
   text-align: center;
   position: relative;
   padding-bottom: 0.75rem;
-  background: linear-gradient(90deg, #3498db, #2ecc71);
+  background: linear-gradient(90deg, #0077b6, #00b4d8);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -184,7 +184,7 @@
   transform: translateX(-50%);
   width: 80px;
   height: 4px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, #0077b6, #00b4d8);
   border-radius: 2px;
 }
 
@@ -251,6 +251,7 @@
   flex-direction: column;
   gap: 0.75rem;
   margin-top: 1.5rem;
+  align-items: stretch;
 }
 
 .tournaments .form-submit {
@@ -472,12 +473,13 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
+  align-items: start; /* evita esticar itens e alturas desproporcionais */
 }
 
 .tournaments .tournament-card {
   background: linear-gradient(135deg, #ffffff, #f8f9fa);
   border-radius: 16px;
-  padding: 1.75rem;
+  padding: 1.25rem; /* compactação para desktop/largura maior */
   box-shadow: 0 8px 20px rgba(0, 119, 182, 0.15);
   transition: all 0.3s ease;
   border: 1px solid rgba(0, 119, 182, 0.1);
@@ -549,7 +551,7 @@
 }
 
 .tournaments .tournament-title svg {
-  color: #667eea;
+  color: #0077b6;
   filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.3));
 }
 
@@ -633,13 +635,13 @@
 
 .tournaments .info-item:hover {
   transform: translateY(-2px);
-  color: #667eea;
+  color: #0077b6;
 }
 
 .tournaments .info-item svg {
   margin-right: 0.5rem;
   flex-shrink: 0;
-  color: #667eea;
+  color: #0077b6;
   transition: transform 0.3s ease;
 }
 
@@ -659,23 +661,34 @@
   margin-bottom: 1.25rem;
   padding-left: 0.5rem;
   border-left: 2px solid #e9ecef;
+  /* Limita descrições longas para evitar cartões muito altos */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: 3.2em;
 }
 
 .tournaments .tournament-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
   margin-top: 1.5rem;
   flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .tournaments .btn-sm {
-  padding: 0.5rem 1rem;
+  padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   min-height: 40px;
+  min-width: 80px;
   background-color: #f0f0f0;
   color: #0077b6;
   border: 1px solid #e0e0e0;
   transition: all 0.3s ease;
+  white-space: nowrap;
+  text-align: center;
 }
 
 .tournaments .btn-sm:hover {
@@ -706,7 +719,7 @@
 }
 
 .tournaments .empty-state .empty-icon svg {
-  color: #667eea;
+  color: #0077b6;
   filter: drop-shadow(0 4px 8px rgba(102, 126, 234, 0.3));
   animation: trophyShine 3s infinite alternate;
 }
@@ -741,6 +754,40 @@
     margin-right: 0.5rem;
     width: 28px;
     height: 28px;
+  }
+  
+  .tournaments .tournament-actions {
+    gap: 0.25rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .tournaments .btn-sm {
+    width: 100%;
+    margin-bottom: 0.25rem;
+    min-width: auto;
+  }
+}
+
+/* Small Mobile styles */
+@media (max-width: 480px) {
+  .tournaments .tournament-actions {
+    gap: 0.5rem;
+  }
+  
+  .tournaments .btn-sm {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.6rem;
+    min-height: 36px;
+  }
+  
+  .tournaments .form-actions {
+    gap: 0.5rem;
+  }
+  
+  .tournaments .btn {
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
   }
 }
 
@@ -808,6 +855,13 @@
   
   .tournaments .tournament-actions {
     flex-direction: row;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  
+  .tournaments .btn-sm {
+    width: auto;
+    min-width: 100px;
   }
 }
 
@@ -1526,4 +1580,34 @@
     grid-template-columns: repeat(4, 1fr);
     gap: var(--spacing-6);
   }
+}
+
+/* Estilos de validação para inputs de data */
+.tournaments .form-input.date-invalid {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.05);
+  animation: invalidInput 0.5s ease-in-out;
+}
+
+.tournaments .form-input.date-valid {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+  animation: validInput 0.5s ease-in-out;
+}
+
+@keyframes validInput {
+  0%, 100% { transform: translateX(0); }
+  50% { box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
+}
+
+@keyframes invalidInput {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50% { transform: translateX(-2px); }
+  20%, 40% { transform: translateX(2px); }
+}
+
+/* Placeholder personalizado para datas */
+.tournaments .form-input[placeholder="dd/mm/aaaa"]::placeholder {
+  color: #9ca3af;
+  font-style: italic;
 }

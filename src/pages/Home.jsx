@@ -323,9 +323,9 @@ const Home = () => {
                     <div className="text-xs text-gray-600">Peso Total</div>
                   </div>
                   
-                  <div className="text-center p-3 bg-purple-50 rounded-lg">
-                    <Users size={24} className="text-purple-600 mx-auto mb-2" />
-                    <div className="text-xl font-bold text-purple-600">{stats.tournaments}</div>
+                  <div className="text-center p-3 bg-primary-50 rounded-lg">
+                    <Users size={24} className="text-primary-600 mx-auto mb-2" />
+                    <div className="text-xl font-bold text-primary-600">{stats.tournaments}</div>
                     <div className="text-xs text-gray-600">Campeonatos</div>
                   </div>
                   

@@ -698,11 +698,9 @@ const FishingProvider = ({ children }) => {
         throw new Error('Período de inscrição encerrado')
       }
       
-      // Permitir inscrição até 30 minutos após o início (para casos de atraso)
-      const thirtyMinutesAfterStart = new Date(startDate.getTime() + 30 * 60 * 1000)
-      if (now > thirtyMinutesAfterStart && tournament.status === 'active') {
-        throw new Error('Não é possível se inscrever em campeonato que já começou há mais de 30 minutos')
-      }
+      // Nova regra: permitir inscrições enquanto o campeonato não tiver encerrado
+      // (qualquer usuário autenticado pode entrar se ainda estiver dentro do período)
+      // Mantemos apenas o bloqueio por fim de campeonato (já tratado acima).
       
       // Validações de perfil do usuário
       if (!user.displayName && !user.email) {
@@ -1222,6 +1220,39 @@ const FishingProvider = ({ children }) => {
     const catchesToUse = allCatches.length > 0 ? allCatches : getFromLocalStorage('all_catches', [])
     return computeRankingFromCatches(catchesToUse, rankingType)
   }
+
+  // Encerrar automaticamente campeonatos cujo período já acabou e gerar ranking
+  useEffect(() => {
+    const finalizeExpiredTournaments = async () => {
+      const now = new Date()
+      const listToCheck = allTournaments || []
+      for (const t of listToCheck) {
+        try {
+          const endDate = new Date(t.endDate)
+          if (isNaN(endDate.getTime())) continue
+          const shouldFinish = endDate <= now && t.status !== 'finished' && t.status !== 'cancelled'
+          if (!shouldFinish) continue
+          const finalRanking = await getTournamentRanking(t.id, 'weight')
+          if (isOnline) {
+            const tournamentRef = doc(db, 'fishing_tournaments', t.id)
+            await updateDoc(tournamentRef, {
+              status: 'finished',
+              finishedAt: new Date().toISOString(),
+              finalRanking
+            })
+          }
+          // Atualizar estado local
+          setAllTournaments(prev => prev.map(x => x.id === t.id ? { ...x, status: 'finished', finishedAt: new Date().toISOString(), finalRanking } : x))
+          setUserTournaments(prev => prev.map(x => x.id === t.id ? { ...x, status: 'finished', finishedAt: new Date().toISOString(), finalRanking } : x))
+        } catch (error) {
+          console.warn('⚠️ Falha ao finalizar automaticamente campeonato:', t?.id, error?.message || error)
+        }
+      }
+    }
+    finalizeExpiredTournaments()
+    const interval = setInterval(finalizeExpiredTournaments, 60000) // checar a cada 60s
+    return () => clearInterval(interval)
+  }, [allTournaments, isOnline])
 
   // Funções para posts do feed
   const createPost = async (postData) => {

@@ -455,7 +455,7 @@
 }
 
 .catch-registration .stat-card.highlight {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%);
   color: white;
   border-color: transparent;
 }
@@ -468,7 +468,7 @@
   height: 48px;
   background: rgba(102, 126, 234, 0.1);
   border-radius: 50%;
-  color: #667eea;
+ color: #0077b6;
 }
 
 .catch-registration .stat-card.highlight .stat-icon {
@@ -513,7 +513,7 @@
 }
 
 .catch-registration .text-primary {
-  color: #667eea;
+ color: #0077b6;
 }
 
 /* Tablet styles */

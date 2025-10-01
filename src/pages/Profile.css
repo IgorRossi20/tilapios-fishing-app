@@ -51,7 +51,7 @@
   left: 0;
   right: 0;
   height: 5px;
-  background: linear-gradient(90deg, #3498db, #9b59b6, #2ecc71);
+ background: linear-gradient(90deg, #3498db, #00b4d8, #2ecc71);
   z-index: 1;
 }
 
@@ -82,7 +82,7 @@
   left: 0;
   right: 0;
   height: 5px;
-  background: linear-gradient(90deg, #3498db, #9b59b6, #2ecc71);
+ background: linear-gradient(90deg, #3498db, #00b4d8, #2ecc71);
   z-index: 1;
 }
 
@@ -100,7 +100,7 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+ background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%);
   display: flex;
   align-items: center;
   justify-content: center;
