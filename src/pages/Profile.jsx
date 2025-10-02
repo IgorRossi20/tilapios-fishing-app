@@ -3,6 +3,7 @@ import { User, Trophy, Fish, MapPin, Calendar, Settings, Edit3, Camera, Award, T
 import { useAuth } from '../hooks/useAuth'
 import { useFishing } from '../contexts/FishingContext'
 import './Profile.css'
+import { compressImage, validateImageFile } from '../utils/imageCompression'
 
 const Profile = () => {
   const { user, logout } = useAuth()
@@ -16,9 +17,8 @@ const Profile = () => {
   const [profileData, setProfileData] = useState({
     displayName: '',
     bio: '',
-    location: '',
-    favoriteSpot: '',
-    experience: ''
+    experience: '',
+    avatarUrl: ''
   })
 
   useEffect(() => {
@@ -162,13 +162,21 @@ const Profile = () => {
       const dynamicAchievements = calculateAchievements(calculatedStats)
       setAchievements(dynamicAchievements)
       
-      // Carregar dados do perfil
+      // Carregar dados do perfil (preferir localStorage se existir)
+      const storedProfile = (() => {
+        try {
+          const raw = localStorage.getItem('profileData')
+          return raw ? JSON.parse(raw) : null
+        } catch {
+          return null
+        }
+      })()
+
       setProfileData({
-        displayName: user?.displayName || 'Pescador',
-        bio: '', // Campo vazio para o usuário preencher
-        location: 'São Paulo, SP',
-        favoriteSpot: 'Lago Azul',
-        experience: 'Intermediário'
+        displayName: storedProfile?.displayName || user?.displayName || 'Pescador',
+        bio: storedProfile?.bio || '',
+        experience: storedProfile?.experience || 'Intermediário',
+        avatarUrl: storedProfile?.avatarUrl || user?.photoURL || ''
       })
       
     } catch (error) {
@@ -181,11 +189,33 @@ const Profile = () => {
   const handleSaveProfile = async (e) => {
     e.preventDefault()
     try {
-      // Aqui implementar salvamento no Firebase
+      // Persistir localmente por enquanto
+      try {
+        localStorage.setItem('profileData', JSON.stringify(profileData))
+      } catch (err) {
+        console.warn('Falha ao salvar no localStorage:', err)
+      }
       console.log('Salvando perfil:', profileData)
       setEditMode(false)
     } catch (error) {
       console.error('Erro ao salvar perfil:', error)
+    }
+  }
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      // Valida e comprime para melhorar desempenho e tamanho
+      validateImageFile(file)
+      const compressed = await compressImage(file, 1.5 * 1024 * 1024)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setProfileData(prev => ({ ...prev, avatarUrl: reader.result }))
+      }
+      reader.readAsDataURL(compressed)
+    } catch (err) {
+      console.error('Erro ao processar avatar:', err)
     }
   }
 
@@ -231,12 +261,26 @@ const Profile = () => {
       <div className="profile-header-card">
         <div className="profile-header-content">
           <div className="profile-avatar">
-            {user?.displayName?.charAt(0) || 'U'}
+            {profileData.avatarUrl ? (
+              <img src={profileData.avatarUrl} alt="Avatar" className="avatar-image" />
+            ) : (
+              (user?.displayName?.charAt(0) || 'U')
+            )}
             <div className="avatar-glow"></div>
           </div>
           <div className="profile-info">
             <div className="profile-name-container">
-              <h2 className="profile-name">{profileData.displayName}</h2>
+              {editMode ? (
+                <input
+                  type="text"
+                  className="profile-name-input"
+                  value={profileData.displayName}
+                  onChange={(e) => setProfileData({ ...profileData, displayName: e.target.value })}
+                  placeholder="Seu nome de guerra"
+                />
+              ) : (
+                <h2 className="profile-name">{profileData.displayName}</h2>
+              )}
               <span className="profile-badge">
                 <Star size={14} className="badge-icon" />
                 {experienceLevel.level}
@@ -257,14 +301,6 @@ const Profile = () => {
             )}
             <div className="profile-meta">
               <span className="profile-meta-item">
-                <MapPin size={16} className="meta-icon" />
-                {profileData.location}
-              </span>
-              <span className="profile-meta-item">
-                <Anchor size={16} className="meta-icon" />
-                {profileData.favoriteSpot}
-              </span>
-              <span className="profile-meta-item">
                 <Trophy size={16} className="meta-icon" />
                 {userStats?.tournamentsWon || 0} torneios vencidos
               </span>
@@ -275,6 +311,15 @@ const Profile = () => {
             </div>
           </div>
           <div className="profile-actions">
+            {editMode && (
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={handleAvatarChange}
+                className="avatar-file-input"
+                title="Alterar foto"
+              />
+            )}
             {editMode && (
               <button 
                 className="profile-btn save-btn"
@@ -431,10 +476,6 @@ const Profile = () => {
               <Fish size={48} className="empty-icon" />
               <p className="empty-title">Nenhuma captura registrada ainda</p>
               <p className="empty-subtitle">Que tal registrar sua primeira captura?</p>
-              <button className="empty-action-btn">
-                <Camera size={18} />
-                Registrar Captura
-              </button>
             </div>
           ) : (
             <div className="catches-grid">

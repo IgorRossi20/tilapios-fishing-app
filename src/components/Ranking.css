@@ -2182,3 +2182,24 @@
   .ranking-type-panel { padding: 0.6rem 0.7rem; border-radius: 14px; }
   .ranking-type-btn { padding: 0.45rem 0.65rem; gap: 0.35rem; }
 }
+/* Título do Ranking com taça colorida */
+.ranking-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ranking-title .title-icon {
+  filter: drop-shadow(0 3px 8px rgba(255, 193, 7, 0.35));
+  animation: trophyFloat 4s ease-in-out infinite;
+}
+
+@keyframes trophyFloat {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+  100% { transform: translateY(0); }
+}
+
+.ranking-title .title-text {
+  font-weight: 800;
+}

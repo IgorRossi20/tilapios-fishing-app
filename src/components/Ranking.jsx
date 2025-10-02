@@ -5,6 +5,45 @@ import { useAuth } from '../contexts/AuthContext'
 import { useLocation } from 'react-router-dom'
 import './Ranking.css'
 
+// Ícone de troféu colorido em SVG (estilo similar ao ícone mostrado)
+const ColorTrophyIcon = ({ size = 32, className = '' }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+    role="img"
+    aria-label="Troféu"
+  >
+    <defs>
+      <linearGradient id="trophyFill" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor="#FFD54F" />
+        <stop offset="60%" stopColor="#FFC107" />
+        <stop offset="100%" stopColor="#FB8C00" />
+      </linearGradient>
+    </defs>
+    {/* Taça */}
+    <path
+      d="M6 4h12v2c0 3.5-3.2 6.5-6 6.5S6 9.5 6 6V4z"
+      fill="url(#trophyFill)"
+      stroke="#111827"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+    />
+    {/* Alças */}
+    <path d="M6 6C4.2 6 3 7.3 3 8.7S4.2 11.2 6 11" fill="none" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M18 6c1.8 0 3 1.3 3 2.7s-1.2 2.5-3 2.3" fill="none" stroke="#111827" strokeWidth="1.5" strokeLinecap="round" />
+    {/* Haste */}
+    <rect x="11" y="12.5" width="2" height="3.8" rx="1" fill="#8D6E63" stroke="#111827" strokeWidth="1.2" />
+    {/* Base */}
+    <rect x="8" y="16.5" width="8" height="1.6" rx="0.8" fill="#8D6E63" stroke="#111827" strokeWidth="1" />
+    <rect x="6.5" y="18.2" width="11" height="2.2" rx="1" fill="#5D4037" stroke="#111827" strokeWidth="1" />
+    {/* Brilho */}
+    <path d="M10.5 6.2 L13 8.4" stroke="#FFFFFF" strokeWidth="1" opacity="0.85" strokeLinecap="round" />
+  </svg>
+)
+
 const Ranking = () => {
   const { userTournaments, allTournaments, getTournamentRanking, getGeneralRanking } = useFishing()
   const { user } = useAuth()
@@ -124,12 +163,9 @@ const Ranking = () => {
     <div className="page">
       <div className="container">
         <div className="page-header">
-          <div className="page-brand">
-            <span className="brand-name">Tilapios</span>
-          </div>
-          <h1 className="page-title">
-            <Trophy size={32} />
-            Ranking
+          <h1 className="page-title ranking-title">
+            <ColorTrophyIcon size={32} className="title-icon" />
+            <span className="title-text">Ranking</span>
           </h1>
           <p className="page-subtitle">Veja quem está dominando as águas!</p>
         </div>
