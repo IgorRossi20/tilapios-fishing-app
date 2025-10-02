@@ -31,7 +31,8 @@ const TournamentDetails = () => {
     leaveTournament,
     deleteTournament,
     finishTournament,
-    getTournamentRanking
+    getTournamentRanking,
+    joinTournament
   } = useFishing()
   
   const [tournament, setTournament] = useState(null)
@@ -187,6 +188,17 @@ const TournamentDetails = () => {
     }
   }
 
+  const handleJoinTournament = async () => {
+    try {
+      await joinTournament(id)
+      setMessage('Você entrou no campeonato com sucesso')
+      // Recarregar detalhes para refletir participação
+      await loadTournamentDetails()
+    } catch (error) {
+      setMessage(error.message || 'Erro ao participar do campeonato')
+    }
+  }
+
   if (loading) {
     return (
       <div className="tournament-details">
@@ -215,6 +227,7 @@ const TournamentDetails = () => {
   }
 
   const currentStatus = getTournamentStatus(tournament)
+  const isFull = (tournament?.participants?.length || 0) >= (tournament?.maxParticipants || 0)
 
   return (
     <div className="tournament-details">
@@ -384,7 +397,7 @@ const TournamentDetails = () => {
                   <div className="user-info">
                     <span className="name">{entry.userName}</span>
                     <span className="stats">
-                      {entry.totalWeight.toFixed(2)}kg • {entry.totalFish} peixes
+                      {entry.totalWeight.toFixed(2)}kg • {entry.totalCatches} peixes
                     </span>
                   </div>
                   
@@ -412,6 +425,19 @@ const TournamentDetails = () => {
           <Trophy size={16} />
           Ver Ranking Completo
         </button>
+
+        {/* Botão para entrar no campeonato (não criador, não participante) */}
+        {!isParticipant() && !isOwner() && !tournament?.isPrivate && (currentStatus === 'upcoming' || currentStatus === 'active') && (
+          <button 
+            onClick={handleJoinTournament}
+            className={`btn ${isFull ? 'btn-disabled' : 'btn-primary'}`}
+            disabled={isFull}
+            title={isFull ? 'Campeonato lotado' : 'Entrar no Campeonato'}
+          >
+            <Users size={16} />
+            {isFull ? 'Campeonato Lotado' : 'Participar do Campeonato'}
+          </button>
+        )}
         
         {isParticipant() && !isOwner() && currentStatus !== 'finished' && (
           <button 

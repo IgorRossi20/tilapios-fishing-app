@@ -1,25 +1,9 @@
 import React, { createContext, useContext } from 'react'
-import { initializeApp } from 'firebase/app'
-import { getAuth, connectAuthEmulator } from 'firebase/auth'
-import { getFirestore, initializeFirestore, connectFirestoreEmulator } from 'firebase/firestore'
-import { getStorage, connectStorageEmulator } from 'firebase/storage'
+import { auth, db, storage } from '../firebase/config'
 import { isValidFirebaseDomain } from '../utils/mobileCompatibility'
 
-// Configuração do Firebase usando variáveis de ambiente
-const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || 'demo-api-key',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'demo-project.firebaseapp.com',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || 'demo-project',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'demo-project.appspot.com',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '123456789',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789:web:abcdef'
-}
-
-console.log('🔧 Configuração Firebase:', {
-  hasApiKey: !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'demo-api-key',
-  hasAuthDomain: !!firebaseConfig.authDomain && firebaseConfig.authDomain !== 'demo-project.firebaseapp.com',
-  hasProjectId: !!firebaseConfig.projectId && firebaseConfig.projectId !== 'demo-project'
-})
+// As instâncias do Firebase (auth, db, storage) são fornecidas por src/firebase/config
+console.log('🔧 Configuração Firebase: usando instâncias unificadas de src/firebase/config')
 
 // Detectar ambiente de produção
 const isProduction = import.meta.env.PROD || window.location.hostname.includes('vercel.app')
@@ -31,73 +15,7 @@ console.log('🌍 Ambiente detectado:', {
   hostname: window.location.hostname
 })
 
-// Inicializar Firebase com tratamento de erros
-let app;
-try {
-  app = initializeApp(firebaseConfig);
-  console.log('✅ Firebase inicializado com sucesso');
-} catch (error) {
-  console.error('❌ Erro ao inicializar Firebase:', error);
-  
-  // Verificar se o erro está relacionado ao domínio não autorizado
-  if (error.code === 'auth/invalid-api-key' || error.code === 'auth/domain-not-authorized') {
-    console.error('🚨 Domínio não autorizado ou API Key inválida.');
-    
-    if (isProduction && currentDomain.includes('vercel.app')) {
-      console.error('🔧 SOLUÇÃO: Adicione o domínio no Firebase Console:');
-      console.error(`   1. Acesse: https://console.firebase.google.com/project/${firebaseConfig.projectId}/authentication/settings`);
-      console.error(`   2. Vá para "Authorized domains"`);
-      console.error(`   3. Adicione: ${currentDomain}`);
-      console.error('   4. Aguarde alguns minutos para propagação');
-      
-      // Mostrar alerta visual para o usuário
-      if (typeof window !== 'undefined') {
-        const alertDiv = document.createElement('div');
-        alertDiv.innerHTML = `
-          <div style="
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            background: #ff4444; 
-            color: white; 
-            padding: 15px; 
-            text-align: center; 
-            z-index: 9999;
-            font-family: Arial, sans-serif;
-          ">
-            <strong>⚠️ Erro de Configuração</strong><br>
-            Domínio não autorizado no Firebase. Verifique a configuração.
-          </div>
-        `;
-        document.body.appendChild(alertDiv);
-      }
-    }
-    
-    console.warn('⚠️ Continuando em modo de desenvolvimento...');
-  } else {
-    console.warn('⚠️ Continuando com configuração padrão...');
-  }
-  
-  // Não fazer throw do erro, continuar com configuração padrão
-  try {
-    app = initializeApp({
-      apiKey: 'demo-api-key',
-      authDomain: 'demo-project.firebaseapp.com',
-      projectId: 'demo-project',
-      storageBucket: 'demo-project.appspot.com',
-      messagingSenderId: '123456789',
-      appId: '1:123456789:web:abcdef'
-    });
-    console.log('✅ Firebase inicializado com configuração de fallback');
-  } catch (fallbackError) {
-    console.error('❌ Erro crítico na inicialização do Firebase:', fallbackError);
-    throw fallbackError;
-  }
-}
-
-// Inicializar serviços com configurações otimizadas e tratamento de erros
-export const auth = getAuth(app);
+// Serviços já inicializados (auth, db, storage) vindos do config.js
 
 // Verificar se o domínio atual é válido para o Firebase
 const isValidDomain = isValidFirebaseDomain();
@@ -105,27 +23,8 @@ if (!isValidDomain) {
   console.warn('⚠️ O domínio atual pode não estar autorizado no Firebase Authentication');
 }
 
-// Configurar Firestore com persistência e tratamento de erros para dispositivos móveis
-let db;
-try {
-  db = getFirestore(app);
-  console.log('🌐 Firestore configurado para modo online');
-  console.log('✅ Acesso à rede habilitado');
-  console.log('🔄 Sincronização automática ativada');
-} catch (error) {
-  console.error('❌ Erro ao configurar Firestore:', error);
-  // Tentar configuração alternativa para dispositivos móveis
-  try {
-    db = initializeFirestore(app, {
-      experimentalForceLongPolling: true, // Melhor para dispositivos móveis
-      useFetchStreams: false // Desativar streams para melhor compatibilidade
-    });
-    console.log('🔄 Firestore configurado com modo alternativo para dispositivos móveis');
-  } catch (fallbackError) {
-    console.error('❌ Erro ao configurar Firestore (modo alternativo):', fallbackError);
-    throw fallbackError;
-  }
-}
+// Firestore já configurado no config.js (initializeFirestore com auto long polling)
+console.log('🌐 Firestore utilizando instância compartilhada de src/firebase/config')
 
 // Filtrar erros ERR_ABORTED que são comuns e não afetam a funcionalidade
 const originalConsoleError = console.error
@@ -174,9 +73,8 @@ window.FIRESTORE_OFFLINE_MODE = false
 console.log('🌐 Modo online ativo:', !window.FIRESTORE_OFFLINE_MODE)
 console.log('🛡️ Filtro de erros ERR_ABORTED ativado')
 
-export { db }
-
-export const storage = getStorage(app)
+// Reexportar instâncias para manter compatibilidade com imports existentes
+export { auth, db, storage }
 
 const FirebaseContext = createContext({
   auth,

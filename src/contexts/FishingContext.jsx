@@ -710,17 +710,37 @@ const FishingProvider = ({ children }) => {
       if (isOnline) {
         console.log('🌐 Online - atualizando participação no Firestore...')
         const tournamentRef = doc(db, COLLECTIONS.FISHING_TOURNAMENTS, tournamentId)
-        await updateDoc(tournamentRef, {
-          participants: arrayUnion(user.uid),
-          participantNames: arrayUnion(user.displayName || user.email)
-        })
-        
-        console.log('✅ Participação registrada com sucesso')
-        
-        // Notificar sucesso
-        notification.notifyTournamentJoined(tournament.name)
-        
-        await loadUserTournaments()
+        try {
+          await updateDoc(tournamentRef, {
+            participants: arrayUnion(user.uid),
+            participantNames: arrayUnion(user.displayName || user.email)
+          })
+          console.log('✅ Participação registrada com sucesso')
+          notification.notifyTournamentJoined(tournament.name)
+          await loadUserTournaments()
+        } catch (error) {
+          console.warn('⚠️ Falha ao atualizar Firestore, aplicando fallback local:', error?.message || error)
+          const pendingParticipations = getFromLocalStorage('pending_participations', [])
+          pendingParticipations.push({
+            tournamentId,
+            userId: user.uid,
+            userName: user.displayName || user.email,
+            timestamp: new Date().toISOString()
+          })
+          saveToLocalStorage('pending_participations', pendingParticipations)
+          const userCacheKey = `user_tournaments_${user.uid}`
+          const currentTournaments = getFromLocalStorage(userCacheKey, [])
+          const updatedTournament = { ...tournament }
+          if (!updatedTournament.participants) updatedTournament.participants = []
+          if (!updatedTournament.participantNames) updatedTournament.participantNames = []
+          updatedTournament.participants.push(user.uid)
+          updatedTournament.participantNames.push(user.displayName || user.email)
+          updatedTournament.isPendingParticipation = true
+          currentTournaments.push(updatedTournament)
+          saveToLocalStorage(userCacheKey, currentTournaments)
+          setUserTournaments(prev => [...prev, updatedTournament])
+          notification.notifyTournamentJoined(tournament.name)
+        }
       } else {
         console.log('📱 Offline - salvando participação localmente...')
         // Salvar participação offline

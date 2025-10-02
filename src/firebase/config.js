@@ -3,7 +3,7 @@
 
 import { initializeApp } from 'firebase/app'
 import { getAuth } from 'firebase/auth'
-import { getFirestore } from 'firebase/firestore'
+import { getFirestore, initializeFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
 // Configuração do Firebase usando variáveis de ambiente
@@ -27,7 +27,21 @@ const app = initializeApp(firebaseConfig)
 
 // Inicializar serviços
 export const auth = getAuth(app)
-export const db = getFirestore(app)
+// Mitigar erros de rede (net::ERR_ABORTED) em ambientes com proxies/firewalls
+// Forçar long polling e desabilitar streams para mitigar abortos em ambientes restritos
+export const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+  useFetchStreams: false
+})
+
+// Habilitar persistência offline para enfileirar writes quando a conexão falhar
+try {
+  await enableIndexedDbPersistence(db)
+  console.log('✅ Firestore offline persistence enabled')
+} catch (err) {
+  // Em ambientes com múltiplas abas, pode ocorrer failed-precondition
+  console.warn('⚠️ Firestore persistence not available:', err?.code || err)
+}
 export const storage = getStorage(app)
 
 console.log('✅ Firebase inicializado:', {

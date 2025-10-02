@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Users, Plus, Trophy, Calendar, Clock, Star, Shield, Award, Target, User, Globe } from 'lucide-react'
+import { Users, Plus, Trophy, Calendar, Clock, Star, Shield, Award, Target, User, Globe, Lock } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { useFishing } from '../contexts/FishingContext'
 import { useNavigate } from 'react-router-dom'
@@ -57,10 +57,12 @@ const Tournaments = () => {
       await loadUserTournaments()
       
       // Carregar campeonatos públicos (não privados e que o usuário não participa)
-      const publicTournaments = allTournaments.filter(tournament => 
-        !tournament.isPrivate && 
-        (!tournament.participants || !tournament.participants.includes(user?.uid))
-      )
+      const publicTournaments = Array.isArray(allTournaments)
+        ? allTournaments.filter(tournament => 
+            !tournament?.isPrivate && 
+            (!tournament?.participants || !tournament.participants.includes(user?.uid))
+          )
+        : []
       
       setPublicTournaments(publicTournaments)
     } catch (error) {
@@ -159,14 +161,23 @@ const Tournaments = () => {
   }
 
   const getTournamentStatus = (tournament) => {
-    const now = new Date()
-    const startDate = new Date(tournament.startDate)
-    const endDate = new Date(tournament.endDate)
-    
-    if (tournament.status === 'finished') return 'finished'
-    if (now < startDate) return 'upcoming'
-    if (now >= startDate && now <= endDate) return 'active'
-    return 'finished'
+    try {
+      if (!tournament) return 'unknown'
+      const now = new Date()
+      const startDate = tournament.startDate ? new Date(tournament.startDate) : now
+      const endDate = tournament.endDate ? new Date(tournament.endDate) : now
+      if (tournament.status === 'finished') return 'finished'
+      if (tournament.status === 'cancelled') return 'cancelled'
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return tournament.status || 'unknown'
+      }
+      if (now < startDate) return 'upcoming'
+      if (now >= startDate && now <= endDate) return 'active'
+      return 'finished'
+    } catch (err) {
+      console.error('Erro ao calcular status do campeonato:', err, tournament)
+      return tournament?.status || 'unknown'
+    }
   }
 
   // Limpar mensagem após 3 segundos
@@ -191,7 +202,15 @@ const Tournaments = () => {
   }
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('pt-BR')
+    if (!dateString) return '-'
+    const d = new Date(dateString)
+    if (isNaN(d.getTime())) return '-'
+    try {
+      return d.toLocaleDateString('pt-BR')
+    } catch (e) {
+      console.error('Data inválida:', dateString, e)
+      return '-'
+    }
   }
 
   // Função para converter data do formato brasileiro (dd/mm/aaaa) para ISO (yyyy-mm-dd)
@@ -286,6 +305,24 @@ const Tournaments = () => {
       </div>
     )
   }
+
+  // Salvaguardas para listas potencialmente indefinidas
+  const safeUserTournaments = Array.isArray(userTournaments) ? userTournaments : []
+  const safePublicTournaments = Array.isArray(publicTournaments) ? publicTournaments : []
+  const safeAllTournaments = Array.isArray(allTournaments) ? allTournaments : []
+
+  // Combina "Meus Campeonatos" com quaisquer torneios em que o usuário
+  // apareça como participante em allTournaments, evitando esconder após inscrição
+  const myTournamentsCombined = (() => {
+    const mapById = new Map()
+    for (const t of safeUserTournaments) mapById.set(t.id, t)
+    for (const t of safeAllTournaments) {
+      if (t?.participants?.includes(user?.uid) && !mapById.has(t.id)) {
+        mapById.set(t.id, t)
+      }
+    }
+    return Array.from(mapById.values())
+  })()
 
   return (
     <div className="tournaments">
@@ -462,13 +499,13 @@ const Tournaments = () => {
               className={`tab-btn ${activeTab === 'my-tournaments' ? 'active' : ''}`}
               onClick={() => setActiveTab('my-tournaments')}
             >
-              <User size={20} /> <span>Meus Campeonatos</span> <span className="tab-count">{userTournaments.length}</span>
+              <User size={20} /> <span>Meus Campeonatos</span> <span className="tab-count">{myTournamentsCombined.length}</span>
             </button>
             <button
               className={`tab-btn ${activeTab === 'public-tournaments' ? 'active' : ''}`}
               onClick={() => setActiveTab('public-tournaments')}
             >
-              <Globe size={20} /> <span>Campeonatos Públicos</span> <span className="tab-count">{publicTournaments.length}</span>
+              <Globe size={20} /> <span>Campeonatos Públicos</span> <span className="tab-count">{safePublicTournaments.length}</span>
             </button>
           </div>
         </div>
@@ -476,7 +513,7 @@ const Tournaments = () => {
         {/* Conteúdo das Tabs */}
         {activeTab === 'my-tournaments' && (
           <div className="tournaments-grid">
-            {userTournaments.map(tournament => {
+            {myTournamentsCombined.map(tournament => {
               const currentStatus = getTournamentStatus(tournament)
               const isOwnerOfTournament = isOwner(tournament)
               const isParticipantOfTournament = isParticipant(tournament)
@@ -585,7 +622,7 @@ const Tournaments = () => {
               )
             })}
             
-            {userTournaments.length === 0 && (
+            {safeUserTournaments.length === 0 && (
               <div className="empty-state">
                 <div className="empty-icon">
                    <Trophy size={64} />
@@ -593,7 +630,7 @@ const Tournaments = () => {
                 <h3>Nenhum campeonato encontrado</h3>
                 <p>Você ainda não tem campeonatos. Crie um novo ou participe de campeonatos públicos.</p>
                 <button 
-                   onClick={() => setShowForm(true)}
+                   onClick={() => setShowCreateForm(true)}
                    className="btn btn-primary"
                  >
                    <Plus size={20} />
@@ -606,7 +643,7 @@ const Tournaments = () => {
 
         {activeTab === 'public-tournaments' && (
           <div className="tournaments-grid">
-            {publicTournaments.map(tournament => {
+            {safePublicTournaments.map(tournament => {
               const currentStatus = getTournamentStatus(tournament)
               const canJoin = currentStatus === 'upcoming' || currentStatus === 'active'
               const isFull = (tournament.participants?.length || 0) >= tournament.maxParticipants
@@ -706,7 +743,7 @@ const Tournaments = () => {
               )
             })}
             
-            {publicTournaments.length === 0 && (
+            {safePublicTournaments.length === 0 && (
               <div className="empty-state">
                 <Users size={48} />
                 <p>Nenhum campeonato público disponível no momento.</p>
