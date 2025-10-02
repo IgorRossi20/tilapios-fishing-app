@@ -1,15 +1,45 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Trophy, Medal, Award, Fish, Weight, TrendingUp, Users, Calendar } from 'lucide-react'
 import { useFishing } from '../contexts/FishingContext'
+import { useAuth } from '../contexts/AuthContext'
+import { useLocation } from 'react-router-dom'
 import './Ranking.css'
 
 const Ranking = () => {
-  const { userTournaments, getTournamentRanking, getGeneralRanking } = useFishing()
+  const { userTournaments, allTournaments, getTournamentRanking, getGeneralRanking } = useFishing()
+  const { user } = useAuth()
+  const location = useLocation()
   const [selectedTournament, setSelectedTournament] = useState('general')
   const [rankingType, setRankingType] = useState('score') // 'score', 'weight', 'quantity', 'biggest', 'species'
   const [ranking, setRanking] = useState([])
   const [loading, setLoading] = useState(false)
   const [tournamentInfo, setTournamentInfo] = useState(null)
+
+  // Unificar campeonatos: do usuário + globais onde o usuário participa ou é criador
+  const myTournaments = useMemo(() => {
+    const base = Array.isArray(userTournaments) ? [...userTournaments] : []
+    if (user && Array.isArray(allTournaments)) {
+      for (const t of allTournaments) {
+        const participates = Array.isArray(t.participants) && t.participants.includes(user.uid)
+        const isCreator = t.createdBy === user?.uid
+        if (participates || isCreator) {
+          if (!base.find(x => x.id === t.id)) {
+            base.push(t)
+          }
+        }
+      }
+    }
+    return base
+  }, [userTournaments, allTournaments, user])
+
+  // Ler parâmetro ?tournament=ID para pré-selecionar
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const tournamentId = params.get('tournament')
+    if (tournamentId) {
+      setSelectedTournament(tournamentId)
+    }
+  }, [location.search])
 
   useEffect(() => {
     if (selectedTournament) {
@@ -33,8 +63,8 @@ const Ranking = () => {
         const rankingData = await getTournamentRanking(selectedTournament, rankingType)
         setRanking(rankingData)
         
-        // Find tournament info
-        const tournament = userTournaments.find(t => t.id === selectedTournament)
+        // Buscar informações do campeonato na lista unificada
+        const tournament = myTournaments.find(t => t.id === selectedTournament)
         setTournamentInfo(tournament)
       }
     } catch (error) {
@@ -117,7 +147,7 @@ const Ranking = () => {
                 className="form-select"
               >
                 <option value="general">🏆 Ranking Geral (Todas as Pescas)</option>
-                {userTournaments.map(tournament => (
+                {myTournaments.map(tournament => (
                   <option key={tournament.id} value={tournament.id}>
                     {tournament.name}
                   </option>
@@ -127,82 +157,53 @@ const Ranking = () => {
 
             <div className="form-group">
               <label className="form-label">📊 Ranking por</label>
-              <div className="d-flex gap-2 flex-wrap">
-                <button 
-                  className={`btn ${rankingType === 'score' ? 'btn-primary' : 'btn-outline'}`}
+              <div className="ranking-type-panel">
+                <div className="ranking-type-group d-flex gap-2 flex-wrap">
+                  <button 
+                  className={`btn ranking-type-btn score ${rankingType === 'score' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setRankingType('score')}
                 >
-                  <Trophy size={18} />
+                  <Trophy size={18} className="icon-score" />
                   Pontuação
                 </button>
                 <button 
-                  className={`btn ${rankingType === 'weight' ? 'btn-primary' : 'btn-outline'}`}
+                  className={`btn ranking-type-btn weight ${rankingType === 'weight' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setRankingType('weight')}
                 >
-                  <Weight size={18} />
+                  <Weight size={18} className="icon-weight" />
                   Peso
                 </button>
                 <button 
-                  className={`btn ${rankingType === 'quantity' ? 'btn-primary' : 'btn-outline'}`}
+                  className={`btn ranking-type-btn quantity ${rankingType === 'quantity' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setRankingType('quantity')}
                 >
-                  <Fish size={18} />
+                  <Fish size={18} className="icon-quantity" />
                   Quantidade
                 </button>
                 <button 
-                  className={`btn ${rankingType === 'biggest' ? 'btn-primary' : 'btn-outline'}`}
+                  className={`btn ranking-type-btn biggest ${rankingType === 'biggest' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setRankingType('biggest')}
                 >
-                  <Award size={18} />
+                  <Award size={18} className="icon-biggest" />
                   Maior Peixe
                 </button>
                 <button 
-                  className={`btn ${rankingType === 'species' ? 'btn-primary' : 'btn-outline'}`}
+                  className={`btn ranking-type-btn species ${rankingType === 'species' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setRankingType('species')}
                 >
-                  <TrendingUp size={18} />
+                  <TrendingUp size={18} className="icon-species" />
                   Diversidade
                 </button>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {selectedTournament === 'general' ? (
-          <div className="tournament-info">
-            <div className="tournament-header">
-              <h2>🏆 Ranking Geral</h2>
-              <span className="status-badge active">Todas as Pescas</span>
-            </div>
-            <div className="tournament-details">
-              <div className="detail-item">
-                <Fish size={16} />
-                <span>Inclui todas as capturas registradas</span>
-              </div>
-              <div className="detail-item">
-                <Users size={16} />
-                <span>Todos os pescadores</span>
-              </div>
-            </div>
-          </div>
-        ) : tournamentInfo && (
+        {selectedTournament === 'general' ? null : tournamentInfo && (
           <div className="card">
             <div className="d-flex flex-column gap-3">
               <h2 className="text-2xl font-bold text-gray-900">{tournamentInfo.name}</h2>
-              <div className="d-flex gap-4 text-sm text-gray-600">
-                <span className="d-flex align-center gap-1">
-                  <Calendar size={16} />
-                  {new Date(tournamentInfo.startDate).toLocaleDateString('pt-BR')} - 
-                  {new Date(tournamentInfo.endDate).toLocaleDateString('pt-BR')}
-                </span>
-                <span className="d-flex align-center gap-1">
-                  <Users size={16} />
-                  {tournamentInfo.participants?.length || 0} participantes
-                </span>
-              </div>
-              {tournamentInfo.description && (
-                <p className="text-gray-700">{tournamentInfo.description}</p>
-              )}
             </div>
           </div>
         )}
@@ -318,184 +319,45 @@ const Ranking = () => {
                   const isFirst = index === 0;
                   const isSecond = index === 1;
                   const isThird = index === 2;
-                  
+
                   return (
-                    <div 
-                      key={participant.userId} 
-                      className={`ranking-card ${
-                        isFirst ? 'champion-card'
-                        : isSecond ? 'silver-card'
-                        : isThird ? 'bronze-card'
-                        : 'regular-card'
+                    <div
+                      key={participant.userId}
+                      className={`rank-pill ${
+                        isFirst ? 'pill-gold'
+                        : isSecond ? 'pill-blue'
+                        : isThird ? 'pill-red'
+                        : 'pill-purple'
                       }`}
                     >
-                      {/* Badge de posição */}
-                      <div className={`position-badge ${
-                        isFirst ? 'gold-badge'
-                        : isSecond ? 'silver-badge'
-                        : isThird ? 'bronze-badge'
-                        : 'regular-badge'
+                      <div className="pill-rank">{index + 1}</div>
+                      <div className={`pill-avatar ${
+                        isFirst ? 'gold'
+                        : isSecond ? 'silver'
+                        : isThird ? 'bronze'
+                        : 'regular'
                       }`}>
-                        #{index + 1}
+                        {participant.userName?.charAt(0)?.toUpperCase() || 'P'}
                       </div>
-                      
-                      {/* Conteúdo principal */}
-                      <div className="ranking-card-content">
-                        {/* Avatar e informações básicas */}
-                        <div className="player-section">
-                          <div className={`player-avatar ${
-                            isFirst ? 'gold-avatar'
-                            : isSecond ? 'silver-avatar'
-                            : isThird ? 'bronze-avatar'
-                            : 'regular-avatar'
-                          }`}>
-                            {participant.userName?.charAt(0)?.toUpperCase() || 'P'}
-                          </div>
-                          
-                          <div className="player-info">
-                            <div className={`player-name ${
-                              isFirst ? 'champion-name'
-                              : isPodium ? 'podium-name'
-                              : 'regular-name'
-                            }`}>
-                              {participant.userName || 'Pescador'}
-                              {isFirst && <span className="champion-title">👑 CAMPEÃO</span>}
-                            </div>
-                            
-                            {/* Ícones de ranking */}
-                            <div className="ranking-icons">
-                              {getRankIcon(index + 1)}
-                              {isPodium && (
-                                <span className="medal-emoji">
-                                  {isFirst ? '🏆' : isSecond ? '🥈' : '🥉'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Estatísticas */}
-                        <div className="stats-section">
-                          {rankingType === 'score' && (
-                            <div className={`stat-item ${
-                              isPodium ? 'podium-stat' : 'regular-stat'
-                            }`}>
-                              <Trophy size={16} className="stat-icon" />
-                              <div className="stat-content">
-                                <div className="stat-value">{participant.score || 0}</div>
-                                <div className="stat-label">pontos</div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className={`stat-item ${
-                            isPodium ? 'podium-stat' : 'regular-stat'
-                          }`}>
-                            <Fish size={16} className="stat-icon" />
-                            <div className="stat-content">
-                              <div className="stat-value">{participant.totalCatches}</div>
-                              <div className="stat-label">capturas</div>
-                            </div>
-                          </div>
-                          
-                          <div className={`stat-item ${
-                            isPodium ? 'podium-stat' : 'regular-stat'
-                          }`}>
-                            <Weight size={16} className="stat-icon" />
-                            <div className="stat-content">
-                              <div className="stat-value">{participant.totalWeight.toFixed(1)}kg</div>
-                              <div className="stat-label">peso total</div>
-                            </div>
-                          </div>
-                          
-                          {(rankingType === 'biggest' || rankingType === 'score') && participant.biggestFish && participant.biggestFish.weight > 0 && (
-                            <div className={`stat-item ${
-                              isPodium ? 'podium-stat' : 'regular-stat'
-                            }`}>
-                              <Trophy size={16} className="stat-icon" />
-                              <div className="stat-content">
-                                <div className="stat-value">{participant.biggestFish.weight.toFixed(1)}kg</div>
-                                <div className="stat-label">maior peixe</div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {(rankingType === 'species' || rankingType === 'score') && (
-                            <div className={`stat-item ${
-                              isPodium ? 'podium-stat' : 'regular-stat'
-                            }`}>
-                              <TrendingUp size={16} className="stat-icon" />
-                              <div className="stat-content">
-                                <div className="stat-value">{participant.uniqueSpecies || 0}</div>
-                                <div className="stat-label">espécies</div>
-                              </div>
-                            </div>
-                          )}
-                          
-                          {rankingType === 'weight' && (
-                            <div className={`stat-item ${
-                              isPodium ? 'podium-stat' : 'regular-stat'
-                            }`}>
-                              <Award size={16} className="stat-icon" />
-                              <div className="stat-content">
-                                <div className="stat-value">{participant.averageWeight?.toFixed(1) || '0.0'}kg</div>
-                                <div className="stat-label">peso médio</div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Pontuação principal */}
-                        <div className="score-section">
-                          <div className={`main-score ${
-                            isFirst ? 'champion-score'
-                            : isPodium ? 'podium-score'
-                            : 'regular-score'
-                          }`}>
-                            {rankingType === 'score' 
-                              ? participant.score || 0
-                              : rankingType === 'weight' 
-                              ? `${participant.totalWeight.toFixed(1)}kg`
-                              : rankingType === 'biggest'
-                              ? `${participant.biggestFish?.weight?.toFixed(1) || '0.0'}kg`
-                              : rankingType === 'species'
-                              ? participant.uniqueSpecies || 0
-                              : participant.totalCatches
-                            }
-                          </div>
-                          <div className="score-label">
-                            {rankingType === 'score' ? 'PONTUAÇÃO'
-                              : rankingType === 'weight' ? 'PESO TOTAL'
-                              : rankingType === 'biggest' ? 'MAIOR PEIXE'
-                              : rankingType === 'species' ? 'ESPÉCIES ÚNICAS'
-                              : 'CAPTURAS'
-                            }
-                          </div>
-                          
-                          {isPodium && (
-                            <div className={`medal-badge ${
-                              isFirst ? 'gold-medal'
-                              : isSecond ? 'silver-medal'
-                              : 'bronze-medal'
-                            }`}>
-                              {isFirst ? 'OURO' : isSecond ? 'PRATA' : 'BRONZE'}
-                            </div>
-                          )}
-                        </div>
+                      <div className="pill-name">
+                        {participant.userName || 'Pescador'}
+                        {isFirst && <span className="pill-badge">CAMPEÃO</span>}
                       </div>
-                      
-                      {/* Barra de progresso para o campeão */}
-                      {isFirst && (
-                        <div className="champion-progress">
-                          <div className="progress-info">
-                            <span>Liderança consolidada</span>
-                            <span>100%</span>
-                          </div>
-                          <div className="progress-bar">
-                            <div className="progress-fill"></div>
-                          </div>
-                        </div>
-                      )}
+                      <div className="pill-value">
+                        {rankingType === 'score' ? (
+                          <><Trophy size={18} className="pill-icon" /><span className="pill-number">{participant.score || 0}</span></>
+                        ) : rankingType === 'quantity' ? (
+                          <><Fish size={18} className="pill-icon" /><span className="pill-number">{participant.totalCatches || 0}</span></>
+                        ) : rankingType === 'weight' ? (
+                          <><Weight size={18} className="pill-icon" /><span className="pill-number">{(participant.totalWeight || 0).toFixed(1)}kg</span></>
+                        ) : rankingType === 'biggest' && participant.biggestFish ? (
+                          <><Award size={18} className="pill-icon" /><span className="pill-number">{participant.biggestFish.weight.toFixed(1)}kg</span></>
+                        ) : rankingType === 'species' ? (
+                          <><TrendingUp size={18} className="pill-icon" /><span className="pill-number">{participant.uniqueSpecies || 0}</span></>
+                        ) : (
+                          <><Trophy size={18} className="pill-icon" /><span className="pill-number">{participant.score || 0}</span></>
+                        )}
+                      </div>
                     </div>
                   );
                 })}

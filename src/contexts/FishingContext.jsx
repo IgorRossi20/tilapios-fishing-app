@@ -208,8 +208,41 @@ const FishingProvider = ({ children }) => {
            allTournamentsSnapshot.forEach((doc) => {
              tournaments.push({ id: doc.id, ...doc.data() })
            })
-           setAllTournaments(tournaments)
-           saveToLocalStorage('all_tournaments', tournaments)
+
+           // Mesclar participantes com cache local e participações pendentes para evitar perdas
+           const pendingParticipations = getFromLocalStorage('pending_participations', [])
+           const localCacheTournaments = cachedTournaments || []
+           const mapById = new Map()
+           for (const t of tournaments) {
+             mapById.set(t.id, {
+               ...t,
+               participants: Array.isArray(t.participants) ? t.participants.slice() : [],
+               participantNames: Array.isArray(t.participantNames) ? t.participantNames.slice() : []
+             })
+           }
+           for (const lt of localCacheTournaments) {
+             const existing = mapById.get(lt.id) || { ...lt }
+             const mergedParticipants = Array.from(new Set([...
+               (Array.isArray(existing.participants) ? existing.participants : []),
+               (Array.isArray(lt.participants) ? lt.participants : [])
+             ]))
+             const mergedNames = Array.from(new Set([...
+               (Array.isArray(existing.participantNames) ? existing.participantNames : []),
+               (Array.isArray(lt.participantNames) ? lt.participantNames : [])
+             ]))
+             mapById.set(lt.id, { ...existing, participants: mergedParticipants, participantNames: mergedNames })
+           }
+           for (const p of pendingParticipations) {
+             const t = mapById.get(p.tournamentId)
+             if (t) {
+               const mergedParticipants = Array.from(new Set([...(t.participants || []), p.userId]))
+               const mergedNames = Array.from(new Set([...(t.participantNames || []), p.userName]))
+               mapById.set(p.tournamentId, { ...t, participants: mergedParticipants, participantNames: mergedNames })
+             }
+           }
+           const mergedTournaments = Array.from(mapById.values())
+           setAllTournaments(mergedTournaments)
+           saveToLocalStorage('all_tournaments', mergedTournaments)
 
            // Sincronizar todas as capturas
            const allCatchesSnapshot = await getDocs(collection(db, 'fishing_catches'))
@@ -717,6 +750,13 @@ const FishingProvider = ({ children }) => {
           })
           console.log('✅ Participação registrada com sucesso')
           notification.notifyTournamentJoined(tournament.name)
+          // Atualização otimista do estado global para refletir imediatamente
+          setAllTournaments(prev => prev.map(t => {
+            if (t.id !== tournamentId) return t
+            const mergedParticipants = Array.from(new Set([...(Array.isArray(t.participants) ? t.participants : []), user.uid]))
+            const mergedNames = Array.from(new Set([...(Array.isArray(t.participantNames) ? t.participantNames : []), (user.displayName || user.email)]))
+            return { ...t, participants: mergedParticipants, participantNames: mergedNames }
+          }))
           await loadUserTournaments()
         } catch (error) {
           console.warn('⚠️ Falha ao atualizar Firestore, aplicando fallback local:', error?.message || error)
@@ -739,6 +779,13 @@ const FishingProvider = ({ children }) => {
           currentTournaments.push(updatedTournament)
           saveToLocalStorage(userCacheKey, currentTournaments)
           setUserTournaments(prev => [...prev, updatedTournament])
+          // Refletir fallback também em allTournaments
+          setAllTournaments(prev => prev.map(t => {
+            if (t.id !== tournamentId) return t
+            const mergedParticipants = Array.from(new Set([...(Array.isArray(t.participants) ? t.participants : []), user.uid]))
+            const mergedNames = Array.from(new Set([...(Array.isArray(t.participantNames) ? t.participantNames : []), (user.displayName || user.email)]))
+            return { ...t, participants: mergedParticipants, participantNames: mergedNames }
+          }))
           notification.notifyTournamentJoined(tournament.name)
         }
       } else {
@@ -769,6 +816,13 @@ const FishingProvider = ({ children }) => {
         
         // Atualizar estado local
         setUserTournaments(prev => [...prev, updatedTournament])
+        // Atualizar estado global para refletir imediatamente
+        setAllTournaments(prev => prev.map(t => {
+          if (t.id !== tournamentId) return t
+          const mergedParticipants = Array.from(new Set([...(Array.isArray(t.participants) ? t.participants : []), user.uid]))
+          const mergedNames = Array.from(new Set([...(Array.isArray(t.participantNames) ? t.participantNames : []), (user.displayName || user.email)]))
+          return { ...t, participants: mergedParticipants, participantNames: mergedNames }
+        }))
         
         // Notificar sucesso offline
         notification.notifyTournamentJoined(tournament.name)

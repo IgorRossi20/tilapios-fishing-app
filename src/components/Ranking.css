@@ -621,6 +621,60 @@
   margin-left: 0.25rem;
 }
 
+/* Contêiner de insígnias com layout fluido e sem barra de rolagem */
+.insignias-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+  gap: 0.5rem;
+  align-items: stretch;
+  width: 100%;
+  overflow: visible;
+}
+
+.insignias-grid .stat-item {
+  min-width: 0;
+  padding: 0.6rem;
+}
+
+.insignias-grid .stat-value {
+  font-size: 0.95rem;
+}
+
+.insignias-grid .stat-label {
+  font-size: 0.7rem;
+}
+
+@media (min-width: 768px) {
+  .insignias-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .insignias-grid {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+  }
+}
+
+/* Mobile extremamente estreito: força 2 colunas para evitar aperto e barras */
+@media (max-width: 480px) {
+  .insignias-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+  }
+  .insignias-grid .stat-item {
+    padding: 0.5rem;
+  }
+  .insignias-grid .stat-value {
+    font-size: 0.9rem;
+  }
+  .insignias-grid .stat-label {
+    font-size: 0.65rem;
+  }
+}
+
 .ranking .fish-species {
   display: block;
   font-size: 0.75rem;
@@ -727,6 +781,32 @@
   transform: translateY(-2px);
   border-color: #cbd5e0;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Evitar conteúdo extrapolando o cartão */
+.ranking-card {
+  overflow: hidden;
+}
+
+/* Grid de insígnias dentro do card */
+.insignias-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+.insignias-grid .stat-item {
+  min-width: 0;
+  padding: 0.6rem;
+}
+
+.insignias-grid .stat-value {
+  font-size: 1rem;
+}
+
+.insignias-grid .stat-label {
+  font-size: 0.75rem;
 }
 
 /* Badge de posição */
@@ -1948,7 +2028,157 @@
     padding: 0.15rem 0.4rem;
   }
   
-  .crown {
-    font-size: 1.2rem;
-  }
+.crown {
+  font-size: 1.2rem;
+}
+}
+
+/* Layout gamificado minimalista (pills) */
+.rank-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 999px;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06));
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08) inset, 0 2px 8px rgba(0,0,0,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+.pill-gold { background: linear-gradient(180deg, #FFE58F 0%, #FFC107 100%); }
+.pill-blue { background: linear-gradient(180deg, #8FD3FE 0%, #1E90FF 100%); }
+.pill-red  { background: linear-gradient(180deg, #FF9AA2 0%, #FF4D4F 100%); }
+.pill-purple { background: linear-gradient(180deg, #B39EF7 0%, #7C4DFF 100%); }
+
+.pill-rank {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #1f2937;
+  background: rgba(255,255,255,0.9);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.pill-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid rgba(255,255,255,0.35);
+}
+
+.pill-name {
+  flex: 1;
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pill-badge {
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #1f2937;
+  background: rgba(255,255,255,0.92);
+  border-radius: 999px;
+  padding: 0.2rem 0.5rem;
+}
+
+.pill-value {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #fff;
+  font-weight: 800;
+}
+
+.pill-icon {
+  color: #fff;
+  opacity: 0.95;
+}
+
+.pill-number {
+  font-size: 1rem;
+}
+
+/* Interações sutis */
+.rank-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+}
+
+/* Responsividade dos pills */
+@media (max-width: 768px) {
+  .rank-pill { padding: 0.6rem 0.8rem; gap: 0.6rem; }
+  .pill-rank { width: 28px; height: 28px; font-size: 0.9rem; }
+  .pill-avatar { width: 32px; height: 32px; }
+  .pill-name { font-size: 0.9rem; }
+  .pill-number { font-size: 0.95rem; }
+}
+
+@media (max-width: 480px) {
+  .rank-pill { padding: 0.5rem 0.7rem; gap: 0.5rem; }
+  .pill-rank { width: 24px; height: 24px; font-size: 0.8rem; }
+  .pill-avatar { width: 28px; height: 28px; font-size: 0.85rem; }
+  .pill-name { font-size: 0.85rem; }
+  .pill-number { font-size: 0.9rem; }
+}
+
+/* Painel dos botões de tipo de ranking */
+.ranking-type-panel {
+  padding: 0.75rem 1rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.65), rgba(245,245,255,0.5));
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+}
+
+.ranking-type-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ranking-type-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 999px;
+  font-weight: 600;
+  backdrop-filter: saturate(140%);
+}
+
+/* Cores dos ícones por categoria */
+.icon-score { color: #f59e0b; }      /* Amber / trophy */
+.icon-weight { color: #3b82f6; }     /* Blue / weight */
+.icon-quantity { color: #10b981; }   /* Green / fish */
+.icon-biggest { color: #ef4444; }    /* Red / award */
+.icon-species { color: #8b5cf6; }    /* Purple / trending */
+
+/* Estado ativo e hover para botões */
+.ranking-type-btn.btn-primary {
+  background: rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.08);
+}
+
+.ranking-type-btn.btn-outline:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+@media (max-width: 480px) {
+  .ranking-type-panel { padding: 0.6rem 0.7rem; border-radius: 14px; }
+  .ranking-type-btn { padding: 0.45rem 0.65rem; gap: 0.35rem; }
 }
