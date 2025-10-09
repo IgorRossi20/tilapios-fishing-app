@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Header from './components/Header'
 import Home from './pages/Home'
 import Login from './pages/Login'
+import SupabaseSetup from './pages/SupabaseSetup'
 import LoadingSpinner from './components/LoadingSpinner'
 import AuthError from './components/AuthError'
 import { ToastContainer } from './components/Toast'
@@ -73,6 +74,10 @@ function AppRoutes() {
                path="/catch" 
                element={user ? <CatchRegistration /> : <Navigate to="/login" />} 
              />
+            <Route 
+              path="/admin/supabase" 
+              element={user ? <SupabaseSetup /> : <Navigate to="/login" />} 
+            />
 
             </Routes>
         </Suspense>

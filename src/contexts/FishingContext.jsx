@@ -1128,6 +1128,20 @@ const FishingProvider = ({ children }) => {
     }
   }
 
+  // Fallback: converter File em Data URL (base64) para armazenar localmente/Firestore
+  const fileToDataURL = (file) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = (e) => reject(new Error('Falha ao ler arquivo: ' + (e?.message || 'erro desconhecido')))
+        reader.readAsDataURL(file)
+      } catch (err) {
+        reject(err)
+      }
+    })
+  }
+
   // Registrar nova captura com suporte offline
   const registerCatch = async (catchData) => {
     console.log('🎣 Iniciando registro de captura...')
@@ -1144,7 +1158,7 @@ const FishingProvider = ({ children }) => {
       throw new Error('UID do usuário não encontrado')
     }
 
-    // Fazer upload da imagem se existir
+    // Fazer upload da imagem se existir (com fallback para Data URL quando Supabase não está configurado)
     let photoURL = null
     if (catchData.photo && catchData.photo instanceof File) {
       try {
@@ -1153,8 +1167,15 @@ const FishingProvider = ({ children }) => {
         console.log('✅ Foto enviada com sucesso:', photoURL)
       } catch (error) {
         console.error('❌ Erro no upload da foto:', error)
-        // Continuar sem a foto em caso de erro
-        photoURL = null
+        // Fallback: armazenar como Data URL para não perder a imagem quando Supabase não está disponível
+        try {
+          console.log('🔄 Aplicando fallback: convertendo foto para Data URL...')
+          photoURL = await fileToDataURL(catchData.photo)
+          console.log('✅ Fallback concluído, imagem convertida em Data URL')
+        } catch (fallbackError) {
+          console.error('❌ Erro no fallback de imagem:', fallbackError)
+          photoURL = null
+        }
       }
     }
     

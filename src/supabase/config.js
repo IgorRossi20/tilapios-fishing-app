@@ -1,9 +1,28 @@
 // Configuração do Supabase
 import { createClient } from '@supabase/supabase-js'
 
-// URL e chave anônima do Supabase (serão configuradas via variáveis de ambiente)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+// URL e chave anônima do Supabase
+// 1) Primeiro tenta variáveis de ambiente (.env)
+// 2) Se ausentes/invalidas, tenta overrides salvos no localStorage pela UI de configuração
+let supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+let supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+// Carregar overrides do localStorage (quando disponíveis)
+try {
+  if (typeof window !== 'undefined') {
+    const lsUrl = window.localStorage.getItem('TILAPIOS_SUPABASE_URL')
+    const lsKey = window.localStorage.getItem('TILAPIOS_SUPABASE_ANON_KEY')
+    // Apenas aplicar se forem strings não vazias
+    if (lsUrl && typeof lsUrl === 'string' && lsUrl.trim() !== '') {
+      supabaseUrl = lsUrl
+    }
+    if (lsKey && typeof lsKey === 'string' && lsKey.trim() !== '') {
+      supabaseAnonKey = lsKey
+    }
+  }
+} catch (e) {
+  // Ignorar erros de acesso ao localStorage
+}
 
 // Verificar se as variáveis estão configuradas corretamente
 const isValidUrl = (url) => {
@@ -36,7 +55,7 @@ const isValidKey = (key) => {
 
 const isSupabaseProperlyConfigured = isValidUrl(supabaseUrl) && isValidKey(supabaseAnonKey)
 
-// Log detalhado para debug
+// Log detalhado para debug (não expõe a chave completa)
 console.log('🔍 Verificação do Supabase:', {
   hasUrl: !!supabaseUrl,
   hasKey: !!supabaseAnonKey,
