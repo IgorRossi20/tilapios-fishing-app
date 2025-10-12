@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Fish, Calendar, Weight, Camera, Trophy, TrendingUp, Award } from 'lucide-react'
 import { useFishing } from '../contexts/FishingContext'
 import { compressImage, validateImageFile } from '../utils/imageCompression'
 import './CatchRegistration.css'
 
 const CatchRegistration = () => {
+  const navigate = useNavigate()
   const { userTournaments, registerCatch, calculateUserStats } = useFishing()
   const [formData, setFormData] = useState({
     species: '',
@@ -82,6 +84,11 @@ const CatchRegistration = () => {
       // Update stats
       const newStats = calculateUserStats()
       setUserStats(newStats)
+
+      // Redirecionar para o feed
+      setTimeout(() => {
+        navigate('/')
+      }, 1000) // Atraso de 1 segundo para o usuário ver a mensagem
       
     } catch (error) {
       setMessage('Erro ao registrar pesca: ' + error.message)
