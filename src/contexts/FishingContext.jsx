@@ -17,10 +17,6 @@ import {
 } from 'firebase/firestore'
 import { useAuth } from './AuthContext'
 import {
-  getFromLocalStorage,
-  saveToLocalStorage
-} from '../utils/localStorageUtils'
-import {
   isSupabaseConfigured,
   uploadImageToSupabase
 } from '../services/supabaseStorage'
