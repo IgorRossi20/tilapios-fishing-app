@@ -21,7 +21,7 @@ import {
   deleteImageFromSupabase,
   isSupabaseConfigured
 } from '../supabase/config'
-import * as notification from '../utils/notificationUtils'
+import { useNotification } from './NotificationContext'
 
 const FishingContext = createContext()
 
@@ -43,6 +43,7 @@ const useFishing = () => {
 
 const FishingProvider = ({ children }) => {
   const { user } = useAuth()
+  const { notifyCatchRegistered, notifyTournamentCreated, notifyJoinedTournament, notifyLeftTournament, notifyTournamentCancelled, notifyTournamentFinished, notifyInviteSent, notifyInviteAccepted } = useNotification()
   const [userTournaments, setUserTournaments] = useState([])
   const [allTournaments, setAllTournaments] = useState([])
   const [userCatches, setUserCatches] = useState([])
@@ -407,7 +408,7 @@ const FishingProvider = ({ children }) => {
           collection(db, 'fishing_tournaments'),
           newTournament
         )
-        notification.notifyTournamentCreated(newTournament.name)
+        notifyTournamentCreated(newTournament.name)
         await loadUserTournaments()
         return { id: docRef.id, ...newTournament }
       } else {
@@ -417,7 +418,7 @@ const FishingProvider = ({ children }) => {
         )
         pendingTournaments.push(newTournament)
         saveToLocalStorage('pending_tournaments', pendingTournaments)
-        notification.notifyTournamentCreated(newTournament.name)
+        notifyTournamentCreated(newTournament.name)
 
         // Adicionar ao estado local
         setUserTournaments(prev => [
@@ -492,7 +493,7 @@ const FishingProvider = ({ children }) => {
           participants: arrayUnion(participant),
           participantCount: (tournament.participantCount || 0) + 1
         })
-        notification.notifyJoinedTournament(tournament.name)
+        notifyJoinedTournament(tournament.name)
         await loadUserTournaments()
       } else {
         // Salvar participação pendente
@@ -517,7 +518,7 @@ const FishingProvider = ({ children }) => {
         saveToLocalStorage('all_tournaments', updatedTournaments)
         setAllTournaments(updatedTournaments)
 
-        notification.notifyJoinedTournament(tournament.name)
+        notifyJoinedTournament(tournament.name)
       }
     } catch (error) {
       console.error('❌ Erro ao entrar no campeonato:', error)
@@ -558,7 +559,7 @@ const FishingProvider = ({ children }) => {
           participants: arrayRemove(participant),
           participantCount: (tournament.participantCount || 1) - 1
         })
-        notification.notifyLeftTournament(tournament.name)
+        notifyLeftTournament(tournament.name);
         await loadUserTournaments()
       } else {
         // Implementar lógica offline para sair
@@ -614,7 +615,7 @@ const FishingProvider = ({ children }) => {
           status: 'cancelled',
           cancelledAt: new Date().toISOString()
         })
-        notification.notifyTournamentCancelled(tournament.name)
+        notifyTournamentCancelled(tournament.name);
         await loadUserTournaments()
       } else {
         // Lógica offline
@@ -625,7 +626,7 @@ const FishingProvider = ({ children }) => {
         )
         saveToLocalStorage(userCacheKey, updatedTournaments)
         setUserTournaments(updatedTournaments)
-        notification.notifyTournamentCancelled(tournament.name)
+        notifyTournamentCancelled(tournament.name)
       }
     } catch (error) {
       console.error('❌ Erro ao cancelar campeonato:', error)
@@ -708,7 +709,7 @@ const FishingProvider = ({ children }) => {
         })
 
         // Notificar sucesso
-        notification.notifyTournamentFinished(tournament.name)
+        notifyTournamentFinished(tournament.name);
 
         await loadUserTournaments()
       } else {
@@ -729,7 +730,9 @@ const FishingProvider = ({ children }) => {
         setUserTournaments(updatedTournaments)
 
         // Notificar sucesso offline
-        notification.notifyTournamentFinished(tournament.name)
+        if (typeof notifyTournamentFinished === 'function') {
+          notifyTournamentFinished(tournament.name)
+        }
       }
 
       return finalRanking
@@ -863,7 +866,7 @@ const FishingProvider = ({ children }) => {
         newCatch.id = docRef.id
 
         // Notificar sucesso
-        notification.notifyCatchRegistered(
+        notifyCatchRegistered(
           newCatch.species || 'Peixe',
           newCatch.weight
         )
@@ -889,7 +892,7 @@ const FishingProvider = ({ children }) => {
         setUserCatches(prev => [...prev, { ...newCatch, isPending: true }])
 
         // Notificar sucesso offline
-        notification.notifyCatchRegistered(
+        notifyCatchRegistered(
           newCatch.species || 'Peixe',
           newCatch.weight
         )
@@ -1237,13 +1240,17 @@ const FishingProvider = ({ children }) => {
       if (isOnline) {
         // Salvar convite no Firestore
         await addDoc(collection(db, COLLECTIONS.TOURNAMENT_INVITES), invite)
-        notification.notifyInviteSent(inviteeEmail, tournament.name)
+        if (typeof notifyInviteSent === 'function') {
+          notifyInviteSent(inviteeEmail, tournament.name);
+        }
       } else {
         // Salvar no cache local
         const pendingInvites = getFromLocalStorage('pending_invites', [])
         pendingInvites.push(invite)
         saveToLocalStorage('pending_invites', pendingInvites)
-        notification.notifyInviteSent(inviteeEmail, tournament.name)
+        if (typeof notifyInviteSent === 'function') {
+          notifyInviteSent(inviteeEmail, tournament.name);
+        }
       }
 
       return invite
@@ -1274,7 +1281,7 @@ const FishingProvider = ({ children }) => {
         })
       }
 
-      notification.notifyInviteAccepted()
+      notifyInviteAccepted();
     } catch (error) {
       console.error('Erro ao aceitar convite:', error)
       throw error
