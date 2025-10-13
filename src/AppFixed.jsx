@@ -27,7 +27,6 @@ function ErrorBoundary({ children, fallback }) {
 
   useEffect(() => {
     const handleError = (error) => {
-      console.error('Erro capturado:', error)
       setError(error)
       setHasError(true)
     }
@@ -95,16 +94,13 @@ function AppFixed() {
   useEffect(() => {
     const initApp = async () => {
       try {
-        console.log('🚀 Iniciando aplicação...')
         setInitStep(1)
         
         // Aguardar um pouco para garantir que tudo carregou
         await new Promise(resolve => setTimeout(resolve, 100))
         setInitStep(2)
         
-        console.log('✅ Aplicação inicializada com sucesso')
       } catch (err) {
-        console.error('❌ Erro na inicialização:', err)
         setError(err)
       }
     }

@@ -16,24 +16,18 @@ function TestApp() {
 
   const testFirebase = async () => {
     try {
-      console.log('Testando Firebase...')
       const { FirebaseProvider } = await import('./contexts/FirebaseContext')
-      console.log('✅ FirebaseProvider carregado com sucesso')
       setStep(6)
     } catch (err) {
-      console.error('❌ Erro ao carregar Firebase:', err)
       setError(err.message)
     }
   }
 
   const testAuth = async () => {
     try {
-      console.log('Testando AuthContext...')
       const { AuthProvider } = await import('./contexts/AuthContext')
-      console.log('✅ AuthProvider carregado com sucesso')
       setStep(7)
     } catch (err) {
-      console.error('❌ Erro ao carregar AuthContext:', err)
       setError(err.message)
     }
   }

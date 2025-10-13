@@ -3,42 +3,34 @@ import { auth, db, storage } from '../firebase/config'
 import { isValidFirebaseDomain } from '../utils/mobileCompatibility'
 
 // As instâncias do Firebase (auth, db, storage) são fornecidas por src/firebase/config
-console.log('🔧 Configuração Firebase: usando instâncias unificadas de src/firebase/config')
 
 // Detectar ambiente de produção
 const isProduction = import.meta.env.PROD || window.location.hostname.includes('vercel.app')
 const currentDomain = window.location.hostname
-
-console.log('🌍 Ambiente detectado:', {
-  isProduction,
-  currentDomain,
-  hostname: window.location.hostname
-})
 
 // Serviços já inicializados (auth, db, storage) vindos do config.js
 
 // Verificar se o domínio atual é válido para o Firebase
 const isValidDomain = isValidFirebaseDomain();
 if (!isValidDomain) {
-  console.warn('⚠️ O domínio atual pode não estar autorizado no Firebase Authentication');
+  // console.warn('⚠️ O domínio atual pode não estar autorizado no Firebase Authentication');
 }
 
 // Firestore já configurado no config.js (initializeFirestore com auto long polling)
-console.log('🌐 Firestore utilizando instância compartilhada de src/firebase/config')
 
 // Filtrar erros ERR_ABORTED que são comuns e não afetam a funcionalidade
 const originalConsoleError = console.error
-console.error = (...args) => {
-  const message = args.join(' ')
-  if (message.includes('ERR_ABORTED') || 
-      message.includes('net::ERR_ABORTED') ||
-      message.includes('firestore.googleapis.com') ||
-      message.includes('Failed to fetch') ||
-      message.includes('NetworkError')) {
-    return // Ignorar esses erros de rede comuns
-  }
-  originalConsoleError.apply(console, args)
-}
+// console.error = (...args) => {
+//   const message = args.join(' ')
+//   if (message.includes('ERR_ABORTED') || 
+//       message.includes('net::ERR_ABORTED') ||
+//       message.includes('firestore.googleapis.com') ||
+//       message.includes('Failed to fetch') ||
+//       message.includes('NetworkError')) {
+//     return // Ignorar esses erros de rede comuns
+//   }
+//   originalConsoleError.apply(console, args)
+// }
 
 // Interceptar erros de rede para suprimir ERR_ABORTED do Firestore
 window.addEventListener('error', (event) => {
@@ -70,8 +62,6 @@ window.addEventListener('unhandledrejection', (event) => {
 
 // Definir flag global para modo online
 window.FIRESTORE_OFFLINE_MODE = false
-console.log('🌐 Modo online ativo:', !window.FIRESTORE_OFFLINE_MODE)
-console.log('🛡️ Filtro de erros ERR_ABORTED ativado')
 
 // Reexportar instâncias para manter compatibilidade com imports existentes
 export { auth, db, storage }

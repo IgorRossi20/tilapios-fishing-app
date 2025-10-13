@@ -64,7 +64,6 @@ const Home = () => {
     const updatePendingCount = () => {
       const pending = getFromLocalStorage('pending_catches', [])
       setPendingCount(pending.length)
-      console.log('📊 [HOME] Dados pendentes atualizados:', pending.length)
     }
     
     // Atualizar inicialmente
@@ -200,44 +199,30 @@ const Home = () => {
       
       setFeedPosts(posts)
     } catch (error) {
-      console.error('Erro ao carregar feed:', error)
       setFeedPosts([])
     }
   }, [user, allCatches])
 
   const loadDashboardData = async () => {
     try {
-      console.log('🔄 Carregando dados do dashboard...')
-      console.log('👤 Usuário:', user?.uid)
-      console.log('🎣 UserCatches do context:', userCatches)
-      
       // Obter capturas do localStorage como fallback
       const userCaptures = JSON.parse(localStorage.getItem('capturas') || '[]')
       const fishingCatches = JSON.parse(localStorage.getItem('fishing_catches') || '[]')
-      console.log('💾 userCaptures do localStorage (capturas):', userCaptures)
-      console.log('💾 fishingCatches do localStorage (fishing_catches):', fishingCatches)
       
       // Combinar ambas as fontes de dados
       const allLocalCaptures = [...userCaptures, ...fishingCatches]
-      console.log('💾 Todas as capturas locais combinadas:', allLocalCaptures)
       
       // Filtrar capturas do usuário atual
       const myCaptures = allLocalCaptures.filter(capture => capture.userId === user?.uid)
-      console.log('🎣 Minhas capturas filtradas:', myCaptures)
       
       // Usar dados do FishingContext se disponível, senão usar localStorage
       const captures = userCatches.length > 0 ? userCatches : (myCaptures.length > 0 ? myCaptures : allLocalCaptures)
-      console.log('📊 Capturas finais para cálculo:', captures)
       
       // Calcular estatísticas do usuário
       const userStats = calculateUserStats()
-      console.log('📈 Stats do usuário:', userStats)
       
       const totalFish = userStats.totalCatches || captures.length
       const totalWeight = userStats.totalWeight || captures.reduce((sum, capture) => sum + (capture.weight || 0), 0)
-      
-      console.log('🐟 Total de peixes:', totalFish)
-      console.log('⚖️ Peso total:', totalWeight)
       
       // Obter ranking geral
       const generalRanking = await getGeneralRanking()
@@ -266,15 +251,12 @@ const Home = () => {
            totalWeight: generalRanking[0].totalWeight,
            biggestFish: generalRanking[0].biggestFish
          }
-         console.log('🏆 Rei do Lago encontrado:', kingOfLake)
          setMonthlyKing(kingOfLake)
        } else {
-         console.log('❌ Nenhum Rei do Lago encontrado')
          setMonthlyKing(null)
        }
 
     } catch (error) {
-      console.error('Erro ao carregar dados:', error)
     } finally {
       setLoading(false)
     }

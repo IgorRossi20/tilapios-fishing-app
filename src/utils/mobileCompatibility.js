@@ -180,7 +180,7 @@ export const applyMobileFixes = () => {
       localStorage.removeItem('tilapios_cache');
       fixes.storageCleared = true;
     } catch (e) {
-      console.error('Erro ao limpar armazenamento local:', e);
+      // console.error('Erro ao limpar armazenamento local:', e);
     }
   }
   
@@ -241,28 +241,28 @@ export const generateRecommendations = (diagnosticInfo) => {
 export const initMobileCompatibility = () => {
   // Verificar se é um dispositivo móvel
   if (isMobileDevice()) {
-    console.log('Dispositivo móvel detectado, iniciando verificações de compatibilidade...');
+    // console.log('Dispositivo móvel detectado, iniciando verificações de compatibilidade...');
     
     // Aplicar correções automáticas
     const fixes = applyMobileFixes();
-    console.log('Correções aplicadas:', fixes);
+    // console.log('Correções aplicadas:', fixes);
     
     // Coletar informações de diagnóstico
     const diagnosticInfo = collectDiagnosticInfo();
-    console.log('Informações de diagnóstico:', diagnosticInfo);
+    // console.log('Informações de diagnóstico:', diagnosticInfo);
     
     // Armazenar informações para depuração
     if (isLocalStorageAvailable()) {
       try {
         localStorage.setItem('tilapios_diagnostic', JSON.stringify(diagnosticInfo));
       } catch (e) {
-        console.error('Erro ao armazenar informações de diagnóstico:', e);
+        // console.error('Erro ao armazenar informações de diagnóstico:', e);
       }
     }
     
     // Verificar problemas críticos
     if (!diagnosticInfo.firebase.validDomain || !diagnosticInfo.browser.isCompatible) {
-      console.warn('Problemas críticos detectados que podem afetar o funcionamento do aplicativo.');
+      // console.warn('Problemas críticos detectados que podem afetar o funcionamento do aplicativo.');
     }
   }
 };

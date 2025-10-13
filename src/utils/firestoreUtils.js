@@ -30,10 +30,10 @@ const executeWithRetry = async (operation, maxRetries = 3, delay = 1000) => {
         error.message?.includes('Failed to fetch') ||
         error.message?.includes('NetworkError')
       ) {
-        console.log(`🔄 Tentativa ${attempt}/${maxRetries} falhou (erro de rede), tentando novamente...`)
+        // console.log(`🔄 Tentativa ${attempt}/${maxRetries} falhou (erro de rede), tentando novamente...`)
         
         if (attempt === maxRetries) {
-          console.warn('⚠️ Operação falhou após múltiplas tentativas (problemas de rede)')
+          // console.warn('⚠️ Operação falhou após múltiplas tentativas (problemas de rede)')
           return null // Retorna null em vez de lançar erro
         }
         
@@ -101,7 +101,7 @@ export const createSafeQuery = (collectionRef, ...constraints) => {
   try {
     return query(collectionRef, ...constraints)
   } catch (error) {
-    console.error('❌ Erro ao criar query:', error)
+    // console.error('❌ Erro ao criar query:', error)
     return collectionRef // Retorna a coleção sem filtros em caso de erro
   }
 }

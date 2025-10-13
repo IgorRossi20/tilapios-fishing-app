@@ -122,7 +122,6 @@ const Login = () => {
         }, 1000)
       }
     } catch (error) {
-      console.error('Erro no formulário:', error)
       setError(error.message || getErrorMessage(error.code) || 'Erro inesperado. Tente novamente.')
       // Feedback visual para erro
       document.querySelector('.login-card').classList.add('error-animation')
@@ -152,7 +151,6 @@ const Login = () => {
       setShowForgotPassword(false)
       setResetEmail('')
     } catch (error) {
-      console.error('Erro ao enviar email de recuperação:', error)
       setError(getErrorMessage(error.code) || 'Erro ao enviar email de recuperação.')
     } finally {
       setLoading(false)

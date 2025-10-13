@@ -66,7 +66,6 @@ const Tournaments = () => {
       
       setPublicTournaments(publicTournaments)
     } catch (error) {
-      console.error('Erro ao carregar campeonatos:', error)
       setMessage('Erro ao carregar campeonatos')
     } finally {
       setLoading(false)
@@ -97,7 +96,6 @@ const Tournaments = () => {
       setShowCreateForm(false)
       loadTournaments()
     } catch (error) {
-      console.error('Erro ao criar campeonato:', error)
       setMessage('Erro ao criar campeonato')
     }
   }
@@ -108,7 +106,6 @@ const Tournaments = () => {
       setMessage('Solicitação de participação enviada com sucesso!')
       await loadTournaments()
     } catch (error) {
-      console.error('Erro ao solicitar participação no campeonato:', error)
       setMessage('Erro ao solicitar participação no campeonato: ' + error.message)
     }
   }
@@ -121,7 +118,6 @@ const Tournaments = () => {
       setMessage('Você saiu do campeonato com sucesso!')
       await loadTournaments()
     } catch (error) {
-      console.error('Erro ao sair do campeonato:', error)
       setMessage('Erro ao sair do campeonato: ' + error.message)
     }
   }
@@ -134,7 +130,6 @@ const Tournaments = () => {
       setMessage('Campeonato deletado com sucesso!')
       await loadTournaments()
     } catch (error) {
-      console.error('Erro ao deletar campeonato:', error)
       setMessage('Erro ao deletar campeonato: ' + error.message)
     }
   }
@@ -147,7 +142,6 @@ const Tournaments = () => {
       setMessage('Campeonato finalizado com sucesso!')
       await loadTournaments()
     } catch (error) {
-      console.error('Erro ao finalizar campeonato:', error)
       setMessage('Erro ao finalizar campeonato: ' + error.message)
     }
   }
@@ -175,7 +169,6 @@ const Tournaments = () => {
       if (now >= startDate && now <= endDate) return 'active'
       return 'finished'
     } catch (err) {
-      console.error('Erro ao calcular status do campeonato:', err, tournament)
       return tournament?.status || 'unknown'
     }
   }
@@ -208,7 +201,6 @@ const Tournaments = () => {
     try {
       return d.toLocaleDateString('pt-BR')
     } catch (e) {
-      console.error('Data inválida:', dateString, e)
       return '-'
     }
   }

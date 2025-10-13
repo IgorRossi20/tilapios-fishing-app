@@ -23,13 +23,13 @@ export const compressImage = async (file, maxSizeBytes = MAX_FILE_SIZE) => {
 
     // Se já está dentro do limite, retornar o arquivo original
     if (file.size <= maxSizeBytes) {
-      console.log('✅ Imagem já está dentro do limite de tamanho:', formatFileSize(file.size));
+      // console.log('✅ Imagem já está dentro do limite de tamanho:', formatFileSize(file.size));
       resolve(file);
       return;
     }
 
-    console.log('📏 Tamanho original:', formatFileSize(file.size));
-    console.log('🎯 Tamanho alvo:', formatFileSize(maxSizeBytes));
+    // console.log('📏 Tamanho original:', formatFileSize(file.size));
+    // console.log('🎯 Tamanho alvo:', formatFileSize(maxSizeBytes));
 
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -43,14 +43,14 @@ export const compressImage = async (file, maxSizeBytes = MAX_FILE_SIZE) => {
         canvas.width = width;
         canvas.height = height;
 
-        console.log(`📐 Redimensionando de ${img.width}x${img.height} para ${width}x${height}`);
+        // console.log(`📐 Redimensionando de ${img.width}x${img.height} para ${width}x${height}`);
 
         // Desenhar imagem redimensionada
         ctx.drawImage(img, 0, 0, width, height);
 
         // Otimização: Calcular qualidade inicial com base na taxa de compressão necessária
         const initialQuality = Math.max(MIN_QUALITY, Math.min(0.9, maxSizeBytes / file.size));
-        console.log(`📉 Qualidade inicial estimada: ${Math.round(initialQuality * 100)}%`);
+        // console.log(`📉 Qualidade inicial estimada: ${Math.round(initialQuality * 100)}%`);
 
         // Tentar comprimir com a qualidade estimada
         compressWithQuality(canvas, file.name, file.type, maxSizeBytes, initialQuality)
@@ -117,7 +117,7 @@ const compressWithQuality = async (canvas, fileName, mimeType, maxSizeBytes, ini
       canvas.toBlob(resolve, outputMimeType, quality);
     });
 
-    console.log(`🔄 Tentativa ${attempts + 1}: Qualidade ${Math.round(quality * 100)}%, Tamanho: ${formatFileSize(blob.size)}`);
+    // console.log(`🔄 Tentativa ${attempts + 1}: Qualidade ${Math.round(quality * 100)}%, Tamanho: ${formatFileSize(blob.size)}`);
 
     if (blob.size <= maxSizeBytes || quality <= MIN_QUALITY) {
       // Criar arquivo com nome apropriado
@@ -129,7 +129,7 @@ const compressWithQuality = async (canvas, fileName, mimeType, maxSizeBytes, ini
         lastModified: Date.now()
       });
 
-      console.log('✅ Compressão concluída:', formatFileSize(compressedFile.size));
+      // console.log('✅ Compressão concluída:', formatFileSize(compressedFile.size));
       return compressedFile;
     }
 

@@ -180,7 +180,6 @@ const Profile = () => {
       })
       
     } catch (error) {
-      console.error('Erro ao carregar dados do usuário:', error)
     } finally {
       setLoading(false)
     }
@@ -193,12 +192,9 @@ const Profile = () => {
       try {
         localStorage.setItem('profileData', JSON.stringify(profileData))
       } catch (err) {
-        console.warn('Falha ao salvar no localStorage:', err)
       }
-      console.log('Salvando perfil:', profileData)
       setEditMode(false)
     } catch (error) {
-      console.error('Erro ao salvar perfil:', error)
     }
   }
 
@@ -215,7 +211,6 @@ const Profile = () => {
       }
       reader.readAsDataURL(compressed)
     } catch (err) {
-      console.error('Erro ao processar avatar:', err)
     }
   }
 
@@ -233,7 +228,6 @@ const Profile = () => {
       
       return date.toLocaleDateString('pt-BR')
     } catch (error) {
-      console.error('Erro ao formatar data:', error)
       return 'Data não disponível'
     }
   }

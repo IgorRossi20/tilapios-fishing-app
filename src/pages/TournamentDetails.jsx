@@ -78,7 +78,6 @@ const TournamentDetails = () => {
       }
       
     } catch (error) {
-      console.error('Erro ao carregar detalhes do campeonato:', error)
       setMessage('Erro ao carregar detalhes do campeonato')
     } finally {
       setLoading(false)

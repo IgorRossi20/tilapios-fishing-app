@@ -109,7 +109,6 @@ const CatchRegistration = () => {
         validateImageFile(file)
         
         // Comprimir imagem para máximo 5MB
-        console.log('🔄 Iniciando compressão da imagem...')
         const compressedFile = await compressImage(file)
         
         // Armazenar arquivo comprimido
@@ -125,7 +124,6 @@ const CatchRegistration = () => {
         }, 3000)
         
       } catch (error) {
-        console.error('❌ Erro ao processar imagem:', error)
         setMessage('Erro ao processar imagem: ' + error.message)
         setMessageType('error')
         

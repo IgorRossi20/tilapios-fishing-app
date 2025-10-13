@@ -107,7 +107,7 @@ const Ranking = () => {
         setTournamentInfo(tournament)
       }
     } catch (error) {
-      console.error('Erro ao carregar ranking:', error)
+      // console.error('Erro ao carregar ranking:', error)
     } finally {
       setLoading(false)
     }
@@ -140,7 +140,7 @@ const Ranking = () => {
       
       return date.toLocaleDateString('pt-BR')
     } catch (error) {
-      console.error('Erro ao formatar data:', error)
+      // console.error('Erro ao formatar data:', error)
       return 'Data não disponível'
     }
   }

@@ -9,14 +9,12 @@ const AuthProvider = ({ children }) => {
 
   // Função para fazer login
   const login = async (email, password) => {
-    console.log('🔐 Tentativa de login:', { email, password })
     
     // Buscar usuários do localStorage sempre que fazer login
     let mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]')
     
     // Se não há usuários, criar usuários de teste
     if (mockUsers.length === 0) {
-      console.log('⚠️ Nenhum usuário encontrado. Criando usuários de teste...')
       const testUsers = [
         {
           uid: 'user_test_1',
@@ -44,10 +42,8 @@ const AuthProvider = ({ children }) => {
       
       localStorage.setItem('mockUsers', JSON.stringify(testUsers))
       mockUsers = testUsers
-      console.log('✅ Usuários de teste criados:', testUsers)
     }
     
-    console.log('👥 Usuários disponíveis:', mockUsers)
     setLoading(true)
     
     // Simular delay de rede
@@ -55,10 +51,8 @@ const AuthProvider = ({ children }) => {
     
     try {
       const existingUser = mockUsers.find(u => u.email === email && u.password === password)
-      console.log('🔍 Usuário encontrado:', existingUser)
       
       if (!existingUser) {
-        console.log('❌ Usuário não encontrado')
         const error = new Error('Usuário não encontrado. Verifique email e senha.')
         error.code = 'auth/user-not-found'
         throw error
@@ -76,7 +70,6 @@ const AuthProvider = ({ children }) => {
       
       setUser(userData)
       localStorage.setItem('currentUser', JSON.stringify(userData))
-      console.log('🎉 Login bem-sucedido:', userData)
       setLoading(false)
       
       return { user: userData }
@@ -88,11 +81,9 @@ const AuthProvider = ({ children }) => {
 
   // Função para registrar usuário
   const register = async (email, password, displayName) => {
-    console.log('📝 Tentativa de registro:', { email, password, displayName })
     
     // Buscar usuários do localStorage sempre que fazer registro
     const mockUsers = JSON.parse(localStorage.getItem('mockUsers') || '[]')
-    console.log('👥 Usuários existentes:', mockUsers)
     setLoading(true)
     
     // Simular delay de rede
@@ -101,10 +92,8 @@ const AuthProvider = ({ children }) => {
     try {
       // Verificar se usuário já existe
       const existingUser = mockUsers.find(u => u.email === email)
-      console.log('🔍 Usuário já existe?', existingUser)
       
       if (existingUser) {
-        console.log('❌ Email já está em uso')
         const error = new Error('Este email já está cadastrado. Tente fazer login.')
         error.code = 'auth/email-already-in-use'
         throw error
@@ -126,8 +115,6 @@ const AuthProvider = ({ children }) => {
       // Salvar no localStorage (simulando banco de dados)
       const updatedUsers = [...mockUsers, newUser]
       localStorage.setItem('mockUsers', JSON.stringify(updatedUsers))
-      console.log('✅ Novo usuário criado:', newUser)
-      console.log('💾 Usuários salvos no localStorage:', updatedUsers)
       
       // Fazer login automático após registro
       const userData = {
@@ -142,7 +129,6 @@ const AuthProvider = ({ children }) => {
       
       setUser(userData)
       localStorage.setItem('currentUser', JSON.stringify(userData))
-      console.log('🎉 Login automático após registro:', userData)
       setLoading(false)
       
       return { user: userData }
@@ -165,9 +151,7 @@ const AuthProvider = ({ children }) => {
       try {
         const userData = JSON.parse(savedUser)
         setUser(userData)
-        console.log('✅ Usuário carregado do localStorage:', userData)
       } catch (error) {
-        console.error('Erro ao carregar usuário salvo:', error)
         localStorage.removeItem('currentUser')
       }
     }

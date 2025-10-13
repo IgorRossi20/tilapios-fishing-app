@@ -81,7 +81,6 @@ const FishingProvider = ({ children }) => {
   // Efeito para sincronizar dados quando online
   useEffect(() => {
     if (isOnline) {
-      console.log('🔄 Conexão restaurada, sincronizando dados...')
       syncLocalDataToFirestore()
     }
   }, [isOnline])
@@ -101,7 +100,6 @@ const FishingProvider = ({ children }) => {
           await syncGlobalData()
         }
       } catch (error) {
-        console.error('❌ Erro ao carregar dados iniciais:', error)
       } finally {
         setLoading(false)
       }
@@ -150,10 +148,8 @@ const FishingProvider = ({ children }) => {
       await syncGlobalData()
 
       setSyncStatus('success')
-      console.log('✅ Sincronização concluída com sucesso!')
     } catch (error) {
       setSyncStatus('error')
-      console.error('❌ Erro durante a sincronização:', error)
     }
   }
 
@@ -192,7 +188,6 @@ const FishingProvider = ({ children }) => {
         setAllCatches(getFromLocalStorage('all_catches', []))
       }
     } catch (error) {
-      console.error('❌ Erro ao sincronizar dados globais:', error)
       // Fallback para cache local em caso de erro
       setAllTournaments(getFromLocalStorage('all_tournaments', []))
       setAllCatches(getFromLocalStorage('all_catches', []))
@@ -267,10 +262,6 @@ const FishingProvider = ({ children }) => {
           }
         }
       } catch (error) {
-        console.error(
-          `❌ Erro ao sincronizar participação para o campeonato ${participation.tournamentId}:`,
-          error
-        )
       }
     }
 
@@ -325,7 +316,6 @@ const FishingProvider = ({ children }) => {
         )
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar campeonatos do usuário:', error)
       setUserTournaments(
         getFromLocalStorage(`user_tournaments_${user.uid}`, [])
       )
@@ -353,7 +343,6 @@ const FishingProvider = ({ children }) => {
         setUserCatches(getFromLocalStorage(`user_catches_${user.uid}`, []))
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar capturas do usuário:', error)
       setUserCatches(getFromLocalStorage(`user_catches_${user.uid}`, []))
     }
   }
@@ -376,7 +365,6 @@ const FishingProvider = ({ children }) => {
         return localCatches;
       }
     } catch (error) {
-      console.error("Erro ao carregar todas as capturas:", error);
       const localCatches = getFromLocalStorage('all_catches', []);
       setAllCatches(localCatches);
       return localCatches;
@@ -429,7 +417,6 @@ const FishingProvider = ({ children }) => {
         return { id: `temp-${Date.now()}`, ...newTournament }
       }
     } catch (error) {
-      console.error('❌ Erro ao criar campeonato:', error)
       throw error
     }
   }
@@ -522,7 +509,6 @@ const FishingProvider = ({ children }) => {
         notifyJoinedTournament(tournament.name)
       }
     } catch (error) {
-      console.error('❌ Erro ao entrar no campeonato:', error)
       throw error
     }
   }
@@ -569,7 +555,6 @@ const FishingProvider = ({ children }) => {
         )
       }
     } catch (error) {
-      console.error('❌ Erro ao sair do campeonato:', error)
       throw error
     }
   }
@@ -630,7 +615,6 @@ const FishingProvider = ({ children }) => {
         notifyTournamentCancelled(tournament.name)
       }
     } catch (error) {
-      console.error('❌ Erro ao cancelar campeonato:', error)
       throw error
     }
   }
@@ -738,7 +722,6 @@ const FishingProvider = ({ children }) => {
 
       return finalRanking
     } catch (error) {
-      console.error('❌ Erro ao finalizar campeonato:', error)
       throw error
     }
   }
@@ -746,16 +729,12 @@ const FishingProvider = ({ children }) => {
   // Função para fazer upload de imagem usando Supabase Storage
   const uploadImage = async (file, path) => {
     if (!file) {
-      console.log('⚠️ Nenhum arquivo fornecido para upload')
       return null
     }
 
     try {
-      console.log('📤 Iniciando upload da imagem com Supabase...')
-
       // Verificar se o Supabase está configurado
       if (!isSupabaseConfigured()) {
-        console.error('❌ Supabase não está configurado')
         throw new Error(
           'Supabase não está configurado. Verifique as variáveis de ambiente.'
         )
@@ -763,19 +742,14 @@ const FishingProvider = ({ children }) => {
 
       // Verificar se o usuário está autenticado
       if (!user) {
-        console.error('❌ Usuário não está autenticado')
         throw new Error('Usuário deve estar autenticado para fazer upload')
       }
-
-      console.log('👤 Usuário autenticado:', user.uid)
 
       // Usar a função do Supabase para upload
       const imageUrl = await uploadImageToSupabase(file, user.uid, 'catches')
 
-      console.log('✅ Upload concluído com Supabase:', imageUrl)
       return imageUrl
     } catch (error) {
-      console.error('❌ Erro no upload da imagem:', error)
       throw new Error('Erro ao fazer upload da imagem: ' + error.message)
     }
   }
@@ -801,17 +775,11 @@ const FishingProvider = ({ children }) => {
 
   // Registrar nova captura com suporte offline
   const registerCatch = async catchData => {
-    console.log('🎣 Iniciando registro de captura...')
-    console.log('👤 Usuário autenticado:', !!user, user?.uid)
-    console.log('📊 Dados da captura:', catchData)
-
     if (!user) {
-      console.error('❌ Usuário não autenticado!')
       throw new Error('Usuário não autenticado')
     }
 
     if (!user.uid) {
-      console.error('❌ UID do usuário não encontrado!')
       throw new Error('UID do usuário não encontrado')
     }
 
@@ -819,11 +787,8 @@ const FishingProvider = ({ children }) => {
     let photoURL = null
     if (catchData.photo && catchData.photo instanceof File) {
       try {
-        console.log('📸 Fazendo upload da foto...')
         photoURL = await uploadImage(catchData.photo, `catches/${user.uid}`)
-        console.log('✅ Foto enviada com sucesso:', photoURL)
       } catch (error) {
-        console.error('❌ Erro no upload da foto, a captura será salva sem imagem:', error)
         photoURL = null // Garante que a foto não será salva se o upload falhar
       }
     }
@@ -842,18 +807,13 @@ const FishingProvider = ({ children }) => {
         .substring(2, 15)}_${performance.now().toString().replace('.', '')}`
     }
 
-    console.log('📝 Dados estruturados para salvar:', newCatch)
-
     try {
       if (isOnline) {
-        console.log('🌐 Online - salvando no Firestore...')
         // Se online, salvar diretamente no Firestore
         const docRef = await addDoc(collection(db, 'fishing_catches'), {
           ...newCatch,
           syncedAt: new Date().toISOString()
         })
-
-        console.log('✅ Captura salva no Firestore com ID:', docRef.id)
 
         // Atualizar ID com o ID real do Firestore
         newCatch.id = docRef.id
@@ -890,16 +850,10 @@ const FishingProvider = ({ children }) => {
           newCatch.weight
         )
 
-        console.log(
-          'Captura salva offline. Será sincronizada quando a conexão for restaurada.'
-        )
-
         // Retornar os dados da captura
         return newCatch
       }
     } catch (error) {
-      console.error('Erro ao registrar captura:', error)
-
       // Em caso de erro, tentar salvar offline
       const pendingCatches = getFromLocalStorage('pending_catches', [])
       pendingCatches.push(newCatch)
@@ -957,11 +911,6 @@ const FishingProvider = ({ children }) => {
 
       return computeRankingFromCatches(catches, rankingType)
     } catch (error) {
-      console.warn(
-        'Aviso ao obter ranking do torneio (usando fallback local):',
-        error?.message || error
-      )
-
       // Em caso de erro, tentar usar dados locais como fallback
       try {
         const allLocalCatches = getFromLocalStorage('all_catches', [])
@@ -974,10 +923,6 @@ const FishingProvider = ({ children }) => {
         )
         return computeRankingFromCatches(tournamentCatches, rankingType)
       } catch (localError) {
-        console.warn(
-          'Aviso ao acessar dados locais para ranking do torneio:',
-          localError?.message || localError
-        )
       }
 
       return []
@@ -1234,7 +1179,7 @@ const FishingProvider = ({ children }) => {
         // Salvar convite no Firestore
         await addDoc(collection(db, COLLECTIONS.TOURNAMENT_INVITES), invite)
         if (typeof notifyInviteSent === 'function') {
-          notifyInviteSent(inviteeEmail, tournament.name);
+          notifyInviteSent(inviteeEmail, tournament.name)
         }
       } else {
         // Salvar no cache local
@@ -1242,7 +1187,7 @@ const FishingProvider = ({ children }) => {
         pendingInvites.push(invite)
         saveToLocalStorage('pending_invites', pendingInvites)
         if (typeof notifyInviteSent === 'function') {
-          notifyInviteSent(inviteeEmail, tournament.name);
+          notifyInviteSent(inviteeEmail, tournament.name)
         }
       }
 
