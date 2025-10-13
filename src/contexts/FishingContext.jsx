@@ -823,16 +823,8 @@ const FishingProvider = ({ children }) => {
         photoURL = await uploadImage(catchData.photo, `catches/${user.uid}`)
         console.log('✅ Foto enviada com sucesso:', photoURL)
       } catch (error) {
-        console.error('❌ Erro no upload da foto:', error)
-        // Fallback: armazenar como Data URL para não perder a imagem quando Supabase não está disponível
-        try {
-          console.log('🔄 Aplicando fallback: convertendo foto para Data URL...')
-          photoURL = await fileToDataURL(catchData.photo)
-          console.log('✅ Fallback concluído, imagem convertida em Data URL')
-        } catch (fallbackError) {
-          console.error('❌ Erro no fallback de imagem:', fallbackError)
-          photoURL = null
-        }
+        console.error('❌ Erro no upload da foto, a captura será salva sem imagem:', error)
+        photoURL = null // Garante que a foto não será salva se o upload falhar
       }
     }
 
