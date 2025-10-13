@@ -48,8 +48,12 @@ export const compressImage = async (file, maxSizeBytes = MAX_FILE_SIZE) => {
         // Desenhar imagem redimensionada
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Comprimir com qualidade variável até atingir o tamanho desejado
-        compressWithQuality(canvas, file.name, file.type, maxSizeBytes)
+        // Otimização: Calcular qualidade inicial com base na taxa de compressão necessária
+        const initialQuality = Math.max(MIN_QUALITY, Math.min(0.9, maxSizeBytes / file.size));
+        console.log(`📉 Qualidade inicial estimada: ${Math.round(initialQuality * 100)}%`);
+
+        // Tentar comprimir com a qualidade estimada
+        compressWithQuality(canvas, file.name, file.type, maxSizeBytes, initialQuality)
           .then(resolve)
           .catch(reject);
 
@@ -100,10 +104,10 @@ const calculateDimensions = (originalWidth, originalHeight) => {
 /**
  * Comprime com qualidade variável até atingir tamanho desejado
  */
-const compressWithQuality = async (canvas, fileName, mimeType, maxSizeBytes) => {
-  let quality = 0.9; // Começar com 90% de qualidade
+const compressWithQuality = async (canvas, fileName, mimeType, maxSizeBytes, initialQuality = 0.9) => {
+  let quality = initialQuality;
   let attempts = 0;
-  const maxAttempts = 10;
+  const maxAttempts = 5; // Reduzir o número de tentativas
 
   // Garantir que o tipo MIME seja suportado para compressão
   const outputMimeType = mimeType === 'image/png' ? 'image/jpeg' : mimeType;

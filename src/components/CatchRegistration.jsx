@@ -7,7 +7,7 @@ import './CatchRegistration.css'
 
 const CatchRegistration = () => {
   const navigate = useNavigate()
-  const { userTournaments, registerCatch, calculateUserStats } = useFishing()
+  const { userTournaments, registerCatch, calculateUserStats, addOptimisticCatch } = useFishing() // Adicionar addOptimisticCatch
   const [formData, setFormData] = useState({
     species: '',
     weight: '',
@@ -63,36 +63,36 @@ const CatchRegistration = () => {
 
     try {
       setLoading(true)
+
+      // Otimização: Adicionar captura otimista imediatamente
+      const optimisticCatch = {
+        ...formData,
+        id: `temp_${Date.now()}`,
+        weight: parseFloat(formData.weight),
+        caughtAt: new Date().toISOString(),
+        photo: formData.photo ? URL.createObjectURL(formData.photo) : null, // Usar URL local para exibição imediata
+        isOptimistic: true
+      }
+      addOptimisticCatch(optimisticCatch)
+
+      // Redirecionar para o feed imediatamente
+      navigate('/')
+
+      // Registrar a captura em segundo plano
       await registerCatch({
         ...formData,
         weight: parseFloat(formData.weight),
         caughtAt: new Date().toISOString()
       })
       
-      setMessage('Pesca registrada com sucesso!')
-      setMessageType('success')
-      
-      // Reset form
-      setFormData({
-        species: '',
-        weight: '',
-        tournamentId: '',
-        photo: null,
-        notes: ''
-      })
-      
-      // Update stats
-      const newStats = calculateUserStats()
-      setUserStats(newStats)
-
-      // Redirecionar para o feed
-      setTimeout(() => {
-        navigate('/')
-      }, 1000) // Atraso de 1 segundo para o usuário ver a mensagem
+      // A mensagem de sucesso pode ser mostrada como um toast no feed
+      // Opcional: limpar o formulário aqui se o componente não for desmontado
       
     } catch (error) {
       setMessage('Erro ao registrar pesca: ' + error.message)
       setMessageType('error')
+      // Reverter a atualização otimista em caso de erro
+      // (a lógica de reversão deve ser implementada no FishingContext)
     } finally {
       setLoading(false)
     }

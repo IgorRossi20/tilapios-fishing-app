@@ -53,6 +53,17 @@ const FishingProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [syncStatus, setSyncStatus] = useState('idle') // idle, syncing, success, error
+  const [globalRanking, setGlobalRanking] = useState([])
+  const [isSyncing, setIsSyncing] = useState(false)
+  const [pendingData, setPendingData] = useState({ catches: 0, participations: 0 })
+
+  // Adicionar captura otimista
+  const addOptimisticCatch = (catchData) => {
+    // Adicionar à lista de capturas do usuário
+    setUserCatches(prevCatches => [catchData, ...prevCatches])
+    // Adicionar à lista de todas as capturas
+    setAllCatches(prevCatches => [catchData, ...prevCatches])
+  }
 
   // Efeito para detectar status da conexão
   useEffect(() => {
@@ -1322,6 +1333,7 @@ const FishingProvider = ({ children }) => {
     deleteTournament,
     finishTournament,
     registerCatch,
+    addOptimisticCatch,
     uploadImage,
     loadUserTournaments,
     loadUserCatches,
