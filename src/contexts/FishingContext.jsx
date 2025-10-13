@@ -17,9 +17,10 @@ import {
 } from 'firebase/firestore'
 import { useAuth } from './AuthContext'
 import {
-  isSupabaseConfigured,
-  uploadImageToSupabase
-} from '../services/supabaseStorage'
+  uploadImageToSupabase,
+  deleteImageFromSupabase,
+  isSupabaseConfigured
+} from '../supabase/config'
 import * as notification from '../utils/notificationUtils'
 
 const FishingContext = createContext()
