@@ -1,5 +1,15 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'
-import { db } from '../services/firebaseConfig'
+import { db, storage, functions } from '../firebase/config' // Corrigir o caminho
+import {
+  safeGetDocs,
+  safeGetDoc,
+  safeSetDoc,
+  safeAddDoc,
+  safeUpdateDoc,
+  safeDeleteDoc,
+  createSafeQuery
+} from '../utils/firestoreUtils'
+import { uploadBytes, ref, getDownloadURL } from 'firebase/storage'
 import {
   collection,
   doc,
