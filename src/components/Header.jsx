@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Fish, Trophy, Users, MessageCircle, User, LogOut, Award, Menu, X } from 'lucide-react'
+import { Fish, Trophy, Users, MessageCircle, User, LogOut, Award, Menu, X, Home } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const Header = () => {
@@ -53,6 +53,17 @@ const Header = () => {
           
           {/* Navigation links */}
           <ul className={`nav-links ${isMenuOpen ? 'nav-links-open' : ''}`}>
+            <li>
+              <Link 
+                to="/" 
+                className={`nav-link ${isActive('/')}`} 
+                onClick={closeMenu}
+                aria-current={location.pathname === '/' ? 'page' : undefined}
+              >
+                <Home size={16} />
+                <span>Home</span>
+              </Link>
+            </li>
             <li>
               <Link 
                 to="/ranking" 

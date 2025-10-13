@@ -8,7 +8,16 @@ import './Home.css'
 const Home = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { userCatches, calculateUserStats, getGeneralRanking, isOnline, getFromLocalStorage, syncLocalDataToFirestore } = useFishing()
+  const { 
+    userCatches, 
+    calculateUserStats, 
+    getGeneralRanking, 
+    isOnline, 
+    getFromLocalStorage, 
+    syncLocalDataToFirestore,
+    loadAllCatches, // Importar a nova função
+    allCatches // Importar o novo estado
+  } = useFishing()
   const [stats, setStats] = useState({
     totalFish: 0,
     totalWeight: 0,
@@ -30,8 +39,9 @@ const Home = () => {
       loadDashboardData()
     }
     // Carregar feed sempre, independente do usuário
+    loadAllCatches() // Chamar a nova função para carregar todas as capturas
     loadFeedPosts()
-  }, [user, userCatches])
+  }, [user, userCatches, loadAllCatches]) // Adicionar loadAllCatches às dependências
 
   // Memoizar stats calculados para evitar recálculos desnecessários
   const memoizedStats = useMemo(() => {
@@ -145,23 +155,19 @@ const Home = () => {
 
   const loadFeedPosts = useCallback(async () => {
     try {
-      // Carregar apenas capturas de usuários autenticados
-      let allCatches = JSON.parse(localStorage.getItem('fishing_catches') || '[]')
+      // Usar allCatches em vez de localStorage
+      let catchesToDisplay = allCatches || []
       
-      // Limpar dados antigos com IDs problemáticos
-      allCatches = allCatches.filter(catch_ => {
-        // Remover capturas com IDs antigos que podem causar duplicatas
-        if (catch_.id && catch_.id.includes('temp_1756953370487')) {
+      // Limpar dados antigos com IDs problemáticos (se necessário, mas idealmente isso deve ser feito na fonte)
+      catchesToDisplay = catchesToDisplay.filter(catch_ => {
+        if (catch_.id && catch_.id.includes('temp_')) {
           return false
         }
         return true
       })
       
-      // Salvar dados limpos de volta
-      localStorage.setItem('fishing_catches', JSON.stringify(allCatches))
-      
       // Filtrar apenas capturas que têm userId (usuários autenticados)
-      const authenticatedCatches = allCatches.filter(catch_ => 
+      const authenticatedCatches = catchesToDisplay.filter(catch_ => 
         catch_.userId && 
         catch_.userId !== 'demo' && 
         !catch_.id?.startsWith('demo_')
@@ -169,7 +175,7 @@ const Home = () => {
       
       const posts = authenticatedCatches
         .sort((a, b) => new Date(b.registeredAt || b.date) - new Date(a.registeredAt || a.date))
-        .slice(0, 10)
+        .slice(0, 20) // Aumentar o limite para mais posts
         .map((catch_, index) => ({
           id: catch_.id || `catch_${catch_.userId || 'unknown'}_${catch_.registeredAt || catch_.date || Date.now()}_${index}_${Math.random().toString(36).substring(2, 12)}`,
           type: 'catch',
@@ -197,7 +203,7 @@ const Home = () => {
       console.error('Erro ao carregar feed:', error)
       setFeedPosts([])
     }
-  }, [user])
+  }, [user, allCatches])
 
   const loadDashboardData = async () => {
     try {

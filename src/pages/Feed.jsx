@@ -6,7 +6,7 @@ import './Feed.css'
 
 const Feed = () => {
   const { user } = useAuth()
-  const { createPost, loadPosts, likePost, addComment, sharePost, registerCatch } = useFishing()
+  const { createPost, loadAllCatches, allCatches, likePost, addComment, sharePost, registerCatch } = useFishing()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreatePost, setShowCreatePost] = useState(false)
@@ -56,12 +56,14 @@ const Feed = () => {
 
   useEffect(() => {
     loadPostsData()
-  }, [])
+  }, [allCatches])
 
   const loadPostsData = async () => {
     try {
       setLoading(true)
-      const postsData = await loadPosts()
+      // A função loadAllCatches já foi chamada no Home.jsx e atualiza o allCatches no contexto
+      // Apenas usamos o allCatches aqui
+      const postsData = allCatches || []
       console.log('🔍 Posts carregados no Feed:', postsData)
       console.log('📊 Total de posts:', postsData.length)
       
