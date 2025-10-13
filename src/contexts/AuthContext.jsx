@@ -1,248 +1,101 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { 
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  updateProfile,
-  sendPasswordResetEmail
-} from 'firebase/auth'
-import { doc, setDoc, getDoc, getDocFromCache } from 'firebase/firestore'
-import { auth, db } from './FirebaseContext'
+import { supabase } from './supabaseClient'
 
 const AuthContext = createContext()
 export { AuthContext }
 
 export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth deve ser usado dentro de AuthProvider')
-  }
-  return context
+  return useContext(AuthContext)
 }
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [authError, setAuthError] = useState(null)
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isReady, setIsReady] = useState(false);
+    const [lastEvent, setLastEvent] = useState(null);
 
-  // Função para fazer login
-  const login = async (email, password) => {
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password)
-      return result
-    } catch (error) {
-      throw error
-    }
-  }
+    const syncUserData = async (supabaseUser) => {
+        if (supabaseUser) {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', supabaseUser.id)
+                .single();
 
-  // Função para registrar usuário
-  const register = async (email, password, displayName) => {
-    try {
-      const result = await createUserWithEmailAndPassword(auth, email, password)
-      
-      // Atualizar perfil com nome
-      await updateProfile(result.user, {
-        displayName: displayName
-      })
-
-      // Criar documento do usuário no Firestore
-      await setDoc(doc(db, 'users', result.user.uid), {
-        uid: result.user.uid,
-        email: result.user.email,
-        displayName: displayName,
-        createdAt: new Date(),
-        totalFish: 0,
-        totalWeight: 0,
-        tournaments: [],
-        achievements: []
-      })
-
-      return result
-    } catch (error) {
-      throw error
-    }
-  }
-
-  // Função para logout
-  const logout = async () => {
-    try {
-      await signOut(auth)
-    } catch (error) {
-      throw error
-    }
-  }
-
-  // Função para resetar senha
-  const resetPassword = async (email) => {
-    try {
-      await sendPasswordResetEmail(auth, email)
-      return { success: true, message: 'Email de recuperação enviado com sucesso!' }
-    } catch (error) {
-      throw error
-    }
-  }
-
-  const getUserData = async (uid) => {
-    try {
-      // Primeiro, tentar carregar do cache local para resposta imediata
-      const cachedUserData = localStorage.getItem(`userData_${uid}`)
-      if (cachedUserData) {
-        const userData = JSON.parse(cachedUserData)
-        console.log('📱 Dados do usuário carregados do cache local:', userData)
-        
-        // Sincronizar imediatamente com Firestore online
-        try {
-          const userRef = doc(db, 'users', uid)
-          const userSnap = await getDoc(userRef)
-          if (userSnap.exists()) {
-            const freshData = { id: userSnap.id, ...userSnap.data() }
-            localStorage.setItem(`userData_${uid}`, JSON.stringify(freshData))
-            console.log('🔄 Dados do usuário sincronizados online:', freshData)
-            return freshData // Retornar dados atualizados
-          }
-        } catch (syncError) {
-          console.log('⚠️ Sincronização online falhou, usando cache:', syncError.message)
+            if (error) {
+                setUser(null);
+                setIsAuthenticated(false);
+            } else {
+                const userData = { ...supabaseUser, ...profile };
+                setUser(userData);
+                setIsAuthenticated(true);
+            }
+        } else {
+            setUser(null);
+            setIsAuthenticated(false);
         }
-        
-        return userData
-      }
-      
-      // Se não há cache, tentar buscar online
-      console.log('🌐 Buscando dados do usuário online...')
-      const userRef = doc(db, 'users', uid)
-      const userSnap = await getDoc(userRef)
-      
-      if (userSnap.exists()) {
-        const userData = { id: userSnap.id, ...userSnap.data() }
-        // Salvar no cache para próximas vezes
-        localStorage.setItem(`userData_${uid}`, JSON.stringify(userData))
-        console.log('✅ Dados do usuário obtidos online e salvos no cache:', userData)
-        return userData
-      } else {
-        // Se não existe no Firestore, criar perfil básico
-        console.log('👤 Criando perfil básico do usuário')
-        const userData = {
-          id: uid,
-          name: user?.displayName || 'Usuário',
-          email: user?.email || '',
-          photoURL: user?.photoURL || null,
-          createdAt: new Date().toISOString()
-        }
-        // Salvar no cache
-        localStorage.setItem(`userData_${uid}`, JSON.stringify(userData))
-        return userData
-      }
-    } catch (error) {
-      console.log('⚠️ Erro ao buscar dados online, usando dados básicos:', error.message)
-      
-      // Criar dados básicos do Firebase Auth
-      const basicUserData = {
-        id: uid,
-        name: user?.displayName || 'Usuário',
-        email: user?.email || '',
-        photoURL: user?.photoURL || null,
-        createdAt: new Date().toISOString()
-      }
-      
-      // Salvar no cache para próximas vezes
-      localStorage.setItem(`userData_${uid}`, JSON.stringify(basicUserData))
-      console.log('💾 Dados básicos salvos no cache local')
-      
-      return basicUserData
-    }
-  }
+    };
 
-  // Monitorar mudanças no estado de autenticação
-  useEffect(() => {
-    let unsubscribe;
-    
-    try {
-      unsubscribe = onAuthStateChanged(auth, async (user) => {
-        try {
-          if (user) {
-            // Buscar dados adicionais do usuário
-            const userData = await getUserData(user.uid)
-            setUser({
-              ...user,
-              ...userData
-            })
-            setAuthError(null) // Limpar erro se autenticação for bem-sucedida
-          } else {
-            setUser(null)
-          }
-        } catch (error) {
-          console.error('❌ Erro ao processar mudança de autenticação:', error)
-          
-          // Verificar se é erro de domínio não autorizado
-          if (error.code === 'auth/invalid-api-key' || 
-              error.code === 'auth/domain-not-authorized' ||
-              error.message?.includes('domain-not-authorized')) {
-            setAuthError({
-              type: 'domain-not-authorized',
-              code: error.code,
-              message: error.message,
-              domain: window.location.hostname
-            })
-          } else {
-            setAuthError({
-              type: 'general',
-              code: error.code,
-              message: error.message
-            })
-          }
-          
-          setUser(null)
-        } finally {
-          setLoading(false)
-        }
-      })
-    } catch (error) {
-      console.error('❌ Erro ao configurar listener de autenticação:', error)
-      
-      // Verificar se é erro de domínio não autorizado
-      if (error.code === 'auth/invalid-api-key' || 
-          error.code === 'auth/domain-not-authorized' ||
-          error.message?.includes('domain-not-authorized')) {
-        setAuthError({
-          type: 'domain-not-authorized',
-          code: error.code,
-          message: error.message,
-          domain: window.location.hostname
-        })
-      } else {
-        setAuthError({
-          type: 'general',
-          code: error.code,
-          message: error.message
-        })
-      }
-      
-      setLoading(false)
-    }
+    useEffect(() => {
+        const setupAuthListener = async () => {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    await syncUserData(session.user);
+                } else {
+                    setUser(null);
+                    setIsAuthenticated(false);
+                }
+                setLoading(false);
+                setIsReady(true);
 
-    return () => {
-      if (unsubscribe) {
-        unsubscribe()
-      }
-    }
-  }, [])
+                const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+                    setLastEvent(event);
+                    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+                        if (session) {
+                            await syncUserData(session.user);
+                        }
+                    } else if (event === 'SIGNED_OUT') {
+                        setUser(null);
+                        setIsAuthenticated(false);
+                    }
+                });
 
-  const value = {
-    user,
-    loading,
-    authError,
-    login,
-    register,
-    logout,
-    resetPassword,
-    getUserData,
-    clearAuthError: () => setAuthError(null)
-  }
+                return () => {
+                    if (authListener && authListener.subscription) {
+                        authListener.subscription.unsubscribe();
+                    }
+                };
+            } catch (error) {
+                setLoading(false);
+                setIsReady(true);
+            }
+        };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  )
+        setupAuthListener();
+    }, []);
+
+    const login = (email, password) => supabase.auth.signInWithPassword({ email, password });
+    const register = (email, password, options) => supabase.auth.signUp({ email, password, options });
+    const logout = () => supabase.auth.signOut();
+    const resetPassword = (email) => supabase.auth.resetPasswordForEmail(email);
+
+    const value = {
+        user,
+        loading,
+        isAuthenticated,
+        isReady,
+        lastEvent,
+        login,
+        register,
+        logout,
+        resetPassword,
+    };
+
+    return (
+        <AuthContext.Provider value={value}>
+            {!loading && children}
+        </AuthContext.Provider>
+    );
 }

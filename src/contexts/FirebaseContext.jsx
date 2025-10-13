@@ -13,24 +13,13 @@ const currentDomain = window.location.hostname
 // Verificar se o domínio atual é válido para o Firebase
 const isValidDomain = isValidFirebaseDomain();
 if (!isValidDomain) {
-  // console.warn('⚠️ O domínio atual pode não estar autorizado no Firebase Authentication');
+  
 }
 
 // Firestore já configurado no config.js (initializeFirestore com auto long polling)
 
 // Filtrar erros ERR_ABORTED que são comuns e não afetam a funcionalidade
 const originalConsoleError = console.error
-// console.error = (...args) => {
-//   const message = args.join(' ')
-//   if (message.includes('ERR_ABORTED') || 
-//       message.includes('net::ERR_ABORTED') ||
-//       message.includes('firestore.googleapis.com') ||
-//       message.includes('Failed to fetch') ||
-//       message.includes('NetworkError')) {
-//     return // Ignorar esses erros de rede comuns
-//   }
-//   originalConsoleError.apply(console, args)
-// }
 
 // Interceptar erros de rede para suprimir ERR_ABORTED do Firestore
 window.addEventListener('error', (event) => {

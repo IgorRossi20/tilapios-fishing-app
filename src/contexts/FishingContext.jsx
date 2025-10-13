@@ -984,11 +984,6 @@ const FishingProvider = ({ children }) => {
             )
           )
         } catch (error) {
-          console.warn(
-            '⚠️ Falha ao finalizar automaticamente campeonato:',
-            t?.id,
-            error?.message || error
-          )
         }
       }
     }
