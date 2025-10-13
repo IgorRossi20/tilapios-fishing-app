@@ -22,6 +22,7 @@ import {
   isSupabaseConfigured
 } from '../supabase/config'
 import { useNotification } from './NotificationContext'
+import { saveToLocalStorage, getFromLocalStorage } from '../utils/localStorage';
 
 const FishingContext = createContext()
 
