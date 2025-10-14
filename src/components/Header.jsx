@@ -12,7 +12,6 @@ const Header = () => {
     try {
       await logout()
     } catch (error) {
-      // console.error('Erro ao fazer logout:', error)
     }
   }
 

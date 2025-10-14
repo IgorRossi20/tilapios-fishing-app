@@ -262,6 +262,8 @@ const FishingProvider = ({ children }) => {
           }
         }
       } catch (error) {
+        // Silently ignore errors for individual participation syncs
+        // The participation will be retried on the next sync
       }
     }
 
@@ -923,19 +925,72 @@ const FishingProvider = ({ children }) => {
         )
         return computeRankingFromCatches(tournamentCatches, rankingType)
       } catch (localError) {
+        // Silently catch local errors
       }
 
       return []
     }
   }
 
-  // Obter ranking geral usando dados sincronizados em tempo real
-  const getGeneralRanking = (rankingType = 'weight') => {
-    // Usar dados sincronizados em tempo real para ranking instantâneo
-    const catchesToUse =
-      allCatches.length > 0 ? allCatches : getFromLocalStorage('all_catches', [])
-    return computeRankingFromCatches(catchesToUse, rankingType)
-  }
+  const getGeneralRanking = async () => {
+    try {
+      const usersRef = collection(db, "users");
+      const usersSnap = await getDocs(usersRef);
+      const users = usersSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+      const ranking = await Promise.all(
+        users.map(async (user) => {
+          const stats = await getUserStats(user.id);
+          return { userName: user.name, totalWeight: stats.totalWeight };
+        })
+      );
+
+      ranking.sort((a, b) => b.totalWeight - a.totalWeight);
+
+      return ranking;
+    } catch (error) {
+      return [];
+    }
+  };
+
+  const getAdvancedRanking = async () => {
+    try {
+      const usersRef = collection(db, "users");
+      const usersSnap = await getDocs(usersRef);
+      const users = usersSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+      const ranking = await Promise.all(
+        users.map(async (user) => {
+          const catchesRef = collection(db, "catches");
+          const q = query(catchesRef, where("userId", "==", user.id));
+          const catchesSnap = await getDocs(q);
+
+          let totalWeight = 0;
+          let largestCatch = 0;
+          let numberOfCatches = 0;
+
+          catchesSnap.forEach((doc) => {
+            const catchData = doc.data();
+            totalWeight += catchData.weight;
+            numberOfCatches++;
+            if (catchData.weight > largestCatch) {
+              largestCatch = catchData.weight;
+            }
+          });
+
+          const score = (totalWeight * 0.6) + (largestCatch * 0.3) + (numberOfCatches * 0.1);
+
+          return { userName: user.name, score, totalWeight, largestCatch, numberOfCatches };
+        })
+      );
+
+      ranking.sort((a, b) => b.score - a.score);
+
+      return ranking;
+    } catch (error) {
+      return [];
+    }
+  };
 
   // Encerrar automaticamente campeonatos cujo período já acabou e gerar ranking
   useEffect(() => {
@@ -1024,7 +1079,6 @@ const FishingProvider = ({ children }) => {
         return postWithId
       }
     } catch (error) {
-      console.error('Erro ao criar post:', error)
       throw error
     }
   }
@@ -1033,7 +1087,6 @@ const FishingProvider = ({ children }) => {
     try {
       // Carregar posts locais primeiro
       const localPosts = getFromLocalStorage('local_posts', [])
-      console.log('📱 Posts locais carregados:', localPosts)
 
       if (isOnline) {
         const postsQuery = query(
@@ -1044,21 +1097,17 @@ const FishingProvider = ({ children }) => {
         const posts = []
         snapshot.forEach(doc => {
           const postData = { id: doc.id, ...doc.data() }
-          console.log('🔍 Post carregado do Firestore:', postData)
           posts.push(postData)
         })
 
         // Combinar com posts locais não sincronizados
         const tempPosts = localPosts.filter(post => post.isTemp)
         const allPosts = [...tempPosts, ...posts]
-        console.log('📋 Todos os posts combinados:', allPosts)
         return allPosts
       } else {
-        console.log('📴 Modo offline - retornando apenas posts locais')
         return localPosts
       }
     } catch (error) {
-      console.error('Erro ao carregar posts:', error)
       return getFromLocalStorage('local_posts', [])
     }
   }
@@ -1092,7 +1141,6 @@ const FishingProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Erro ao curtir post:', error)
       throw error
     }
   }
@@ -1118,7 +1166,6 @@ const FishingProvider = ({ children }) => {
       }
       return comment
     } catch (error) {
-      console.error('Erro ao adicionar comentário:', error)
       throw error
     }
   }
@@ -1139,7 +1186,6 @@ const FishingProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Erro ao compartilhar post:', error)
       throw error
     }
   }
@@ -1188,7 +1234,6 @@ const FishingProvider = ({ children }) => {
 
       return invite
     } catch (error) {
-      console.error('Erro ao enviar convite:', error)
       throw error
     }
   }
@@ -1216,7 +1261,6 @@ const FishingProvider = ({ children }) => {
 
       notifyInviteAccepted();
     } catch (error) {
-      console.error('Erro ao aceitar convite:', error)
       throw error
     }
   }
@@ -1251,7 +1295,6 @@ const FishingProvider = ({ children }) => {
         return getFromLocalStorage(`user_invites_${user.uid}`, [])
       }
     } catch (error) {
-      console.error('Erro ao carregar convites:', error)
       return []
     }
   }

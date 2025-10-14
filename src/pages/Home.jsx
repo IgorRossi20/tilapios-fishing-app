@@ -237,12 +237,9 @@ const Home = () => {
 
       // Carregar capturas recentes do usuário (últimas 5)
        const userRecentCaptures = myCaptures.slice(-5).reverse()
-       console.log('📅 Capturas recentes do usuário:', userRecentCaptures)
        setRecentCatches(userRecentCaptures)
 
        // Obter Rei do Lago (top 1 do ranking geral)
-       console.log('👑 Obtendo Rei do Lago do ranking geral...')
-       
        if (generalRanking.length > 0 && generalRanking[0].totalWeight > 0) {
          const kingOfLake = {
            userId: generalRanking[0].userId,
@@ -491,7 +488,7 @@ const Home = () => {
                              month: 'short'
                            }).toUpperCase()
                          } catch (error) {
-                           console.error('Erro ao formatar timestamp:', error)
+                           
                            return 'Data não disponível'
                          }
                        })()}

@@ -64,26 +64,12 @@ const Feed = () => {
       // A função loadAllCatches já foi chamada no Home.jsx e atualiza o allCatches no contexto
       // Apenas usamos o allCatches aqui
       const postsData = allCatches || []
-      // console.log('🔍 Posts carregados no Feed:', postsData)
-      // console.log('📊 Total de posts:', postsData.length)
       
       // Debug: verificar se as imagens estão presentes
       postsData.forEach((post, index) => {
-        // console.log(`📋 Post ${index + 1} (ID: ${post.id}):`, {
-        //   completePost: post,
-        //   image: post.image,
-        //   photo: post.photo,
-        //   hasImage: !!post.image,
-        //   hasPhoto: !!post.photo,
-        //   imageType: typeof post.image,
-        //   photoType: typeof post.photo,
-        //   imageValue: post.image,
-        //   photoValue: post.photo
-        // })
       })
       setPosts(postsData)
     } catch (error) {
-      // console.error('Erro ao carregar posts:', error)
     } finally {
       setLoading(false)
     }
@@ -120,13 +106,9 @@ const Feed = () => {
       const registeredCatch = await registerCatch(captureData)
       
       // Debug: verificar o que foi retornado
-      // console.log('🔍 Resultado do registerCatch:', registeredCatch)
       
       // Obter a URL da imagem do resultado do registerCatch
       const imageUrl = registeredCatch?.photo || null
-      // console.log('🖼️ URL da imagem obtida:', imageUrl)
-      // console.log('🖼️ Tipo da URL da imagem:', typeof imageUrl)
-      // console.log('🖼️ Imagem é válida?', imageUrl && imageUrl !== '🐟')
       
       // Criar post para o feed com os mesmos dados
       const postData = {
@@ -139,10 +121,8 @@ const Feed = () => {
         photo: imageUrl  // Manter ambos para compatibilidade
       }
       
-      // console.log('📝 Dados do post a ser criado:', postData)
       
       const createdPost = await createPost(postData)
-      // console.log('✅ Post criado:', createdPost)
       
       // Atualizar lista de posts
       setPosts([createdPost, ...posts])
@@ -161,7 +141,6 @@ const Feed = () => {
       
       alert('Captura registrada com sucesso! 🎣')
     } catch (error) {
-      // console.error('Erro ao criar post:', error)
       alert('Erro ao registrar captura. Tente novamente.')
     } finally {
       setLoading(false)
@@ -188,7 +167,6 @@ const Feed = () => {
         return post
       }))
     } catch (error) {
-      // console.error('Erro ao curtir post:', error)
     }
   }
   
@@ -246,7 +224,6 @@ const Feed = () => {
          alert('Link copiado para a área de transferência!')
        }
     } catch (error) {
-      // console.error('Erro ao compartilhar post:', error)
     }
   }
   
@@ -284,8 +261,6 @@ const Feed = () => {
       } else {
         return 'Agora'
       }
-    } catch (error) {
-      console.error('Erro ao formatar timestamp:', error)
       return 'Data não disponível'
     }
   }
@@ -552,13 +527,6 @@ const Feed = () => {
                     typeof imageUrl === 'string' &&
                     imageUrl.trim() !== ''
                   
-                  console.log(`🖼️ Verificando imagem do post ${post.id}:`, {
-                    imageUrl,
-                    hasValidImage,
-                    postImage: post.image,
-                    postPhoto: post.photo
-                  })
-                  
                   if (hasValidImage) {
                     return (
                       <img 
@@ -566,7 +534,6 @@ const Feed = () => {
                         alt="Captura de peixe" 
                         className="post-image"
                         onError={(e) => {
-                          console.log('❌ Erro ao carregar imagem:', imageUrl)
                           e.target.style.display = 'none'
                           e.target.nextSibling.style.display = 'flex'
                         }}

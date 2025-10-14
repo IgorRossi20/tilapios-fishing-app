@@ -25,7 +25,6 @@ const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
       const invites = await loadUserInvites()
       setUserInvites(invites)
     } catch (error) {
-      // console.error('Erro ao carregar convites:', error)
     }
   }
 
@@ -39,7 +38,6 @@ const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
       setInviteEmail('')
       setShowInviteForm(false)
     } catch (error) {
-      // console.error('Erro ao enviar convite:', error)
     } finally {
       setLoading(false)
     }
@@ -56,7 +54,6 @@ const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
       await navigator.clipboard.writeText(inviteLink)
       notifyInviteSent('Link copiado!', tournamentName)
     } catch (error) {
-      // console.error('Erro ao copiar link:', error)
     }
   }
 
@@ -67,7 +64,6 @@ const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
       // Recarregar convites para atualizar a lista
       await loadInvites()
     } catch (error) {
-      // console.error('Erro ao aceitar convite:', error)
     }
   }
 
@@ -79,7 +75,6 @@ const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
       // Recarregar convites para atualizar a lista
       await loadInvites()
     } catch (error) {
-      // console.error('Erro ao recusar convite:', error)
     }
   }
 

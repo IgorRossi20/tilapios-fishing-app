@@ -17,11 +17,6 @@ const firebaseConfig = {
 }
 
 // Inicializar Firebase
-console.log('🔧 Inicializando Firebase com config:', {
-  projectId: firebaseConfig.projectId,
-  storageBucket: firebaseConfig.storageBucket,
-  authDomain: firebaseConfig.authDomain
-})
 
 const app = initializeApp(firebaseConfig)
 
@@ -37,19 +32,12 @@ export const db = initializeFirestore(app, {
 // Habilitar persistência offline para enfileirar writes quando a conexão falhar
 try {
   await enableIndexedDbPersistence(db)
-  console.log('✅ Firestore offline persistence enabled')
 } catch (err) {
   // Em ambientes com múltiplas abas, pode ocorrer failed-precondition
   console.warn('⚠️ Firestore persistence not available:', err?.code || err)
 }
 export const storage = getStorage(app)
 
-console.log('✅ Firebase inicializado:', {
-  app: !!app,
-  auth: !!auth,
-  db: !!db,
-  storage: !!storage
-})
 
 export default app
 

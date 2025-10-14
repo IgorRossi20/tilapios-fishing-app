@@ -54,15 +54,7 @@ const isValidKey = (key) => {
 }
 
 const isSupabaseProperlyConfigured = isValidUrl(supabaseUrl) && isValidKey(supabaseAnonKey)
-
-// Log detalhado para debug (não expõe a chave completa)
-console.log('🔍 Verificação do Supabase:', {
-  hasUrl: !!supabaseUrl,
-  hasKey: !!supabaseAnonKey,
-  urlValid: isValidUrl(supabaseUrl),
-  keyValid: isValidKey(supabaseAnonKey),
-  configured: isSupabaseProperlyConfigured
-})
+// Logs removidos para evitar ruído em produção
 
 if (!isSupabaseProperlyConfigured) {
   console.warn('⚠️ Variáveis do Supabase não configuradas corretamente. Storage de imagens não funcionará.')
@@ -76,9 +68,8 @@ let supabase = null
 try {
   if (isSupabaseProperlyConfigured) {
     supabase = createClient(supabaseUrl, supabaseAnonKey)
-    console.log('✅ Cliente Supabase criado com sucesso')
   } else {
-    console.log('⚠️ Cliente Supabase não criado - configuração inválida')
+    // Cliente Supabase não criado - configuração inválida
   }
 } catch (error) {
   console.error('❌ Erro ao criar cliente Supabase:', error)
@@ -116,13 +107,7 @@ export const isSupabaseConfigured = () => {
 // Função para fazer upload de imagem
 export const uploadImageToSupabase = async (file, userId, folder = STORAGE_CONFIG.FOLDER_CATCHES) => {
   try {
-    console.log('📤 Iniciando upload para Supabase:', {
-      fileName: file.name,
-      fileSize: file.size,
-      fileType: file.type,
-      userId,
-      folder
-    })
+    // Upload para Supabase iniciado
 
     // Verificar se está configurado
     if (!isSupabaseConfigured()) {
@@ -151,8 +136,6 @@ export const uploadImageToSupabase = async (file, userId, folder = STORAGE_CONFI
     const fileExtension = file.name.split('.').pop()
     const fileName = `${folder}/${userId}/${timestamp}.${fileExtension}`
 
-    console.log('📁 Caminho do arquivo:', fileName)
-
     // Fazer upload
     const { data, error } = await supabase.storage
       .from(STORAGE_CONFIG.BUCKET_NAME)
@@ -166,8 +149,6 @@ export const uploadImageToSupabase = async (file, userId, folder = STORAGE_CONFI
       throw error
     }
 
-    console.log('✅ Upload concluído:', data)
-
     // Obter URL pública
     const { data: urlData } = supabase.storage
       .from(STORAGE_CONFIG.BUCKET_NAME)
@@ -177,7 +158,6 @@ export const uploadImageToSupabase = async (file, userId, folder = STORAGE_CONFI
       throw new Error('Erro ao obter URL pública da imagem')
     }
 
-    console.log('🔗 URL pública:', urlData.publicUrl)
     return urlData.publicUrl
 
   } catch (error) {
@@ -202,7 +182,6 @@ export const deleteImageFromSupabase = async (imagePath) => {
       throw error
     }
 
-    console.log('✅ Imagem deletada com sucesso')
     return true
 
   } catch (error) {

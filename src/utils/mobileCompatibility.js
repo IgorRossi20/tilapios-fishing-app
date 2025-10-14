@@ -176,11 +176,9 @@ export const applyMobileFixes = () => {
   // Limpar cache de armazenamento local se necessário
   if (isLocalStorageAvailable()) {
     try {
-      // Limpar apenas dados de cache, não dados de usuário
       localStorage.removeItem('tilapios_cache');
       fixes.storageCleared = true;
     } catch (e) {
-      // console.error('Erro ao limpar armazenamento local:', e);
     }
   }
   
