@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '../supabase/config'
+import { auth } from '../firebase/config'
+import { sendPasswordResetEmail } from 'firebase/auth'
 
 const AuthContext = createContext()
 export { AuthContext }
@@ -83,11 +85,12 @@ export const AuthProvider = ({ children }) => {
     const login = (email, password) => supabase.auth.signInWithPassword({ email, password });
     const register = (email, password, options) => supabase.auth.signUp({ email, password, options });
     const logout = () => supabase.auth.signOut();
+    // Recuperação de senha via Firebase (usuarios estão no Firebase)
     const resetPassword = (email) => {
-        // Redireciona de volta para a página de login onde tratamos PASSWORD_RECOVERY
-        const redirectTo = `${window.location.origin}/login`;
-        return supabase.auth.resetPasswordForEmail(email, { redirectTo });
-    };
+        // Usar fluxo padrão do Firebase. Se desejar redirecionar para o app após redefinir,
+        // configure Authorized Domains no Firebase e utilize actionCodeSettings.
+        return sendPasswordResetEmail(auth, email)
+    }
     const updatePassword = (newPassword) => supabase.auth.updateUser({ password: newPassword });
     const completeRecovery = () => setIsPasswordRecovery(false);
 
