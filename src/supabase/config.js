@@ -102,8 +102,10 @@ const supabaseClient = isSupabaseProperlyConfigured && supabase ? supabase : sup
 export { supabaseClient as supabase }
 
 // Configurações do Storage
+// Permite definir o bucket via variável de ambiente `VITE_SUPABASE_BUCKET`.
+// Fallback para 'capturas' (bucket já existente em produção).
 export const STORAGE_CONFIG = {
-  BUCKET_NAME: 'fishing-images', // Nome do bucket para imagens de pesca
+  BUCKET_NAME: import.meta.env.VITE_SUPABASE_BUCKET || 'capturas',
   MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
   ALLOWED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
   FOLDER_CATCHES: 'catches', // Pasta para imagens de capturas
