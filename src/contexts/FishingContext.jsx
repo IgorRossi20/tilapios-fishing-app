@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'
-import { db, storage, functions } from '../firebase/config' // Corrigir o caminho
+import { db, storage } from '../firebase/config' // Corrigir o caminho
 import {
   collection,
   doc,

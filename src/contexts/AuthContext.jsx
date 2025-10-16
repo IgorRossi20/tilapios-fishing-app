@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isReady, setIsReady] = useState(false);
     const [lastEvent, setLastEvent] = useState(null);
+    const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
     const syncUserData = async (supabaseUser) => {
         if (supabaseUser) {
@@ -59,6 +60,9 @@ export const AuthProvider = ({ children }) => {
                     } else if (event === 'SIGNED_OUT') {
                         setUser(null);
                         setIsAuthenticated(false);
+                    } else if (event === 'PASSWORD_RECOVERY') {
+                        // Exibir fluxo de redefinição de senha na UI
+                        setIsPasswordRecovery(true);
                     }
                 });
 
@@ -79,7 +83,13 @@ export const AuthProvider = ({ children }) => {
     const login = (email, password) => supabase.auth.signInWithPassword({ email, password });
     const register = (email, password, options) => supabase.auth.signUp({ email, password, options });
     const logout = () => supabase.auth.signOut();
-    const resetPassword = (email) => supabase.auth.resetPasswordForEmail(email);
+    const resetPassword = (email) => {
+        // Redireciona de volta para a página de login onde tratamos PASSWORD_RECOVERY
+        const redirectTo = `${window.location.origin}/login`;
+        return supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    };
+    const updatePassword = (newPassword) => supabase.auth.updateUser({ password: newPassword });
+    const completeRecovery = () => setIsPasswordRecovery(false);
 
     const value = {
         user,
@@ -87,10 +97,13 @@ export const AuthProvider = ({ children }) => {
         isAuthenticated,
         isReady,
         lastEvent,
+        isPasswordRecovery,
         login,
         register,
         logout,
         resetPassword,
+        updatePassword,
+        completeRecovery,
     };
 
     return (

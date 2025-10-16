@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
-import { Fish, Mail, Lock, User, Check, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
+import { Fish, Mail, Lock, User, Check, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, Link as LinkIcon, Key } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { isSupabaseConfigured, getSupabaseOverrides, setSupabaseOverrides, clearSupabaseOverrides } from '../supabase/config'
 import './Login.css'
 
 const Login = () => {
@@ -16,8 +17,27 @@ const Login = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [showSupabaseSetup, setShowSupabaseSetup] = useState(false)
+  const [supabaseUrl, setSupabaseUrl] = useState('')
+  const [supabaseKey, setSupabaseKey] = useState('')
 
-  const { login, register, resetPassword } = useAuth()
+  const { login, register, resetPassword, lastEvent, isPasswordRecovery, updatePassword, completeRecovery } = useAuth()
+
+  // Abrir modal de redefinição quando o Supabase retornar com PASSWORD_RECOVERY
+  useEffect(() => {
+    if (lastEvent === 'PASSWORD_RECOVERY' || isPasswordRecovery) {
+      setShowResetModal(true)
+    }
+  }, [lastEvent, isPasswordRecovery])
+
+  // Carregar overrides salvos para facilitar configuração
+  useEffect(() => {
+    const { url, key } = getSupabaseOverrides()
+    setSupabaseUrl(url)
+    setSupabaseKey(key)
+  }, [])
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -157,6 +177,69 @@ const Login = () => {
     }
   }
 
+  const handleUpdatePassword = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    setError('')
+    setSuccess('')
+
+    if (!newPassword || newPassword.length < 6) {
+      setError('A nova senha deve ter pelo menos 6 caracteres.')
+      setLoading(false)
+      return
+    }
+
+    try {
+      await updatePassword(newPassword)
+      setSuccess('Senha atualizada com sucesso! Faça login novamente.')
+      setShowResetModal(false)
+      setNewPassword('')
+      completeRecovery()
+    } catch (error) {
+      setError(error.message || 'Erro ao atualizar a senha.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSaveSupabase = (e) => {
+    e.preventDefault()
+    setError('')
+    setSuccess('')
+
+    const isValidUrl = (url) => {
+      try { return url && url.trim() !== '' && url.startsWith('http') } catch { return false }
+    }
+    const isValidKey = (key) => {
+      try { return key && key.trim() !== '' && key.length > 10 } catch { return false }
+    }
+
+    if (!isValidUrl(supabaseUrl)) {
+      setError('URL inválida. Use https://xxxxx.supabase.co')
+      return
+    }
+    if (!isValidKey(supabaseKey)) {
+      setError('Chave anônima inválida.')
+      return
+    }
+
+    const ok = setSupabaseOverrides(supabaseUrl, supabaseKey)
+    if (!ok) {
+      setError('Erro ao salvar no navegador.')
+      return
+    }
+    setSuccess('Supabase configurado! Recarregando...')
+    setTimeout(() => window.location.reload(), 600)
+  }
+
+  const handleClearSupabase = () => {
+    clearSupabaseOverrides()
+    setSupabaseUrl('')
+    setSupabaseKey('')
+    setSuccess('Overrides removidos. Recarregando...')
+    setTimeout(() => window.location.reload(), 600)
+  }
+
   const getErrorMessage = (errorCode) => {
     switch (errorCode) {
       case 'auth/user-not-found':
@@ -191,6 +274,83 @@ const Login = () => {
         {error && (
           <div className="alert alert-error">
             {error}
+          </div>
+        )}
+
+        {/* Configuração do Supabase quando não está configurado */}
+        {!isSupabaseConfigured() && (
+          <div className="warning-banner" style={{ marginTop: 12 }}>
+            <p style={{ marginBottom: 8 }}>
+              Supabase não configurado. O envio de emails e Storage ficarão indisponíveis.
+            </p>
+            <button 
+              type="button" 
+              className="modal-btn modal-btn-primary"
+              onClick={() => setShowSupabaseSetup(true)}
+            >
+              Configurar Supabase
+            </button>
+          </div>
+        )}
+
+        {showSupabaseSetup && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3 className="modal-title">Configurar Supabase</h3>
+              <form onSubmit={handleSaveSupabase}>
+                <div className="form-group">
+                  <label className="form-label">
+                      <LinkIcon size={16} />
+                      Project URL
+                    </label>
+                  <input
+                    type="text"
+                    value={supabaseUrl}
+                    onChange={(e) => setSupabaseUrl(e.target.value)}
+                    className="form-input"
+                    placeholder="https://xxxxx.supabase.co"
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">
+                      <Key size={16} />
+                      Anon Public Key
+                    </label>
+                  <input
+                    type="password"
+                    value={supabaseKey}
+                    onChange={(e) => setSupabaseKey(e.target.value)}
+                    className="form-input"
+                    placeholder="eyJhbGciOi..."
+                    required
+                  />
+                </div>
+                <div className="modal-actions">
+                  <button 
+                    type="submit" 
+                    className="modal-btn modal-btn-primary"
+                  >
+                    Salvar e Recarregar
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowSupabaseSetup(false)}
+                    className="modal-btn modal-btn-secondary"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={handleClearSupabase}
+                    className="modal-btn"
+                    style={{ backgroundColor: '#444', color: '#fff' }}
+                  >
+                    Limpar Overrides
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
@@ -358,6 +518,56 @@ const Login = () => {
                       setShowForgotPassword(false)
                       setResetEmail('')
                       setError('')
+                    }}
+                    className="modal-btn modal-btn-secondary"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {showResetModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3 className="modal-title">Definir Nova Senha</h3>
+              <form onSubmit={handleUpdatePassword}>
+                <div className="form-group">
+                  <label className="form-label">
+                      <Lock size={16} />
+                      Nova Senha
+                    </label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="form-input"
+                    placeholder="Digite a nova senha"
+                    minLength={6}
+                    required
+                  />
+                </div>
+                <div className="modal-actions">
+                  <button 
+                    type="submit" 
+                    className="modal-btn modal-btn-primary"
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <div className="login-spinner"></div>
+                    ) : (
+                      'Atualizar Senha'
+                    )}
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setShowResetModal(false)
+                      setNewPassword('')
+                      setError('')
+                      completeRecovery()
                     }}
                     className="modal-btn modal-btn-secondary"
                   >

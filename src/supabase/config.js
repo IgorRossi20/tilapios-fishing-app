@@ -10,15 +10,9 @@ let supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 // Carregar overrides do localStorage (quando disponíveis)
 try {
   if (typeof window !== 'undefined') {
-    const lsUrl = window.localStorage.getItem('TILAPIOS_SUPABASE_URL')
-    const lsKey = window.localStorage.getItem('TILAPIOS_SUPABASE_ANON_KEY')
-    // Apenas aplicar se forem strings não vazias
-    if (lsUrl && typeof lsUrl === 'string' && lsUrl.trim() !== '') {
-      supabaseUrl = lsUrl
-    }
-    if (lsKey && typeof lsKey === 'string' && lsKey.trim() !== '') {
-      supabaseAnonKey = lsKey
-    }
+    // Guardar localmente para decidir depois se devemos usar (preferir .env se válido)
+    var __lsUrl = window.localStorage.getItem('TILAPIOS_SUPABASE_URL') || ''
+    var __lsKey = window.localStorage.getItem('TILAPIOS_SUPABASE_ANON_KEY') || ''
   }
 } catch (e) {
   // Ignorar erros de acesso ao localStorage
@@ -52,6 +46,22 @@ const isValidKey = (key) => {
     return false
   }
 }
+
+// Preferir variáveis do .env quando forem válidas; caso contrário, usar overrides do localStorage
+try {
+  const envUrlValid = isValidUrl(supabaseUrl)
+  const envKeyValid = isValidKey(supabaseAnonKey)
+  const lsUrlValid = typeof __lsUrl !== 'undefined' ? isValidUrl(__lsUrl) : false
+  const lsKeyValid = typeof __lsKey !== 'undefined' ? isValidKey(__lsKey) : false
+
+  // Apenas usar localStorage se o .env estiver ausente ou inválido
+  if (!envUrlValid && lsUrlValid) {
+    supabaseUrl = __lsUrl
+  }
+  if (!envKeyValid && lsKeyValid) {
+    supabaseAnonKey = __lsKey
+  }
+} catch {}
 
 const isSupabaseProperlyConfigured = isValidUrl(supabaseUrl) && isValidKey(supabaseAnonKey)
 // Logs removidos para evitar ruído em produção
@@ -102,6 +112,43 @@ export const STORAGE_CONFIG = {
 // Função para verificar se o Supabase está configurado
 export const isSupabaseConfigured = () => {
   return isSupabaseProperlyConfigured && supabase !== null
+}
+
+// Helpers para configurar Supabase via UI (localStorage overrides)
+export const getSupabaseOverrides = () => {
+  try {
+    const url = typeof window !== 'undefined' ? (window.localStorage.getItem('TILAPIOS_SUPABASE_URL') || '') : ''
+    const key = typeof window !== 'undefined' ? (window.localStorage.getItem('TILAPIOS_SUPABASE_ANON_KEY') || '') : ''
+    return { url, key }
+  } catch {
+    return { url: '', key: '' }
+  }
+}
+
+export const setSupabaseOverrides = (url, key) => {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('TILAPIOS_SUPABASE_URL', url)
+      window.localStorage.setItem('TILAPIOS_SUPABASE_ANON_KEY', key)
+      return true
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
+export const clearSupabaseOverrides = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('TILAPIOS_SUPABASE_URL')
+      window.localStorage.removeItem('TILAPIOS_SUPABASE_ANON_KEY')
+      return true
+    }
+    return false
+  } catch {
+    return false
+  }
 }
 
 // Função para fazer upload de imagem
