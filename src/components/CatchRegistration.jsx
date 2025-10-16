@@ -69,7 +69,7 @@ const CatchRegistration = () => {
         ...formData,
         id: `temp_${Date.now()}`,
         weight: parseFloat(formData.weight),
-        caughtAt: new Date().toISOString(),
+        registeredAt: new Date().toISOString(),
         photo: formData.photo ? URL.createObjectURL(formData.photo) : null, // Usar URL local para exibição imediata
         isOptimistic: true
       }

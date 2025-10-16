@@ -41,7 +41,7 @@ const Home = () => {
     // Carregar feed sempre, independente do usuário
     loadAllCatches() // Chamar a nova função para carregar todas as capturas
     loadFeedPosts()
-  }, [user, userCatches, loadAllCatches]) // Adicionar loadAllCatches às dependências
+  }, [user, userCatches, loadAllCatches, allCatches]) // Atualizar feed quando allCatches mudar
 
   // Memoizar stats calculados para evitar recálculos desnecessários
   const memoizedStats = useMemo(() => {
@@ -157,13 +157,7 @@ const Home = () => {
       // Usar allCatches em vez de localStorage
       let catchesToDisplay = allCatches || []
       
-      // Limpar dados antigos com IDs problemáticos (se necessário, mas idealmente isso deve ser feito na fonte)
-      catchesToDisplay = catchesToDisplay.filter(catch_ => {
-        if (catch_.id && catch_.id.includes('temp_')) {
-          return false
-        }
-        return true
-      })
+      // Exibir também capturas otimistas (IDs temporários), para feedback imediato no feed
       
       // Filtrar apenas capturas que têm userId (usuários autenticados)
       const authenticatedCatches = catchesToDisplay.filter(catch_ => 
@@ -236,7 +230,7 @@ const Home = () => {
       })
 
       // Carregar capturas recentes do usuário (últimas 5)
-       const userRecentCaptures = myCaptures.slice(-5).reverse()
+       const userRecentCaptures = (userCatches.length > 0 ? userCatches : myCaptures).slice(-5).reverse()
        setRecentCatches(userRecentCaptures)
 
        // Obter Rei do Lago (top 1 do ranking geral)
