@@ -32,7 +32,8 @@ const TournamentDetails = () => {
     deleteTournament,
     finishTournament,
     getTournamentRanking,
-    joinTournament
+    joinTournament,
+    mergeParticipantsWithLocal
   } = useFishing()
   
   const [tournament, setTournament] = useState(null)
@@ -61,14 +62,20 @@ const TournamentDetails = () => {
       
       setTournament(foundTournament)
       
-      // Carregar participantes (simulado - em produção viria do Firestore)
-      const participantsList = foundTournament.participantNames?.map((name, index) => ({
-        id: foundTournament.participants?.[index] || `participant_${index}`,
-        name: name,
-        isCreator: foundTournament.participants?.[index] === foundTournament.createdBy,
-        joinedAt: foundTournament.createdAt // Simplificado
-      })) || []
-      
+      // Carregar participantes reais, mesclando Firestore com cache local
+      const rawParticipants = Array.isArray(foundTournament.participants)
+        ? foundTournament.participants
+        : []
+
+      const mergedParticipants = mergeParticipantsWithLocal(foundTournament.id, rawParticipants)
+      const participantsList = mergedParticipants.map(p => ({
+        id: p.userId || p.id || `participant_${Math.random().toString(36).slice(2)}`,
+        userName: p.userName || p.name || 'Participante',
+        isCreator: (p.userId || p.id) === foundTournament.createdBy,
+        joinedAt: p.joinedAt || foundTournament.createdAt,
+        isPending: !!p.isPending
+      }))
+
       setParticipants(participantsList)
       
       // Carregar ranking se o campeonato estiver ativo ou finalizado
@@ -138,7 +145,10 @@ const TournamentDetails = () => {
   }
 
   const isParticipant = () => {
-    return tournament?.participants?.includes(user?.uid)
+    if (!tournament || !user?.uid) return false
+    const arr = Array.isArray(tournament.participants) ? tournament.participants : []
+    // Suportar participantes como objetos ou IDs
+    return arr.some(p => (typeof p === 'string' ? p === user.uid : p?.userId === user.uid))
   }
 
   const handleLeaveTournament = async () => {
@@ -305,6 +315,15 @@ const TournamentDetails = () => {
             </div>
           )}
         </div>
+
+        {tournament.status === 'finished' && tournament.winner && (
+          <div className="winner-banner">
+            <h3>Campeão</h3>
+            <p>
+              {tournament.winner.userName} — {Number(tournament.winner.totalWeight || 0).toFixed(2)}kg • {tournament.winner.totalCatches || 0} peixes
+            </p>
+          </div>
+        )}
         
         {tournament.description && (
           <div className="description">
@@ -357,7 +376,7 @@ const TournamentDetails = () => {
                     )}
                   </div>
                   <div className="details">
-                    <span className="name">{participant.name}</span>
+                    <span className="name">{participant.userName}</span>
                     <span className="role">
                       {participant.isCreator ? 'Criador' : 'Participante'}
                     </span>
@@ -426,7 +445,7 @@ const TournamentDetails = () => {
         </button>
 
         {/* Botão para entrar no campeonato (não criador, não participante) */}
-        {!isParticipant() && !isOwner() && !tournament?.isPrivate && (currentStatus === 'upcoming' || currentStatus === 'active') && (
+        {!isParticipant() && !isOwner() && !tournament?.isPrivate && (currentStatus === 'upcoming' || currentStatus === 'active') && (tournament?.status !== 'cancelled') && (tournament?.status !== 'finished') && (
           <button 
             onClick={handleJoinTournament}
             className={`btn ${isFull ? 'btn-disabled' : 'btn-primary'}`}
@@ -435,6 +454,23 @@ const TournamentDetails = () => {
           >
             <Users size={16} />
             {isFull ? 'Campeonato Lotado' : 'Participar do Campeonato'}
+          </button>
+        )}
+        {/* Estado indisponível quando campeonato cancelado ou finalizado */}
+        {!isParticipant() && !isOwner() && !tournament?.isPrivate && ((tournament?.status === 'cancelled') || (tournament?.status === 'finished') || currentStatus === 'finished') && (
+          <button 
+            className="btn btn-disabled"
+            disabled
+            title={
+              isFull
+                ? 'Campeonato lotado'
+                : (tournament?.status === 'cancelled'
+                    ? 'Campeonato cancelado'
+                    : 'Campeonato finalizado')
+            }
+          >
+            <Users size={16} />
+            {isFull ? 'Campeonato Lotado' : 'Indisponível'}
           </button>
         )}
         

@@ -51,6 +51,18 @@ const Tournaments = () => {
     loadTournaments()
   }, [])
 
+  // Atualizar lista pública automaticamente quando os campeonatos globais mudarem
+  useEffect(() => {
+    const updatedPublic = Array.isArray(allTournaments)
+      ? allTournaments.filter(tournament => 
+          !tournament?.isPrivate &&
+          !(Array.isArray(tournament?.participants) && 
+            tournament.participants.some(p => p?.userId === user?.uid))
+        )
+      : []
+    setPublicTournaments(updatedPublic)
+  }, [allTournaments, user])
+
   const loadTournaments = async () => {
     try {
       setLoading(true)
@@ -59,8 +71,10 @@ const Tournaments = () => {
       // Carregar campeonatos públicos (não privados e que o usuário não participa)
       const publicTournaments = Array.isArray(allTournaments)
         ? allTournaments.filter(tournament => 
-            !tournament?.isPrivate && 
-            (!tournament?.participants || !tournament.participants.includes(user?.uid))
+            !tournament?.isPrivate &&
+            // Se não há participantes, é público; caso haja, garantir que o usuário não esteja na lista
+            !(Array.isArray(tournament?.participants) && 
+              tournament.participants.some(p => p?.userId === user?.uid))
           )
         : []
       
@@ -104,6 +118,9 @@ const Tournaments = () => {
     try {
       await joinTournament(tournamentId)
       setMessage('Solicitação de participação enviada com sucesso!')
+      // Remover imediatamente da lista pública e focar em "Meus Campeonatos"
+      setPublicTournaments(prev => prev.filter(t => t.id !== tournamentId))
+      setActiveTab('my-tournaments')
       await loadTournaments()
     } catch (error) {
       setMessage('Erro ao solicitar participação no campeonato: ' + error.message)
@@ -151,7 +168,9 @@ const Tournaments = () => {
   }
 
   const isParticipant = (tournament) => {
-    return tournament.participants?.includes(user?.uid)
+    return Array.isArray(tournament?.participants) 
+      ? tournament.participants.some(p => p?.userId === user?.uid)
+      : false
   }
 
   const getTournamentStatus = (tournament) => {
@@ -309,7 +328,9 @@ const Tournaments = () => {
     const mapById = new Map()
     for (const t of safeUserTournaments) mapById.set(t.id, t)
     for (const t of safeAllTournaments) {
-      if (t?.participants?.includes(user?.uid) && !mapById.has(t.id)) {
+      const userIsParticipant = Array.isArray(t?.participants) 
+        && t.participants.some(p => p?.userId === user?.uid)
+      if (userIsParticipant && !mapById.has(t.id)) {
         mapById.set(t.id, t)
       }
     }
@@ -538,7 +559,12 @@ const Tournaments = () => {
                     <div className="info-item">
                       <Users size={18} />
                       <span>
-                        {tournament.participants?.length || 0}/{tournament.maxParticipants} pescadores
+                        {(() => {
+                          const arr = Array.isArray(tournament.participants) ? tournament.participants : []
+                          const unique = new Set(arr.map(p => (typeof p === 'string' ? p : p?.userId)))
+                          const serverCount = typeof tournament.participantCount === 'number' ? tournament.participantCount : 0
+                          return Math.max(unique.size, serverCount)
+                        })()}/{tournament.maxParticipants} pescadores
                       </span>
                     </div>
                     {tournament.entryFee > 0 && (
@@ -614,7 +640,7 @@ const Tournaments = () => {
               )
             })}
             
-            {safeUserTournaments.length === 0 && (
+            {myTournamentsCombined.length === 0 && (
               <div className="empty-state">
                 <div className="empty-icon">
                    <Trophy size={64} />
@@ -637,8 +663,31 @@ const Tournaments = () => {
           <div className="tournaments-grid">
             {safePublicTournaments.map(tournament => {
               const currentStatus = getTournamentStatus(tournament)
-              const canJoin = currentStatus === 'upcoming' || currentStatus === 'active'
-              const isFull = (tournament.participants?.length || 0) >= tournament.maxParticipants
+              // Permitir inscrições durante 'upcoming' e 'active'; bloquear apenas se cancelado ou finalizado
+              const isCancelled = (tournament.status === 'cancelled')
+              const isFinishedDoc = (tournament.status === 'finished')
+              const canJoin = (currentStatus === 'upcoming' || currentStatus === 'active') && !isCancelled && !isFinishedDoc
+              const arrCount = (() => {
+                const arr = Array.isArray(tournament.participants) ? tournament.participants : []
+                const unique = new Set(arr.map(p => (typeof p === 'string' ? p : p?.userId)))
+                const serverCount = typeof tournament.participantCount === 'number' ? tournament.participantCount : 0
+                return Math.max(unique.size, serverCount)
+              })()
+              const isFull = arrCount >= tournament.maxParticipants
+              const unavailableTitle = isFull
+                ? 'Campeonato lotado'
+                : (isCancelled
+                    ? 'Campeonato cancelado'
+                    : (isFinishedDoc || currentStatus === 'finished'
+                        ? 'Campeonato finalizado'
+                        : 'Campeonato não disponível para participação'))
+              const unavailableText = isFull
+                ? 'Este campeonato atingiu o limite de participantes.'
+                : (isCancelled
+                    ? 'Este campeonato foi cancelado.'
+                    : (isFinishedDoc || currentStatus === 'finished'
+                        ? 'Este campeonato já foi finalizado.'
+                        : 'Este campeonato não está disponível para participação no momento.'))
               
               return (
                 <div key={tournament.id} className="tournament-card">
@@ -660,7 +709,12 @@ const Tournaments = () => {
                     <div className="detail-item">
                       <Users size={16} />
                       <span>
-                        {tournament.participants?.length || 0}/{tournament.maxParticipants} pescadores
+                        {(() => {
+                          const arr = Array.isArray(tournament.participants) ? tournament.participants : []
+                          const unique = new Set(arr.map(p => (typeof p === 'string' ? p : p?.userId)))
+                          const serverCount = typeof tournament.participantCount === 'number' ? tournament.participantCount : 0
+                          return Math.max(unique.size, serverCount)
+                        })()}/{tournament.maxParticipants} pescadores
                       </span>
                     </div>
                     {tournament.entryFee > 0 && (
@@ -706,12 +760,12 @@ const Tournaments = () => {
                       <button 
                         disabled
                         className="btn btn-join-tournament btn-disabled"
-                        title={isFull ? 'Campeonato lotado' : 'Campeonato não disponível para participação'}
+                        title={unavailableTitle}
                       >
                         {isFull ? '🚫 Campeonato Lotado' : '⏰ Indisponível'}
                       </button>
                       <p className="join-help-text">
-                        {isFull ? 'Este campeonato atingiu o limite de participantes.' : 'Este campeonato não está disponível para participação no momento.'}
+                        {unavailableText}
                       </p>
                     </div>
                   )}

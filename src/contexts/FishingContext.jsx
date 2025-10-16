@@ -1,20 +1,21 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'
 import { db, storage } from '../firebase/config' // Corrigir o caminho
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  getDoc,
-  query,
-  where,
-  orderBy,
-  writeBatch,
-  arrayUnion,
-  arrayRemove
-} from 'firebase/firestore'
+  import {
+    collection,
+    doc,
+    addDoc,
+    updateDoc,
+    deleteDoc,
+    getDocs,
+    getDoc,
+    query,
+    where,
+    orderBy,
+    writeBatch,
+    arrayUnion,
+    arrayRemove,
+    onSnapshot
+  } from 'firebase/firestore'
 import { useAuth } from './AuthContext'
 import {
   uploadImageToSupabase,
@@ -44,7 +45,7 @@ const useFishing = () => {
 
 const FishingProvider = ({ children }) => {
   const { user } = useAuth()
-  const { notifyCatchRegistered, notifyTournamentCreated, notifyJoinedTournament, notifyLeftTournament, notifyTournamentCancelled, notifyTournamentFinished, notifyInviteSent, notifyInviteAccepted } = useNotification()
+  const { notifyCatchRegistered, notifyTournamentCreated, notifyTournamentJoined, notifyTournamentLeft, notifyTournamentCancelled, notifyTournamentFinished, notifyInviteSent, notifyInviteAccepted } = useNotification()
   const [userTournaments, setUserTournaments] = useState([])
   const [allTournaments, setAllTournaments] = useState([])
   const [userCatches, setUserCatches] = useState([])
@@ -106,6 +107,44 @@ const FishingProvider = ({ children }) => {
     }
     loadInitialData()
   }, [user])
+
+  // Assinatura em tempo real dos campeonatos para manter todos os clientes sincronizados
+  useEffect(() => {
+    if (!isOnline) return
+    try {
+      const tournamentsCol = collection(db, 'fishing_tournaments')
+      const unsubscribe = onSnapshot(tournamentsCol, snapshot => {
+        const firestoreTournaments = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+
+        // Mesclar participações pendentes locais e normalizar contagem
+        const mergedAll = firestoreTournaments.map(t => {
+          const baseParticipants = Array.isArray(t.participants) ? t.participants : []
+          const mergedParticipants = mergeParticipantsWithLocal(t.id, baseParticipants)
+          // A contagem deve refletir apenas o que está no Firestore,
+          // para evitar discrepâncias entre clientes por conta de pendências locais.
+          const uniqueFirestoreCount = new Set(baseParticipants.map(p => p.userId)).size
+          return { ...t, participants: mergedParticipants, participantCount: uniqueFirestoreCount }
+        })
+
+        setAllTournaments(mergedAll)
+        saveToLocalStorage('all_tournaments', mergedAll)
+
+        if (user) {
+          const myTournaments = mergedAll.filter(t => {
+            const isCreator = t.createdBy === user.uid
+            const isParticipant = Array.isArray(t.participants) && t.participants.some(p => p.userId === user.uid)
+            return isCreator || isParticipant
+          })
+          setUserTournaments(myTournaments)
+          saveToLocalStorage(`user_tournaments_${user.uid}`, myTournaments)
+        }
+      })
+      return () => unsubscribe()
+    } catch (err) {
+      // Silencioso: se falhar, ficamos com carregamento manual
+      return () => {}
+    }
+  }, [isOnline, user])
 
   // Sincronizar dados locais com o Firestore
   const syncLocalDataToFirestore = async () => {
@@ -248,12 +287,17 @@ const FishingProvider = ({ children }) => {
 
           // Evitar duplicatas
           if (!participants.some(p => p.userId === participation.userId)) {
+            const projectedCount = new Set([
+              ...participants.map(p => p.userId),
+              participation.userId
+            ]).size
             batch.update(tournamentRef, {
               participants: arrayUnion({
                 userId: participation.userId,
                 userName: participation.userName,
                 joinedAt: participation.joinedAt
-              })
+              }),
+              participantCount: projectedCount
             })
             successfulSyncs.push(participation)
           } else {
@@ -451,8 +495,16 @@ const FishingProvider = ({ children }) => {
       }
 
       // Validações
-      if (tournament.status !== 'open') {
-        throw new Error('Este campeonato não está aberto para inscrições.')
+      const now = new Date()
+      const startDate = new Date(tournament.startDate)
+      const endDate = new Date(tournament.endDate)
+
+      // Bloquear campeonatos cancelados ou finalizados (por status ou pelo fim da data)
+      if (tournament.status === 'cancelled') {
+        throw new Error('Este campeonato foi cancelado.')
+      }
+      if (tournament.status === 'finished' || (!isNaN(endDate.getTime()) && now > endDate)) {
+        throw new Error('Este campeonato já foi finalizado.')
       }
       if (
         tournament.participants &&
@@ -466,11 +518,7 @@ const FishingProvider = ({ children }) => {
       ) {
         throw new Error('O campeonato atingiu o número máximo de participantes.')
       }
-      const now = new Date()
-      const startDate = new Date(tournament.startDate)
-      if (now > startDate) {
-        throw new Error('Este campeonato já começou.')
-      }
+      // Permitir inscrição mesmo após o início, desde que não tenha acabado
 
       const participant = {
         userId: user.uid,
@@ -479,12 +527,93 @@ const FishingProvider = ({ children }) => {
       }
 
       if (isOnline) {
-        await updateDoc(tournamentRef, {
-          participants: arrayUnion(participant),
-          participantCount: (tournament.participantCount || 0) + 1
-        })
-        notifyJoinedTournament(tournament.name)
-        await loadUserTournaments()
+        try {
+          await updateDoc(tournamentRef, {
+            participants: arrayUnion(participant),
+            participantCount: (tournament.participantCount || 0) + 1
+          })
+          // Atualizar estado global de campeonatos para refletir inscrição imediatamente
+          setAllTournaments(prev => {
+            const updated = prev.map(t =>
+              t.id === tournamentId
+                ? {
+                    ...t,
+                    participants: [...(t.participants || []), participant],
+                    participantCount: (t.participantCount || 0) + 1
+                  }
+                : t
+            )
+            saveToLocalStorage('all_tournaments', updated)
+            return updated
+          })
+          // Evita quebra caso a função de notificação não exista em algum build antigo
+          if (typeof notifyTournamentJoined === 'function') {
+            notifyTournamentJoined(tournament.name)
+          }
+          await loadUserTournaments()
+        } catch (err) {
+          const isPermissionError =
+            err?.code === 'permission-denied' ||
+            (typeof err?.message === 'string' &&
+              err.message.toLowerCase().includes('insufficient permissions')) ||
+            String(err).toLowerCase().includes('insufficient permissions')
+
+          if (isPermissionError) {
+            // Fallback: tratar como participação pendente (similar ao modo offline)
+            const pendingParticipations = getFromLocalStorage(
+              'pending_participations',
+              []
+            )
+            pendingParticipations.push({ tournamentId, ...participant })
+            saveToLocalStorage('pending_participations', pendingParticipations)
+
+            // Atualizar cache local do campeonato
+            setAllTournaments(prev => {
+              const updated = prev.map(t =>
+                t.id === tournamentId
+                  ? {
+                      ...t,
+                      participants: [...(t.participants || []), { ...participant, isPending: true }],
+                      // Não alterar a contagem com pendência local; manter a do Firestore
+                      participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
+                    }
+                  : t
+              )
+              saveToLocalStorage('all_tournaments', updated)
+              return updated
+            })
+
+            // Também refletir imediatamente em userTournaments para a UI "Meus Campeonatos"
+            setUserTournaments(prev => {
+              const exists = prev.some(t => t.id === tournamentId)
+              const updatedList = exists
+                ? prev.map(t =>
+                    t.id === tournamentId
+                      ? {
+                          ...t,
+                          participants: [...(t.participants || []), { ...participant, isPending: true }],
+                          participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
+                        }
+                      : t
+                  )
+                : [
+                    {
+                      ...tournament,
+                      participants: [...(tournament.participants || []), { ...participant, isPending: true }],
+                      participantCount: tournament.participantCount ?? new Set((tournament.participants || []).map(p => p.userId)).size
+                    },
+                    ...prev
+                  ]
+              saveToLocalStorage(`user_tournaments_${user.uid}`, updatedList)
+              return updatedList
+            })
+
+            // Notificar como pendente
+            notifyTournamentJoined(tournament.name)
+          } else {
+            throw err
+          }
+        }
       } else {
         // Salvar participação pendente
         const pendingParticipations = getFromLocalStorage(
@@ -501,14 +630,40 @@ const FishingProvider = ({ children }) => {
             ? {
                 ...t,
                 participants: [...(t.participants || []), participant],
-                participantCount: (t.participantCount || 0) + 1
+                // Não alterar a contagem local; manter a contagem conhecida do Firestore
+                participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
               }
             : t
         )
         saveToLocalStorage('all_tournaments', updatedTournaments)
         setAllTournaments(updatedTournaments)
 
-        notifyJoinedTournament(tournament.name)
+        // Também refletir imediatamente em userTournaments para a UI "Meus Campeonatos"
+        setUserTournaments(prev => {
+          const exists = prev.some(t => t.id === tournamentId)
+          const updatedList = exists
+            ? prev.map(t =>
+                t.id === tournamentId
+                  ? {
+                      ...t,
+                      participants: [...(t.participants || []), participant],
+                      participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
+                    }
+                  : t
+              )
+            : [
+                {
+                  ...tournament,
+                  participants: [...(tournament.participants || []), participant],
+                  participantCount: tournament.participantCount ?? new Set((tournament.participants || []).map(p => p.userId)).size
+                },
+                ...prev
+              ]
+          saveToLocalStorage(`user_tournaments_${user.uid}`, updatedList)
+          return updatedList
+        })
+
+        notifyTournamentJoined(tournament.name)
       }
     } catch (error) {
       throw error
@@ -548,7 +703,7 @@ const FishingProvider = ({ children }) => {
           participants: arrayRemove(participant),
           participantCount: (tournament.participantCount || 1) - 1
         })
-        notifyLeftTournament(tournament.name);
+        notifyTournamentLeft(tournament.name);
         await loadUserTournaments()
       } else {
         // Implementar lógica offline para sair
@@ -683,8 +838,20 @@ const FishingProvider = ({ children }) => {
         throw new Error('Não é possível finalizar um campeonato sem participantes')
       }
 
-      // Calcular ranking final
+      // Calcular ranking final e determinar campeão
       const finalRanking = await getTournamentRanking(tournamentId, 'weight')
+      const winnerEntry = Array.isArray(finalRanking) && finalRanking.length > 0
+        ? finalRanking[0]
+        : null
+      const winner = winnerEntry
+        ? {
+            userId: winnerEntry.userId,
+            userName: winnerEntry.userName,
+            totalWeight: winnerEntry.totalWeight,
+            totalCatches: winnerEntry.totalCatches,
+            score: winnerEntry.score
+          }
+        : null
 
       if (isOnline) {
         const tournamentRef = doc(db, 'fishing_tournaments', tournamentId)
@@ -692,7 +859,8 @@ const FishingProvider = ({ children }) => {
           status: 'finished',
           finishedAt: new Date().toISOString(),
           finishedBy: user.uid,
-          finalRanking: finalRanking
+          finalRanking: finalRanking,
+          winner
         })
 
         // Notificar sucesso
@@ -709,7 +877,8 @@ const FishingProvider = ({ children }) => {
                 ...t,
                 status: 'finished',
                 finishedAt: new Date().toISOString(),
-                finalRanking: finalRanking
+                finalRanking: finalRanking,
+                winner
               }
             : t
         )
@@ -1005,12 +1174,22 @@ const FishingProvider = ({ children }) => {
             endDate <= now && t.status !== 'finished' && t.status !== 'cancelled'
           if (!shouldFinish) continue
           const finalRanking = await getTournamentRanking(t.id, 'weight')
+          const winner = Array.isArray(finalRanking) && finalRanking.length > 0
+            ? {
+                userId: finalRanking[0].userId,
+                userName: finalRanking[0].userName,
+                totalWeight: finalRanking[0].totalWeight,
+                totalCatches: finalRanking[0].totalCatches,
+                score: finalRanking[0].score
+              }
+            : null
           if (isOnline) {
             const tournamentRef = doc(db, 'fishing_tournaments', t.id)
             await updateDoc(tournamentRef, {
               status: 'finished',
               finishedAt: new Date().toISOString(),
-              finalRanking
+              finalRanking,
+              winner
             })
           }
           // Atualizar estado local
@@ -1021,7 +1200,8 @@ const FishingProvider = ({ children }) => {
                     ...x,
                     status: 'finished',
                     finishedAt: new Date().toISOString(),
-                    finalRanking
+                    finalRanking,
+                    winner
                   }
                 : x
             )
@@ -1033,7 +1213,8 @@ const FishingProvider = ({ children }) => {
                     ...x,
                     status: 'finished',
                     finishedAt: new Date().toISOString(),
-                    finalRanking
+                    finalRanking,
+                    winner
                   }
                 : x
             )
@@ -1324,6 +1505,8 @@ const FishingProvider = ({ children }) => {
     syncLocalDataToFirestore,
     saveToLocalStorage,
     getFromLocalStorage,
+    // Expor utilitário de mesclagem para uso na UI de detalhes
+    mergeParticipantsWithLocal,
     // Funções do feed
     createPost,
     loadPosts,

@@ -24,7 +24,18 @@ service cloud.firestore {
     match /fishing_tournaments/{tournamentId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
+
+      // Permitir: 
+      // - criador editar/deletar
+      // - participantes atualizarem apenas 'participants' e 'participantCount'
+      allow update: if request.auth != null && (
+        // Criador pode editar qualquer campo
+        request.auth.uid == resource.data.createdBy ||
+        // Participação: permitir mudanças somente nesses dois campos
+        request.resource.data.diff(resource.data).changedKeys().hasOnly(['participants', 'participantCount'])
+      );
+
+      allow delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
     }
     
     // Capturas são públicas para leitura, apenas o autor pode editar

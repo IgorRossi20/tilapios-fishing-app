@@ -7,7 +7,7 @@ import { compressImage, validateImageFile } from '../utils/imageCompression'
 
 const Profile = () => {
   const { user, logout } = useAuth()
-  const { userCatches, calculateUserStats } = useFishing()
+  const { userCatches, userTournaments, calculateUserStats } = useFishing()
   const [activeTab, setActiveTab] = useState('stats')
   const [userStats, setUserStats] = useState(null)
   const [recentCatches, setRecentCatches] = useState([])
@@ -23,7 +23,7 @@ const Profile = () => {
 
   useEffect(() => {
     loadUserData()
-  }, [userCatches])
+  }, [userCatches, userTournaments])
 
   // Função para encontrar espécie favorita
   const getFavoriteSpecies = (catches) => {
@@ -134,6 +134,11 @@ const Profile = () => {
       // Usar dados reais do FishingContext
       const stats = calculateUserStats()
       
+      const tournamentsParticipated = Array.isArray(userTournaments) ? userTournaments.length : 0
+      const tournamentsWon = Array.isArray(userTournaments)
+        ? userTournaments.filter(t => t.status === 'finished' && t.winner?.userId === (user?.uid)).length
+        : 0
+
       const calculatedStats = {
         totalFish: stats.totalCatches || 0,
         totalWeight: stats.totalWeight || 0,
@@ -147,8 +152,8 @@ const Profile = () => {
         averageWeight: stats.averageWeight || 0,
         currentRanking: 8,
         monthlyRanking: 3,
-        tournamentsWon: 2,
-        tournamentsParticipated: 7
+        tournamentsWon,
+        tournamentsParticipated
       }
       
       // Usar capturas reais do usuário
