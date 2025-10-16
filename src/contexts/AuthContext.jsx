@@ -1,7 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { supabase } from '../supabase/config'
 import { auth } from '../firebase/config'
-import { sendPasswordResetEmail } from 'firebase/auth'
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  updateProfile,
+  updatePassword as updateFirebasePassword,
+  sendPasswordResetEmail
+} from 'firebase/auth'
 
 const AuthContext = createContext()
 export { AuthContext }
@@ -18,80 +25,51 @@ export const AuthProvider = ({ children }) => {
     const [lastEvent, setLastEvent] = useState(null);
     const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
-    const syncUserData = async (supabaseUser) => {
-        if (supabaseUser) {
-            const { data: profile, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', supabaseUser.id)
-                .single();
-
-            if (error) {
-                setUser(null);
-                setIsAuthenticated(false);
-            } else {
-                const userData = { ...supabaseUser, ...profile };
-                setUser(userData);
-                setIsAuthenticated(true);
-            }
-        } else {
-            setUser(null);
-            setIsAuthenticated(false);
-        }
-    };
+    const mapFirebaseUser = (firebaseUser) => {
+        if (!firebaseUser) return null
+        const { uid, email, displayName, photoURL } = firebaseUser
+        return { uid, email, displayName, photoURL }
+    }
 
     useEffect(() => {
-        const setupAuthListener = async () => {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    await syncUserData(session.user);
-                } else {
-                    setUser(null);
-                    setIsAuthenticated(false);
-                }
-                setLoading(false);
-                setIsReady(true);
-
-                const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
-                    setLastEvent(event);
-                    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                        if (session) {
-                            await syncUserData(session.user);
-                        }
-                    } else if (event === 'SIGNED_OUT') {
-                        setUser(null);
-                        setIsAuthenticated(false);
-                    } else if (event === 'PASSWORD_RECOVERY') {
-                        // Exibir fluxo de redefinição de senha na UI
-                        setIsPasswordRecovery(true);
-                    }
-                });
-
-                return () => {
-                    if (authListener && authListener.subscription) {
-                        authListener.subscription.unsubscribe();
-                    }
-                };
-            } catch (error) {
-                setLoading(false);
-                setIsReady(true);
+        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+            const mapped = mapFirebaseUser(firebaseUser)
+            if (mapped) {
+                setUser(mapped)
+                setIsAuthenticated(true)
+                setLastEvent('SIGNED_IN')
+            } else {
+                setUser(null)
+                setIsAuthenticated(false)
+                setLastEvent('SIGNED_OUT')
             }
-        };
+            setLoading(false)
+            setIsReady(true)
+        })
 
-        setupAuthListener();
-    }, []);
+        return () => unsubscribe()
+    }, [])
 
-    const login = (email, password) => supabase.auth.signInWithPassword({ email, password });
-    const register = (email, password, options) => supabase.auth.signUp({ email, password, options });
-    const logout = () => supabase.auth.signOut();
+    const login = (email, password) => signInWithEmailAndPassword(auth, email, password)
+    const register = async (email, password, displayName) => {
+        const cred = await createUserWithEmailAndPassword(auth, email, password)
+        if (displayName && cred?.user) {
+            try { await updateProfile(cred.user, { displayName }) } catch {}
+        }
+        return cred
+    }
+    const logout = () => signOut(auth)
     // Recuperação de senha via Firebase (usuarios estão no Firebase)
     const resetPassword = (email) => {
         // Usar fluxo padrão do Firebase. Se desejar redirecionar para o app após redefinir,
         // configure Authorized Domains no Firebase e utilize actionCodeSettings.
         return sendPasswordResetEmail(auth, email)
     }
-    const updatePassword = (newPassword) => supabase.auth.updateUser({ password: newPassword });
+    const updatePassword = (newPassword) => {
+        const current = auth.currentUser
+        if (!current) throw new Error('Nenhum usuário autenticado')
+        return updateFirebasePassword(current, newPassword)
+    }
     const completeRecovery = () => setIsPasswordRecovery(false);
 
     const value = {

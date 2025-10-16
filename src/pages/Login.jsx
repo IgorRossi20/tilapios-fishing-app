@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Fish, Mail, Lock, User, Check, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, Link as LinkIcon, Key } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { useNavigate } from 'react-router-dom'
 import { isSupabaseConfigured, getSupabaseOverrides, setSupabaseOverrides, clearSupabaseOverrides } from '../supabase/config'
 import './Login.css'
 
@@ -23,7 +24,8 @@ const Login = () => {
   const [supabaseUrl, setSupabaseUrl] = useState('')
   const [supabaseKey, setSupabaseKey] = useState('')
 
-  const { login, register, resetPassword, lastEvent, isPasswordRecovery, updatePassword, completeRecovery } = useAuth()
+  const navigate = useNavigate()
+  const { user, login, register, resetPassword, lastEvent, isPasswordRecovery, updatePassword, completeRecovery } = useAuth()
 
   // Abrir modal de redefinição quando o Supabase retornar com PASSWORD_RECOVERY
   useEffect(() => {
@@ -31,6 +33,13 @@ const Login = () => {
       setShowResetModal(true)
     }
   }, [lastEvent, isPasswordRecovery])
+
+  // Redirecionar automaticamente quando o usuário autenticar
+  useEffect(() => {
+    if (user) {
+      navigate('/')
+    }
+  }, [user, navigate])
 
   // Carregar overrides salvos para facilitar configuração
   useEffect(() => {
@@ -132,6 +141,8 @@ const Login = () => {
         setTimeout(() => {
           document.querySelector('.login-card').classList.remove('success-animation')
         }, 1000)
+        // Redirecionar após sucesso
+        navigate('/')
       } else {
         await register(formData.email, formData.password, formData.displayName)
         setSuccess('Conta criada com sucesso! Redirecionando...')
@@ -140,6 +151,7 @@ const Login = () => {
         setTimeout(() => {
           document.querySelector('.login-card').classList.remove('success-animation')
         }, 1000)
+        navigate('/')
       }
     } catch (error) {
       setError(error.message || getErrorMessage(error.code) || 'Erro inesperado. Tente novamente.')
