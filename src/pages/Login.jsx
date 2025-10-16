@@ -37,9 +37,11 @@ const Login = () => {
   // Redirecionar automaticamente quando o usuário autenticar
   useEffect(() => {
     if (user) {
+      // Mostrar mensagem de sucesso somente quando user estiver disponível
+      setSuccess(isLogin ? 'Login realizado com sucesso!' : 'Conta criada com sucesso!')
       navigate('/')
     }
-  }, [user, navigate])
+  }, [user, navigate, isLogin])
 
   // Carregar overrides salvos para facilitar configuração
   useEffect(() => {
@@ -135,23 +137,17 @@ const Login = () => {
     try {
       if (isLogin) {
         await login(formData.email, formData.password)
-        setSuccess('Login realizado com sucesso!')
-        // Feedback visual para login bem-sucedido
+        // Mensagem e navegação serão disparadas pelo efeito quando user atualizar
         document.querySelector('.login-card').classList.add('success-animation')
         setTimeout(() => {
           document.querySelector('.login-card').classList.remove('success-animation')
         }, 1000)
-        // Redirecionar após sucesso
-        navigate('/')
       } else {
         await register(formData.email, formData.password, formData.displayName)
-        setSuccess('Conta criada com sucesso! Redirecionando...')
-        // Feedback visual para registro bem-sucedido
         document.querySelector('.login-card').classList.add('success-animation')
         setTimeout(() => {
           document.querySelector('.login-card').classList.remove('success-animation')
         }, 1000)
-        navigate('/')
       }
     } catch (error) {
       setError(error.message || getErrorMessage(error.code) || 'Erro inesperado. Tente novamente.')
