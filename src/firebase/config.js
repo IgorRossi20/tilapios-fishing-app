@@ -2,9 +2,9 @@
 // Para usar em produção, substitua pelas suas credenciais do Firebase
 
 import { initializeApp } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { getFirestore, initializeFirestore, enableIndexedDbPersistence } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
+import { getAuth, connectAuthEmulator } from 'firebase/auth'
+import { initializeFirestore, enableIndexedDbPersistence, connectFirestoreEmulator } from 'firebase/firestore'
+import { getStorage, connectStorageEmulator } from 'firebase/storage'
 
 // Configuração do Firebase usando variáveis de ambiente
 const firebaseConfig = {
@@ -37,6 +37,20 @@ try {
   console.warn('⚠️ Firestore persistence not available:', err?.code || err)
 }
 export const storage = getStorage(app)
+
+// Conectar emuladores localmente (opcional) se a flag estiver habilitada
+try {
+  const useEmulator = String(import.meta.env.VITE_FIREBASE_EMULATOR).toLowerCase() === 'true'
+  if (useEmulator) {
+    // Endpoints padrão dos emuladores
+    connectFirestoreEmulator(db, 'localhost', 8080)
+    connectAuthEmulator(auth, 'http://localhost:9099')
+    connectStorageEmulator(storage, 'localhost', 9199)
+    console.info('🔥 Conectado aos emuladores do Firebase (Firestore/Auth/Storage).')
+  }
+} catch (err) {
+  console.warn('Não foi possível conectar emuladores Firebase:', err?.message || err)
+}
 
 
 export default app

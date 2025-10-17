@@ -3,6 +3,7 @@ import { Heart, MessageCircle, Share2, Camera, MapPin, Clock, Fish, Trophy, User
 import { useAuth } from '../hooks/useAuth'
 import { useFishing } from '../contexts/FishingContext'
 import './Feed.css'
+import { formatPostForUI, formatTimeAgo } from '../utils/postFormat'
 
 const Feed = () => {
   const { user } = useAuth()
@@ -13,6 +14,7 @@ const Feed = () => {
   const [showComments, setShowComments] = useState({})
   const [newComment, setNewComment] = useState({})
   const [postInteractions, setPostInteractions] = useState({})
+  const [commentSubmitting, setCommentSubmitting] = useState({})
   const [newPost, setNewPost] = useState({
     description: '',
     fishSpecies: '',
@@ -85,8 +87,8 @@ const Feed = () => {
       setLoading(true)
       // Carregar posts globais do contexto; garantir carregamento inicial
       const postsData = (allPosts && allPosts.length ? allPosts : await loadPosts()) || []
-      
-      setPosts(postsData)
+      const formatted = postsData.map(p => formatPostForUI(p, user))
+      setPosts(formatted)
     } catch (error) {
     } finally {
       setLoading(false)
@@ -168,18 +170,15 @@ const Feed = () => {
   const handleLike = async (postId) => {
     try {
       const isLiked = await likePost(postId)
-      
       // Atualizar estado local
       setPosts(posts.map(post => {
         if (post.id === postId) {
-          const likes = post.likes || []
-          const userLiked = likes.includes(user.uid)
-          
+          const nextLiked = (typeof isLiked === 'boolean') ? isLiked : !post.isLiked
+          const delta = nextLiked ? 1 : -1
           return {
             ...post,
-            likes: userLiked 
-              ? likes.filter(uid => uid !== user.uid)
-              : [...likes, user.uid]
+            isLiked: nextLiked,
+            likesCount: Math.max(0, (post.likesCount || 0) + delta)
           }
         }
         return post
@@ -203,6 +202,8 @@ const Feed = () => {
   const handleComment = async (postId) => {
     const commentText = newComment[postId]
     if (!commentText?.trim()) return
+    if (commentSubmitting[postId]) return
+    setCommentSubmitting(prev => ({ ...prev, [postId]: true }))
     
     try {
       const comment = await addComment(postId, commentText)
@@ -212,7 +213,7 @@ const Feed = () => {
         if (post.id === postId) {
           return {
             ...post,
-            comments: [...(post.comments || []), comment]
+            commentsList: [...(post.commentsList || []), comment]
           }
         }
         return post
@@ -237,6 +238,8 @@ const Feed = () => {
       setNewComment({ ...newComment, [postId]: '' })
     } catch (error) {
       // console.error('Erro ao adicionar comentário:', error)
+    } finally {
+      setCommentSubmitting(prev => ({ ...prev, [postId]: false }))
     }
   }
   
@@ -288,36 +291,7 @@ const Feed = () => {
     })
   }
 
-  const formatTimeAgo = (timestamp) => {
-    try {
-      // Verificar se o timestamp é válido
-      if (!timestamp) {
-        return 'Data não disponível'
-      }
-      
-      // Converter para Date se necessário
-      const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
-      
-      // Verificar se a data é válida
-      if (isNaN(date.getTime())) {
-        return 'Data não disponível'
-      }
-      
-      const now = new Date()
-      const diff = now - date
-      const hours = Math.floor(diff / (1000 * 60 * 60))
-      const minutes = Math.floor(diff / (1000 * 60))
-      
-      if (hours > 0) {
-        return `${hours}h atrás`
-      } else if (minutes > 0) {
-        return `${minutes}min atrás`
-      } else {
-        return 'Agora'
-      }
-      return 'Data não disponível'
-    }
-  }
+  // formatTimeAgo centralizado em utils/postFormat
 
   if (loading) {
     return (
@@ -614,12 +588,12 @@ const Feed = () => {
               <div className="action-buttons">
                 <button 
                   onClick={() => handleLike(post.id)}
-                  className={`action-btn like-btn ${((post.likes || []).includes(user?.uid) || postInteractions[post.id]?.liked) ? 'liked' : ''}`}
+                  className={`action-btn like-btn ${((post.isLiked) || postInteractions[post.id]?.liked) ? 'liked' : ''}`}
                 >
                   <Heart 
                     size={24} 
-                    fill={((post.likes || []).includes(user?.uid) || postInteractions[post.id]?.liked) ? '#ed4956' : 'none'}
-                    color={((post.likes || []).includes(user?.uid) || postInteractions[post.id]?.liked) ? '#ed4956' : '#262626'}
+                    fill={((post.isLiked) || postInteractions[post.id]?.liked) ? '#ed4956' : 'none'}
+                    color={((post.isLiked) || postInteractions[post.id]?.liked) ? '#ed4956' : '#262626'}
                   />
                 </button>
                 
@@ -643,7 +617,7 @@ const Feed = () => {
                 {/* Contador de curtidas */}
                 <div className="likes-count">
                   {(() => {
-                    const base = (post.likes || []).length
+                    const base = (post.likesCount || 0)
                     const extra = postInteractions[post.id]?.likes || 0
                     const total = base + extra
                     return total > 0 
@@ -671,7 +645,7 @@ const Feed = () => {
                 className="comments-toggle"
               >
                 {(() => {
-                  const base = (post.comments || []).length
+                  const base = (post.commentsList || []).length
                   const extra = (postInteractions[post.id]?.commentsList || []).length
                   const total = base + extra
                   return total > 0 
@@ -685,7 +659,7 @@ const Feed = () => {
                 <div className="comments-section">
                   {/* Lista de comentários */}
                   <div style={{ marginBottom: '12px' }}>
-                    {[...(post.comments || []), ...((postInteractions[post.id]?.commentsList || []))].map((comment, index) => (
+                    {[...(post.commentsList || []), ...((postInteractions[post.id]?.commentsList || []))].map((comment, index) => (
                       <div key={index} className="comment-item">
                         <span className="comment-author">{comment.authorName || comment.user}</span>
                         {comment.text}
@@ -704,18 +678,19 @@ const Feed = () => {
                         [post.id]: e.target.value
                       })}
                       className="comment-input"
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
+                      disabled={!!commentSubmitting[post.id]}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !commentSubmitting[post.id]) {
                           handleComment(post.id)
                         }
                       }}
                     />
                     <button
                       onClick={() => handleComment(post.id)}
-                      disabled={!newComment[post.id]?.trim()}
+                      disabled={!!commentSubmitting[post.id] || !newComment[post.id]?.trim()}
                       className="comment-submit"
                     >
-                      Publicar
+                      {commentSubmitting[post.id] ? 'Publicando...' : 'Publicar'}
                     </button>
                   </div>
                 </div>

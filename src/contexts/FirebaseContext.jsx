@@ -1,5 +1,6 @@
 import React, { createContext, useContext } from 'react'
 import { auth, db, storage } from '../firebase/config'
+import { disableNetwork, enableNetwork } from 'firebase/firestore'
 import { isValidFirebaseDomain } from '../utils/mobileCompatibility'
 
 // As instâncias do Firebase (auth, db, storage) são fornecidas por src/firebase/config
@@ -13,7 +14,16 @@ const currentDomain = window.location.hostname
 // Verificar se o domínio atual é válido para o Firebase
 const isValidDomain = isValidFirebaseDomain();
 if (!isValidDomain) {
-  
+  // Ativar modo offline quando domínio não autorizado
+  window.FIRESTORE_OFFLINE_MODE = true
+  ;(async () => {
+    try {
+      await disableNetwork(db)
+      console.info('Firestore em modo offline: domínio não autorizado para Firebase Auth.')
+    } catch (e) {
+      console.warn('Falha ao desativar rede do Firestore:', e?.message || e)
+    }
+  })()
 }
 
 // Firestore já configurado no config.js (initializeFirestore com auto long polling)
@@ -47,6 +57,16 @@ window.addEventListener('unhandledrejection', (event) => {
     event.preventDefault()
     return false
   }
+})
+
+// Alternar rede do Firestore conforme status online/offline
+window.addEventListener('online', () => {
+  if (!window.FIRESTORE_OFFLINE_MODE) {
+    enableNetwork(db).catch(() => {})
+  }
+})
+window.addEventListener('offline', () => {
+  disableNetwork(db).catch(() => {})
 })
 
 // Definir flag global para modo online

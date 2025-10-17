@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { useFishing } from '../contexts/FishingContext'
 import './Home.css'
+import { formatPostForUI, toDateSafe, formatTimeAgo } from '../utils/postFormat'
 
 const Home = () => {
   const { user } = useAuth()
@@ -14,14 +15,20 @@ const Home = () => {
     getGeneralRanking, 
     isOnline, 
     getFromLocalStorage, 
+    saveToLocalStorage,
     syncLocalDataToFirestore,
     loadAllCatches,
     allCatches,
     // Campeonatos do usuário
     userTournaments,
-    loadUserTournaments
+    loadUserTournaments,
+    // Posts da comunidade
+    allPosts,
+    loadPosts,
+    likePost,
+    addComment,
+    sharePost
   } = useFishing()
-  const { saveToLocalStorage } = useFishing()
   const [stats, setStats] = useState({
     totalFish: 0,
     totalWeight: 0,
@@ -58,6 +65,7 @@ const Home = () => {
   }, [postInteractions, saveToLocalStorage])
   const [newComment, setNewComment] = useState({})
   const [showCreatePost, setShowCreatePost] = useState(false)
+  const [commentSubmitting, setCommentSubmitting] = useState({})
 
   // Carregar dados do dashboard quando usuário/log de capturas mudar
   useEffect(() => {
@@ -71,12 +79,58 @@ const Home = () => {
   // Carregar todas as capturas apenas uma vez ao montar
   useEffect(() => {
     loadAllCatches()
+    // Também carregar posts da comunidade para interações do backend
+    loadPosts()
   }, [])
 
-  // Atualizar posts do feed quando allCatches ou usuário mudarem
+  // Atualizar posts do feed quando posts/capturas ou usuário mudarem
   useEffect(() => {
     loadFeedPosts()
-  }, [allCatches, user])
+  }, [allPosts, allCatches, user])
+
+  // Sincronizar estado local de curtidas com backend e reconciliar delta
+  useEffect(() => {
+    try {
+      if (Array.isArray(allPosts) && allPosts.length > 0) {
+        setPostInteractions(prev => {
+          const next = { ...prev }
+          allPosts.forEach(p => {
+            const pid = p.id
+            const remoteLiked = Array.isArray(p.likes) ? p.likes.includes(user?.uid) : false
+            const prevEntry = next[pid] || {}
+            // Reconciliar comentários locais com os do backend
+            const remoteComments = Array.isArray(p.comments)
+              ? p.comments
+              : Array.isArray(p.commentsList)
+              ? p.commentsList
+              : []
+            const localComments = Array.isArray(prevEntry.commentsList) ? prevEntry.commentsList : []
+
+            const remoteIds = new Set(remoteComments.map(c => c && c.id).filter(Boolean))
+            let filteredLocal = localComments.filter(c => !remoteIds.has(c && c.id))
+
+            // Deduplicação adicional por assinatura texto+timestamp
+            const remoteSig = new Set(
+              remoteComments.map(c => `${(c?.text || '').trim()}|${c?.createdAt || c?.timestamp || c?.date || ''}`)
+            )
+            filteredLocal = filteredLocal.filter(c => {
+              const sig = `${(c?.text || '').trim()}|${c?.timestamp || c?.createdAt || c?.date || ''}`
+              return !remoteSig.has(sig)
+            })
+
+            // Reflete sempre o estado remoto e zera o delta ao sincronizar
+            next[pid] = {
+              ...prevEntry,
+              liked: remoteLiked,
+              likes: 0,
+              commentsList: filteredLocal
+            }
+          })
+          return next
+        })
+      }
+    } catch {}
+  }, [allPosts, user])
 
   // Memoizar stats calculados para evitar recálculos desnecessários
   const memoizedStats = useMemo(() => {
@@ -118,18 +172,21 @@ const Home = () => {
 
   // Carregar posts do feed social
   // Funções de interação com posts
-  const handleLike = useCallback((postId) => {
+  const handleLike = useCallback(async (postId) => {
+    try {
+      await likePost?.(postId)
+    } catch {}
     setPostInteractions(prev => ({
       ...prev,
       [postId]: {
         ...prev[postId],
         liked: !prev[postId]?.liked,
         likes: prev[postId]?.liked 
-          ? (prev[postId]?.likes || 0) - 1 
+          ? Math.max(0, (prev[postId]?.likes || 0) - 1) 
           : (prev[postId]?.likes || 0) + 1
       }
     }))
-  }, [])
+  }, [likePost])
 
   const toggleComments = useCallback((postId) => {
     setShowComments(prev => ({
@@ -138,33 +195,41 @@ const Home = () => {
     }))
   }, [])
 
-  const handleComment = useCallback((postId) => {
+  const handleComment = useCallback(async (postId) => {
     const commentText = newComment[postId]
-    if (commentText && commentText.trim()) {
+    if (!commentText || !commentText.trim()) return
+    if (commentSubmitting[postId]) return
+    setCommentSubmitting(prev => ({ ...prev, [postId]: true }))
+    let serverComment = null
+    try {
+      try {
+        serverComment = await addComment?.(postId, commentText.trim())
+      } catch {}
       setPostInteractions(prev => ({
         ...prev,
         [postId]: {
           ...prev[postId],
           comments: (prev[postId]?.comments || 0) + 1,
           commentsList: [...(prev[postId]?.commentsList || []), {
-            id: Date.now(),
+            id: serverComment?.id || Date.now(),
             text: commentText.trim(),
-            user: user?.displayName || 'Anônimo',
-            timestamp: new Date().toISOString()
+            user: serverComment?.authorName || user?.displayName || 'Anônimo',
+            timestamp: serverComment?.createdAt || new Date().toISOString()
           }]
         }
       }))
-      
-      // Limpar campo de comentário
       setNewComment(prev => ({
         ...prev,
         [postId]: ''
       }))
+    } finally {
+      setCommentSubmitting(prev => ({ ...prev, [postId]: false }))
     }
-  }, [newComment, user])
+  }, [newComment, user, addComment, commentSubmitting])
 
-  const handleShare = useCallback((postId, postContent) => {
+  const handleShare = useCallback(async (postId, postContent) => {
     try {
+      try { await sharePost?.(postId) } catch {}
       const title = 'Captura de Pesca'
       const text = postContent?.species && postContent?.weight && postContent?.location
         ? `Confira esta captura: ${postContent.species} de ${postContent.weight}kg em ${postContent.location}!`
@@ -197,61 +262,58 @@ const Home = () => {
         }
       }))
     }
-  }, [])
+  }, [sharePost])
 
   const loadFeedPosts = useCallback(async () => {
     try {
-      // Usar allCatches em vez de localStorage
-      let catchesToDisplay = allCatches || []
-      
-      // Exibir também capturas otimistas (IDs temporários), para feedback imediato no feed
-      
-      // Filtrar apenas capturas que têm userId (usuários autenticados)
-      const authenticatedCatches = catchesToDisplay.filter(catch_ => 
-        catch_.userId && 
-        catch_.userId !== 'demo' && 
-        !catch_.id?.startsWith('demo_')
-      )
-      
-      const posts = authenticatedCatches
-        .sort((a, b) => new Date(b.registeredAt || b.date) - new Date(a.registeredAt || a.date))
-        .slice(0, 20) // Aumentar o limite para mais posts
-        .map((catch_, index) => ({
-          // ID estável: usar id da captura, senão combinar userId + timestamp
-          id: (() => {
-            if (catch_.id) return catch_.id
-            const uid = catch_.userId || 'unknown'
-            const ts = (() => {
-              const d = new Date(catch_.registeredAt || catch_.date)
-              return isNaN(d.getTime()) ? 0 : d.getTime()
-            })()
-            return `catch_${uid}_${ts}`
-          })(),
-          type: 'catch',
-          user: {
-            name: catch_.userName || user?.displayName || user?.email || 'Pescador',
-            avatar: catch_.userAvatar || user?.photoURL || catch_.userName?.charAt(0)?.toUpperCase() || 'P',
-            level: 'Pescador'
-          },
-          content: {
-            species: catch_.species,
-            weight: catch_.weight,
-            location: catch_.location,
-            description: catch_.notes || `Capturei um(a) ${catch_.species} de ${catch_.weight}kg em ${catch_.location}! 🎣`,
-            image: catch_.photo || null
-          },
-          timestamp: catch_.registeredAt || catch_.date,
-          likes: catch_.likes || 0,
-          comments: catch_.comments || 0,
-          shares: catch_.shares || 0,
-          isLiked: false
-        }))
-      
-      setFeedPosts(posts)
+      // Preferir posts da comunidade (com suporte a interações no backend)
+      const sourcePosts = Array.isArray(allPosts) && allPosts.length > 0 ? allPosts : []
+
+      // toDateSafe agora importado de utils/postFormat
+
+      const mapped = sourcePosts
+        .slice(0, 30)
+        .map(p => formatPostForUI(p, user))
+
+      // Fallback: se não houver posts ainda, manter comportamento anterior com capturas
+      if (mapped.length === 0) {
+        let catchesToDisplay = allCatches || []
+        const authenticatedCatches = catchesToDisplay.filter(catch_ => 
+          catch_.userId && catch_.userId !== 'demo' && !catch_.id?.startsWith('demo_')
+        )
+        const postsFromCatches = authenticatedCatches
+          .sort((a, b) => new Date(b.registeredAt || b.date) - new Date(a.registeredAt || a.date))
+          .slice(0, 20)
+          .map((catch_, index) => ({
+            id: catch_.id || `catch_${catch_.userId || 'unknown'}_${(() => { const d = new Date(catch_.registeredAt || catch_.date); return isNaN(d.getTime()) ? 0 : d.getTime() })()}`,
+            type: 'catch',
+            user: {
+              name: catch_.userName || user?.displayName || user?.email || 'Pescador',
+              avatar: catch_.userAvatar || user?.photoURL || catch_.userName?.charAt(0)?.toUpperCase() || 'P',
+              level: 'Pescador'
+            },
+            content: {
+              species: catch_.species,
+              weight: catch_.weight,
+              location: catch_.location,
+              description: catch_.notes || `Capturei um(a) ${catch_.species} de ${catch_.weight}kg em ${catch_.location}! 🎣`,
+              image: catch_.photo || null
+            },
+            timestamp: toDateSafe(catch_.registeredAt) || toDateSafe(catch_.date) || new Date(),
+            createdAt: toDateSafe(catch_.registeredAt) || toDateSafe(catch_.date) || new Date(),
+            likes: catch_.likes || 0,
+            comments: catch_.comments || 0,
+            shares: catch_.shares || 0,
+            isLiked: false
+          }))
+        setFeedPosts(postsFromCatches)
+      } else {
+        setFeedPosts(mapped)
+      }
     } catch (error) {
       setFeedPosts([])
     }
-  }, [user, allCatches])
+  }, [user, allPosts, allCatches])
 
   const loadDashboardData = async () => {
     try {
@@ -506,6 +568,18 @@ const Home = () => {
                            className="action-btn comment-btn"
                          >
                            <MessageCircle size={24} />
+                           <span
+                             style={{
+                               marginLeft: 6,
+                               fontSize: 12,
+                               color: '#666'
+                             }}
+                           >
+                             {(
+                               (Array.isArray(post.commentsList) ? post.commentsList.length : 0)
+                               + (postInteractions[post.id]?.commentsList?.length || 0)
+                             )}
+                           </span>
                          </button>
                          <button 
                            onClick={() => handleShare(post.id, post.content)}
@@ -518,9 +592,9 @@ const Home = () => {
 
                      {/* Likes */}
                      <div className="likes-section">
-                       <span className="likes-count">
-                         {(post.likes || 0) + (postInteractions[post.id]?.likes || 0)} curtidas
-                       </span>
+                      <span className="likes-count">
+                        {((post.likesCount || post.likes || 0) + (postInteractions[post.id]?.likes || 0))} curtidas
+                      </span>
                      </div>
 
                      {/* Caption */}
@@ -531,39 +605,27 @@ const Home = () => {
 
                      {/* Timestamp */}
                      <div className="timestamp">
-                       {(() => {
-                         try {
-                           if (!post.timestamp) {
-                             return 'Data não disponível'
-                           }
-                           
-                           const date = new Date(post.timestamp)
-                           
-                           if (isNaN(date.getTime())) {
-                             return 'Data não disponível'
-                           }
-                           
-                           return date.toLocaleDateString('pt-BR', {
-                             day: '2-digit',
-                             month: 'short'
-                           }).toUpperCase()
-                         } catch (error) {
-                           
-                           return 'Data não disponível'
-                         }
-                       })()}
+                       {formatTimeAgo(post.createdAt || post.timestamp)}
                      </div>
 
-                     {/* Comentários */}
-                     {showComments[post.id] && (
-                       <div className="comments-section">
-                         {/* Lista de comentários */}
-                         {postInteractions[post.id]?.commentsList?.map((comment) => (
-                           <div key={comment.id} className="comment-item">
-                             <span className="comment-author">{comment.user}</span>
-                             <span className="comment-text">{comment.text}</span>
-                           </div>
-                         ))}
+                    {/* Comentários */}
+                    {showComments[post.id] && (
+                      <div className="comments-section">
+                        {/* Comentários do backend */}
+                        {Array.isArray(post.commentsList) && post.commentsList.map((comment) => (
+                          <div key={comment.id || `${post.id}-srv-${(comment.createdAt?.seconds || comment.timestamp?.seconds || comment.date || '')}-${(comment.authorName || comment.user || 'anon')}-${(comment.text || '').slice(0,16)}`}
+                            className="comment-item">
+                            <span className="comment-author">{comment.authorName || comment.user || 'Pescador'}</span>
+                            <span className="comment-text">{comment.text}</span>
+                          </div>
+                        ))}
+                        {/* Comentários locais (persistidos) */}
+                        {postInteractions[post.id]?.commentsList?.map((comment) => (
+                          <div key={comment.id} className="comment-item">
+                            <span className="comment-author">{comment.user}</span>
+                            <span className="comment-text">{comment.text}</span>
+                          </div>
+                        ))}
                          
                          {/* Campo para novo comentário */}
                          <div className="comment-input-container">
@@ -576,18 +638,19 @@ const Home = () => {
                                [post.id]: e.target.value
                              }))}
                              className="comment-input"
-                             onKeyPress={(e) => {
-                               if (e.key === 'Enter') {
+                             disabled={!!commentSubmitting[post.id]}
+                             onKeyDown={(e) => {
+                               if (e.key === 'Enter' && !commentSubmitting[post.id]) {
                                  handleComment(post.id)
                                }
                              }}
                            />
                            <button
                              onClick={() => handleComment(post.id)}
-                             disabled={!newComment[post.id]?.trim()}
+                             disabled={!!commentSubmitting[post.id] || !newComment[post.id]?.trim()}
                              className="comment-submit"
                            >
-                             Publicar
+                             {commentSubmitting[post.id] ? 'Publicando...' : 'Publicar'}
                            </button>
                          </div>
                        </div>
