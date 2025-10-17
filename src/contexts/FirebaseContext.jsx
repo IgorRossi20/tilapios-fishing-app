@@ -11,17 +11,31 @@ const currentDomain = window.location.hostname
 
 // Serviços já inicializados (auth, db, storage) vindos do config.js
 
-// Verificar se o domínio atual é válido para o Firebase
-const isValidDomain = isValidFirebaseDomain();
-if (!isValidDomain) {
-  // Ativar modo offline quando domínio não autorizado
-  window.FIRESTORE_OFFLINE_MODE = true
+// Verificar se o domínio atual é válido para o Firebase e aplicar flags de ambiente
+const isValidDomain = isValidFirebaseDomain()
+const forceOffline = String(import.meta.env.VITE_FIRESTORE_FORCE_OFFLINE || '').toLowerCase() === 'true'
+const forceOnlineDev = String(import.meta.env.VITE_FIREBASE_FORCE_ONLINE_DEV || '').toLowerCase() === 'true'
+
+// Decidir modo offline: forçado por env ou domínio não autorizado (sem força online)
+const shouldGoOffline = forceOffline || (!isValidDomain && !forceOnlineDev)
+window.FIRESTORE_OFFLINE_MODE = shouldGoOffline
+
+if (shouldGoOffline) {
   ;(async () => {
     try {
       await disableNetwork(db)
-      console.info('Firestore em modo offline: domínio não autorizado para Firebase Auth.')
+      console.info('Firestore em modo offline (forçado ou domínio não autorizado).')
     } catch (e) {
       console.warn('Falha ao desativar rede do Firestore:', e?.message || e)
+    }
+  })()
+} else {
+  ;(async () => {
+    try {
+      await enableNetwork(db)
+      console.info('Firestore habilitado em modo ONLINE.')
+    } catch (e) {
+      console.warn('Falha ao habilitar rede do Firestore:', e?.message || e)
     }
   })()
 }
@@ -69,8 +83,8 @@ window.addEventListener('offline', () => {
   disableNetwork(db).catch(() => {})
 })
 
-// Definir flag global para modo online
-window.FIRESTORE_OFFLINE_MODE = false
+// Preservar flag global conforme calculado acima (removido reset para false)
+// window.FIRESTORE_OFFLINE_MODE = false
 
 // Reexportar instâncias para manter compatibilidade com imports existentes
 export { auth, db, storage }
@@ -81,23 +95,11 @@ const FirebaseContext = createContext({
   storage
 })
 
-export const useFirebase = () => {
-  const context = useContext(FirebaseContext)
-  if (!context) {
-    throw new Error('useFirebase deve ser usado dentro de FirebaseProvider')
-  }
-  return context
-}
+export const useFirebase = () => useContext(FirebaseContext)
 
 export const FirebaseProvider = ({ children }) => {
-  const value = {
-    auth,
-    db,
-    storage
-  }
-
   return (
-    <FirebaseContext.Provider value={value}>
+    <FirebaseContext.Provider value={{ auth, db, storage }}>
       {children}
     </FirebaseContext.Provider>
   )

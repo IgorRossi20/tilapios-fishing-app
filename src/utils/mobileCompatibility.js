@@ -99,9 +99,11 @@ export const areCookiesEnabled = () => {
  */
 export const isValidFirebaseDomain = () => {
   const hostname = window.location.hostname;
+  const isLocalIp = /^(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/.test(hostname);
   return (
     hostname === 'localhost' ||
     hostname === '127.0.0.1' ||
+    isLocalIp ||
     hostname === 'tilapios.vercel.app' ||
     hostname.endsWith('.firebaseapp.com')
   );
@@ -249,14 +251,7 @@ export const initMobileCompatibility = () => {
     const diagnosticInfo = collectDiagnosticInfo();
     // console.log('Informações de diagnóstico:', diagnosticInfo);
     
-    // Armazenar informações para depuração
-    if (isLocalStorageAvailable()) {
-      try {
-        localStorage.setItem('tilapios_diagnostic', JSON.stringify(diagnosticInfo));
-      } catch (e) {
-        // console.error('Erro ao armazenar informações de diagnóstico:', e);
-      }
-    }
+    // Armazenamento de diagnóstico desativado no modo somente online.
     
     // Verificar problemas críticos
     if (!diagnosticInfo.firebase.validDomain || !diagnosticInfo.browser.isCompatible) {

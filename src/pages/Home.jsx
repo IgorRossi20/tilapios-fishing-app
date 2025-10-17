@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
-import { Fish, Trophy, Users, TrendingUp, Calendar, Award, Wifi, WifiOff, Heart, MessageCircle, Share2, Camera, MapPin, Clock, Plus } from 'lucide-react'
+import { Fish, Trophy, Users, TrendingUp, Calendar, Award, Heart, MessageCircle, Share2, Camera, MapPin, Clock, Plus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { useFishing } from '../contexts/FishingContext'
@@ -14,9 +14,6 @@ const Home = () => {
     calculateUserStats, 
     getGeneralRanking, 
     isOnline, 
-    getFromLocalStorage, 
-    saveToLocalStorage,
-    syncLocalDataToFirestore,
     loadAllCatches,
     allCatches,
     // Campeonatos do usuário
@@ -24,7 +21,6 @@ const Home = () => {
     loadUserTournaments,
     // Posts da comunidade
     allPosts,
-    loadPosts,
     likePost,
     addComment,
     sharePost
@@ -35,34 +31,17 @@ const Home = () => {
     averageWeight: 0,
     biggestFish: null
   })
-  const [pendingCount, setPendingCount] = useState(0)
+
   const [recentCatches, setRecentCatches] = useState([])
   const [monthlyKing, setMonthlyKing] = useState(null)
   const [loading, setLoading] = useState(true)
   const [feedPosts, setFeedPosts] = useState([])
-  const [postInteractions, setPostInteractions] = useState({})
+
   const [showComments, setShowComments] = useState({})
   
-  // Restaurar interações do localStorage na montagem
-  useEffect(() => {
-    try {
-      const stored = getFromLocalStorage ? getFromLocalStorage('feed_post_interactions', {}) : JSON.parse(window.localStorage.getItem('feed_post_interactions') || '{}')
-      if (stored && typeof stored === 'object') {
-        setPostInteractions(stored)
-      }
-    } catch {}
-  }, [getFromLocalStorage])
 
-  // Persistir interações sempre que mudarem
-  useEffect(() => {
-    try {
-      if (saveToLocalStorage) {
-        saveToLocalStorage('feed_post_interactions', postInteractions)
-      } else {
-        window.localStorage.setItem('feed_post_interactions', JSON.stringify(postInteractions))
-      }
-    } catch {}
-  }, [postInteractions, saveToLocalStorage])
+
+
   const [newComment, setNewComment] = useState({})
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [commentSubmitting, setCommentSubmitting] = useState({})
@@ -79,8 +58,8 @@ const Home = () => {
   // Carregar todas as capturas apenas uma vez ao montar
   useEffect(() => {
     loadAllCatches()
-    // Também carregar posts da comunidade para interações do backend
-    loadPosts()
+    // Removido: carregar posts via fetch
+    // O feed usa assinatura em tempo real pelo FishingContext (allPosts)
   }, [])
 
   // Atualizar posts do feed quando posts/capturas ou usuário mudarem
@@ -88,49 +67,8 @@ const Home = () => {
     loadFeedPosts()
   }, [allPosts, allCatches, user])
 
-  // Sincronizar estado local de curtidas com backend e reconciliar delta
-  useEffect(() => {
-    try {
-      if (Array.isArray(allPosts) && allPosts.length > 0) {
-        setPostInteractions(prev => {
-          const next = { ...prev }
-          allPosts.forEach(p => {
-            const pid = p.id
-            const remoteLiked = Array.isArray(p.likes) ? p.likes.includes(user?.uid) : false
-            const prevEntry = next[pid] || {}
-            // Reconciliar comentários locais com os do backend
-            const remoteComments = Array.isArray(p.comments)
-              ? p.comments
-              : Array.isArray(p.commentsList)
-              ? p.commentsList
-              : []
-            const localComments = Array.isArray(prevEntry.commentsList) ? prevEntry.commentsList : []
 
-            const remoteIds = new Set(remoteComments.map(c => c && c.id).filter(Boolean))
-            let filteredLocal = localComments.filter(c => !remoteIds.has(c && c.id))
 
-            // Deduplicação adicional por assinatura texto+timestamp
-            const remoteSig = new Set(
-              remoteComments.map(c => `${(c?.text || '').trim()}|${c?.createdAt || c?.timestamp || c?.date || ''}`)
-            )
-            filteredLocal = filteredLocal.filter(c => {
-              const sig = `${(c?.text || '').trim()}|${c?.timestamp || c?.createdAt || c?.date || ''}`
-              return !remoteSig.has(sig)
-            })
-
-            // Reflete sempre o estado remoto e zera o delta ao sincronizar
-            next[pid] = {
-              ...prevEntry,
-              liked: remoteLiked,
-              likes: 0,
-              commentsList: filteredLocal
-            }
-          })
-          return next
-        })
-      }
-    } catch {}
-  }, [allPosts, user])
 
   // Memoizar stats calculados para evitar recálculos desnecessários
   const memoizedStats = useMemo(() => {
@@ -148,44 +86,24 @@ const Home = () => {
   // Memoizar posts do feed para evitar re-renderizações
   const memoizedFeedPosts = useMemo(() => feedPosts, [feedPosts])
 
-  // Monitorar dados pendentes
-  useEffect(() => {
-    const updatePendingCount = () => {
-      const pending = getFromLocalStorage('pending_catches', [])
-      setPendingCount(pending.length)
-    }
-    
-    // Atualizar inicialmente
-    updatePendingCount()
-    
-    // Escutar mudanças no localStorage
-    window.addEventListener('storage', updatePendingCount)
-    
-    // Verificar periodicamente
-    const interval = setInterval(updatePendingCount, 2000)
-    
-    return () => {
-      window.removeEventListener('storage', updatePendingCount)
-      clearInterval(interval)
-    }
-  }, [getFromLocalStorage])
+
 
   // Carregar posts do feed social
   // Funções de interação com posts
   const handleLike = useCallback(async (postId) => {
     try {
-      await likePost?.(postId)
+      const isLiked = await likePost?.(postId)
+      setFeedPosts(prev => prev.map(post => {
+        if (post.id !== postId) return post
+        const nextLiked = (typeof isLiked === 'boolean') ? isLiked : !post.isLiked
+        const delta = nextLiked ? 1 : -1
+        return {
+          ...post,
+          isLiked: nextLiked,
+          likesCount: Math.max(0, (post.likesCount || 0) + delta)
+        }
+      }))
     } catch {}
-    setPostInteractions(prev => ({
-      ...prev,
-      [postId]: {
-        ...prev[postId],
-        liked: !prev[postId]?.liked,
-        likes: prev[postId]?.liked 
-          ? Math.max(0, (prev[postId]?.likes || 0) - 1) 
-          : (prev[postId]?.likes || 0) + 1
-      }
-    }))
   }, [likePost])
 
   const toggleComments = useCallback((postId) => {
@@ -200,22 +118,13 @@ const Home = () => {
     if (!commentText || !commentText.trim()) return
     if (commentSubmitting[postId]) return
     setCommentSubmitting(prev => ({ ...prev, [postId]: true }))
-    let serverComment = null
     try {
-      try {
-        serverComment = await addComment?.(postId, commentText.trim())
-      } catch {}
-      setPostInteractions(prev => ({
-        ...prev,
-        [postId]: {
-          ...prev[postId],
-          comments: (prev[postId]?.comments || 0) + 1,
-          commentsList: [...(prev[postId]?.commentsList || []), {
-            id: serverComment?.id || Date.now(),
-            text: commentText.trim(),
-            user: serverComment?.authorName || user?.displayName || 'Anônimo',
-            timestamp: serverComment?.createdAt || new Date().toISOString()
-          }]
+      const comment = await addComment?.(postId, commentText.trim())
+      setFeedPosts(prev => prev.map(post => {
+        if (post.id !== postId) return post
+        return {
+          ...post,
+          commentsList: [...(post.commentsList || []), comment]
         }
       }))
       setNewComment(prev => ({
@@ -225,7 +134,7 @@ const Home = () => {
     } finally {
       setCommentSubmitting(prev => ({ ...prev, [postId]: false }))
     }
-  }, [newComment, user, addComment, commentSubmitting])
+  }, [newComment, addComment, commentSubmitting])
 
   const handleShare = useCallback(async (postId, postContent) => {
     try {
@@ -254,13 +163,7 @@ const Home = () => {
         }
       }
     } finally {
-      setPostInteractions(prev => ({
-        ...prev,
-        [postId]: {
-          ...prev[postId],
-          shares: (prev[postId]?.shares || 0) + 1
-        }
-      }))
+      // no offline local increments in online-only mode
     }
   }, [sharePost])
 
@@ -317,21 +220,11 @@ const Home = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Obter capturas do localStorage como fallback
-      const userCaptures = JSON.parse(localStorage.getItem('capturas') || '[]')
-      const fishingCatches = JSON.parse(localStorage.getItem('fishing_catches') || '[]')
-      
-      // Combinar ambas as fontes de dados
-      const allLocalCaptures = [...userCaptures, ...fishingCatches]
-      
-      // Filtrar capturas do usuário atual
-      const myCaptures = allLocalCaptures.filter(capture => capture.userId === user?.uid)
-      
-      // Usar dados do FishingContext se disponível, senão usar localStorage
-      const captures = userCatches.length > 0 ? userCatches : (myCaptures.length > 0 ? myCaptures : allLocalCaptures)
-      
-      // Calcular estatísticas do usuário
-      const userStats = calculateUserStats()
+      // Modo somente online: usar exclusivamente dados do contexto
+      const captures = Array.isArray(userCatches) ? userCatches : []
+
+      // Calcular estatísticas do usuário a partir de dados remotos
+      const userStats = calculateUserStats(captures)
       const totalFish = userStats.totalCatches || captures.length
       const totalWeight = userStats.totalWeight || captures.reduce((sum, capture) => sum + (capture.weight || 0), 0)
 
@@ -357,23 +250,23 @@ const Home = () => {
         ranking: finalPosition
       })
 
-      // Carregar capturas recentes do usuário (últimas 5)
-       const userRecentCaptures = (userCatches.length > 0 ? userCatches : myCaptures).slice(-5).reverse()
-       setRecentCatches(userRecentCaptures)
+      // Últimas 5 capturas do usuário (remoto)
+      const userRecentCaptures = captures.slice(-5).reverse()
+      setRecentCatches(userRecentCaptures)
 
-       // Obter Rei do Lago (top 1 do ranking geral)
-       if (generalRanking.length > 0 && generalRanking[0].totalWeight > 0) {
-         const kingOfLake = {
-           userId: generalRanking[0].userId,
-           name: generalRanking[0].userName || 'Pescador',
-           totalFish: generalRanking[0].totalCatches,
-           totalWeight: generalRanking[0].totalWeight,
-           biggestFish: generalRanking[0].biggestFish
-         }
-         setMonthlyKing(kingOfLake)
-       } else {
-         setMonthlyKing(null)
-       }
+      // Rei do Lago (top 1 do ranking geral)
+      if (generalRanking.length > 0 && generalRanking[0].totalWeight > 0) {
+        const kingOfLake = {
+          userId: generalRanking[0].userId,
+          name: generalRanking[0].userName || 'Pescador',
+          totalFish: generalRanking[0].totalCatches,
+          totalWeight: generalRanking[0].totalWeight,
+          biggestFish: generalRanking[0].biggestFish
+        }
+        setMonthlyKing(kingOfLake)
+      } else {
+        setMonthlyKing(null)
+      }
 
     } catch (error) {
     } finally {
@@ -445,43 +338,6 @@ const Home = () => {
               </div>
             </div>
 
-            {/* Status de Conectividade */}
-            {(!isOnline || pendingCount > 0) && (
-              <div className="card">
-                <div className="d-flex align-center gap-3 mb-3">
-                  {!isOnline ? (
-                    <WifiOff size={20} className="text-error" />
-                  ) : (
-                    <Wifi size={20} className="text-success" />
-                  )}
-                  <h4 className={`font-semibold ${!isOnline ? 'text-error' : 'text-success'}`}>
-                    {!isOnline ? 'Offline' : 'Online'}
-                  </h4>
-                </div>
-                
-                <div className="text-sm text-gray-600 mb-3">
-                  {!isOnline ? (
-                    <p>Suas capturas serão sincronizadas quando a conexão for restaurada.</p>
-                  ) : (
-                    <p>Todas as capturas estão sendo sincronizadas automaticamente.</p>
-                  )}
-                  {pendingCount > 0 && (
-                    <p className="text-warning font-medium mt-2">
-                      📋 {pendingCount} capturas aguardando sincronização
-                    </p>
-                  )}
-                </div>
-                
-                {isOnline && pendingCount > 0 && (
-                  <button 
-                    onClick={() => syncLocalDataToFirestore()}
-                    className="btn btn-sm btn-primary w-full"
-                  >
-                    🔄 Sincronizar Agora
-                  </button>
-                )}
-              </div>
-            )}
            </div>
 
            {/* Coluna da direita - Feed Social */}
@@ -558,10 +414,11 @@ const Home = () => {
                          <button 
                            onClick={() => handleLike(post.id)}
                            className={`action-btn like-btn ${
-                             postInteractions[post.id]?.liked ? 'liked' : ''
+                             post.isLiked ? 'liked' : ''
                            }`}
+                           disabled={!isOnline}
                          >
-                           <Heart size={24} fill={postInteractions[post.id]?.liked ? 'currentColor' : 'none'} />
+                           <Heart size={24} fill={post.isLiked ? 'currentColor' : 'none'} />
                          </button>
                          <button 
                            onClick={() => toggleComments(post.id)}
@@ -575,14 +432,12 @@ const Home = () => {
                                color: '#666'
                              }}
                            >
-                             {(
-                               (Array.isArray(post.commentsList) ? post.commentsList.length : 0)
-                               + (postInteractions[post.id]?.commentsList?.length || 0)
-                             )}
+                             {Array.isArray(post.commentsList) ? post.commentsList.length : 0}
                            </span>
                          </button>
                          <button 
                            onClick={() => handleShare(post.id, post.content)}
+                           disabled={!isOnline}
                            className="action-btn share-btn"
                          >
                            <Share2 size={24} />
@@ -593,7 +448,10 @@ const Home = () => {
                      {/* Likes */}
                      <div className="likes-section">
                       <span className="likes-count">
-                        {((post.likesCount || post.likes || 0) + (postInteractions[post.id]?.likes || 0))} curtidas
+                        {(() => {
+                          const base = (post.likesCount || post.likes || 0)
+                          return `${base} curtidas`
+                        })()}
                       </span>
                      </div>
 
@@ -619,13 +477,7 @@ const Home = () => {
                             <span className="comment-text">{comment.text}</span>
                           </div>
                         ))}
-                        {/* Comentários locais (persistidos) */}
-                        {postInteractions[post.id]?.commentsList?.map((comment) => (
-                          <div key={comment.id} className="comment-item">
-                            <span className="comment-author">{comment.user}</span>
-                            <span className="comment-text">{comment.text}</span>
-                          </div>
-                        ))}
+
                          
                          {/* Campo para novo comentário */}
                          <div className="comment-input-container">

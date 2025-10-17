@@ -11,120 +11,121 @@ const MIN_QUALITY = 0.3; // Qualidade mínima
  * Comprime uma imagem para garantir que não exceda 5MB
  * @param {File} file - Arquivo de imagem original
  * @param {number} maxSizeBytes - Tamanho máximo em bytes (padrão: 5MB)
+ * @param {Object} options - Opções de saída (ex.: { maxWidth, maxHeight, outputMimeType })
  * @returns {Promise<File>} - Arquivo comprimido
  */
-export const compressImage = async (file, maxSizeBytes = MAX_FILE_SIZE) => {
+export const compressImage = async (file, maxSizeBytes = MAX_FILE_SIZE, options = {}) => {
   return new Promise((resolve, reject) => {
     // Verificar se é uma imagem
     if (!file.type.startsWith('image/')) {
-      reject(new Error('Arquivo deve ser uma imagem'));
-      return;
+      reject(new Error('Arquivo deve ser uma imagem'))
+      return
     }
 
     // Se já está dentro do limite, retornar o arquivo original
     if (file.size <= maxSizeBytes) {
-      resolve(file);
-      return;
+      resolve(file)
+      return
     }
 
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    const img = new Image();
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new Image()
 
     img.onload = () => {
       try {
         // Calcular novas dimensões mantendo proporção
-        const { width, height } = calculateDimensions(img.width, img.height);
+        const { width, height } = calculateDimensions(img.width, img.height, options.maxWidth, options.maxHeight)
         
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = width
+        canvas.height = height
 
-        ctx.drawImage(img, 0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height)
 
-        const initialQuality = Math.max(MIN_QUALITY, Math.min(0.9, maxSizeBytes / file.size));
+        const initialQuality = Math.max(MIN_QUALITY, Math.min(0.9, maxSizeBytes / file.size))
 
-        compressWithQuality(canvas, file.name, file.type, maxSizeBytes, initialQuality)
+        compressWithQuality(canvas, file.name, file.type, maxSizeBytes, initialQuality, options.outputMimeType)
           .then(resolve)
-          .catch(reject);
+          .catch(reject)
 
       } catch (error) {
-        reject(new Error('Erro ao processar imagem: ' + error.message));
+        reject(new Error('Erro ao processar imagem: ' + error.message))
       }
-    };
+    }
 
     img.onerror = () => {
-      reject(new Error('Erro ao carregar imagem'));
-    };
+      reject(new Error('Erro ao carregar imagem'))
+    }
 
     // Carregar imagem
-    const reader = new FileReader();
+    const reader = new FileReader()
     reader.onload = (e) => {
-      img.src = e.target.result;
-    };
+      img.src = e.target.result
+    }
     reader.onerror = () => {
-      reject(new Error('Erro ao ler arquivo'));
-    };
-    reader.readAsDataURL(file);
-  });
-};
+      reject(new Error('Erro ao ler arquivo'))
+    }
+    reader.readAsDataURL(file)
+  })
+}
 
 /**
  * Calcula novas dimensões mantendo proporção
  */
-const calculateDimensions = (originalWidth, originalHeight) => {
-  let { width, height } = { width: originalWidth, height: originalHeight };
+const calculateDimensions = (originalWidth, originalHeight, maxWidth = MAX_WIDTH, maxHeight = MAX_HEIGHT) => {
+  let { width, height } = { width: originalWidth, height: originalHeight }
 
   // Reduzir se exceder dimensões máximas
-  if (width > MAX_WIDTH) {
-    height = (height * MAX_WIDTH) / width;
-    width = MAX_WIDTH;
+  if (width > maxWidth) {
+    height = (height * maxWidth) / width
+    width = maxWidth
   }
 
-  if (height > MAX_HEIGHT) {
-    width = (width * MAX_HEIGHT) / height;
-    height = MAX_HEIGHT;
+  if (height > maxHeight) {
+    width = (width * maxHeight) / height
+    height = maxHeight
   }
 
   return {
     width: Math.round(width),
     height: Math.round(height)
-  };
-};
+  }
+}
 
 /**
  * Comprime com qualidade variável até atingir tamanho desejado
  */
-const compressWithQuality = async (canvas, fileName, mimeType, maxSizeBytes, initialQuality = 0.9) => {
-  let quality = initialQuality;
-  let attempts = 0;
-  const maxAttempts = 5; // Reduzir o número de tentativas
+const compressWithQuality = async (canvas, fileName, mimeType, maxSizeBytes, initialQuality = 0.9, outputMimeTypeOverride) => {
+  let quality = initialQuality
+  let attempts = 0
+  const maxAttempts = 5 // Reduzir o número de tentativas
 
   // Garantir que o tipo MIME seja suportado para compressão
-  const outputMimeType = mimeType === 'image/png' ? 'image/jpeg' : mimeType;
+  const outputMimeType = outputMimeTypeOverride || (mimeType === 'image/png' ? 'image/jpeg' : mimeType)
 
   while (attempts < maxAttempts) {
     const blob = await new Promise(resolve => {
-      canvas.toBlob(resolve, outputMimeType, quality);
-    });
+      canvas.toBlob(resolve, outputMimeType, quality)
+    })
 
     if (blob.size <= maxSizeBytes || quality <= MIN_QUALITY) {
-      const extension = outputMimeType === 'image/jpeg' ? '.jpg' : getExtensionFromMimeType(outputMimeType);
-      const finalFileName = fileName.replace(/\.[^/.]+$/, '') + extension;
+      const extension = outputMimeType === 'image/jpeg' ? '.jpg' : getExtensionFromMimeType(outputMimeType)
+      const finalFileName = fileName.replace(/\.[^/.]+$/, '') + extension
       
       const compressedFile = new File([blob], finalFileName, {
         type: outputMimeType,
         lastModified: Date.now()
-      });
+      })
 
-      return compressedFile;
+      return compressedFile
     }
 
-    quality -= QUALITY_STEP;
-    attempts++;
+    quality -= QUALITY_STEP
+    attempts++
   }
 
-  throw new Error('Não foi possível comprimir a imagem para o tamanho desejado');
-};
+  throw new Error('Não foi possível comprimir a imagem para o tamanho desejado')
+}
 
 /**
  * Obtém extensão do arquivo baseada no MIME type
@@ -136,48 +137,48 @@ const getExtensionFromMimeType = (mimeType) => {
     'image/png': '.png',
     'image/webp': '.webp',
     'image/gif': '.gif'
-  };
-  return extensions[mimeType] || '.jpg';
-};
+  }
+  return extensions[mimeType] || '.jpg'
+}
 
 /**
  * Formata tamanho do arquivo para exibição
  */
 const formatFileSize = (bytes) => {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return '0 Bytes'
   
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
   
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-};
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
 
 /**
  * Valida se o arquivo é uma imagem suportada
  */
 export const validateImageFile = (file) => {
-  const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
   
   if (!file) {
-    throw new Error('Nenhum arquivo selecionado');
+    throw new Error('Nenhum arquivo selecionado')
   }
   
   if (!supportedTypes.includes(file.type)) {
-    throw new Error('Tipo de arquivo não suportado. Use JPEG, PNG ou WebP');
+    throw new Error('Tipo de arquivo não suportado. Use JPEG, PNG ou WebP')
   }
   
   // Limite máximo de 50MB para arquivo original (antes da compressão)
-  const maxOriginalSize = 50 * 1024 * 1024;
+  const maxOriginalSize = 50 * 1024 * 1024
   if (file.size > maxOriginalSize) {
-    throw new Error('Arquivo muito grande. Máximo: 50MB');
+    throw new Error('Arquivo muito grande. Máximo: 50MB')
   }
   
-  return true;
-};
+  return true
+}
 
 export default {
   compressImage,
   validateImageFile,
   MAX_FILE_SIZE
-};
+}

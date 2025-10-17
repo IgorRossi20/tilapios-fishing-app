@@ -1,19 +1,8 @@
 export const saveToLocalStorage = (key, value) => {
-  try {
-    const serializedValue = JSON.stringify(value);
-    localStorage.setItem(key, serializedValue);
-  } catch (error) {
-  }
+  // online-only mode: no-op, do not persist anything locally
 };
 
 export const getFromLocalStorage = (key, defaultValue) => {
-  try {
-    const serializedValue = localStorage.getItem(key);
-    if (serializedValue === null) {
-      return defaultValue;
-    }
-    return JSON.parse(serializedValue);
-  } catch (error) {
-    return defaultValue;
-  }
+  // online-only mode: always return provided default value, no reads from storage
+  return defaultValue;
 };

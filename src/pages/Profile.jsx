@@ -1,29 +1,98 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { User, Trophy, Fish, MapPin, Calendar, Settings, Edit3, Camera, Award, Target, TrendingUp, CheckCircle, Star, Compass, Anchor, Save, Activity, BarChart2, Heart } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useFishing } from '../contexts/FishingContext'
 import './Profile.css'
 import { compressImage, validateImageFile } from '../utils/imageCompression'
+import { db, COLLECTIONS, storage } from '../firebase/config'
+import { doc } from 'firebase/firestore'
+import { ref, uploadString, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { safeGetDoc, safeSetDoc } from '../utils/firestoreUtils'
+import useToast from '../hooks/useToast'
+import { ToastContainer } from '../components/Toast'
 
 const Profile = () => {
   const { user, logout } = useAuth()
   const { userCatches, userTournaments, calculateUserStats } = useFishing()
+  const { toasts, removeToast, success, error } = useToast()
   const [activeTab, setActiveTab] = useState('stats')
   const [userStats, setUserStats] = useState(null)
   const [recentCatches, setRecentCatches] = useState([])
   const [achievements, setAchievements] = useState([])
   const [loading, setLoading] = useState(true)
   const [editMode, setEditMode] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [avatarFile, setAvatarFile] = useState(null)
   const [profileData, setProfileData] = useState({
     displayName: '',
     bio: '',
     experience: '',
     avatarUrl: ''
   })
+  // Estados de upload de avatar
+  const [uploadStatus, setUploadStatus] = useState('idle')
+  const [lastUploadError, setLastUploadError] = useState(null)
+  const [uploadAttempts, setUploadAttempts] = useState(0)
+  const uploadTaskRef = useRef(null)
+  const MAX_UPLOAD_ATTEMPTS = 3
 
   useEffect(() => {
     loadUserData()
   }, [userCatches, userTournaments])
+
+  useEffect(() => {
+    const persistStats = async () => {
+      try {
+        if (!user?.uid || !userStats) return
+        const userRef = doc(db, COLLECTIONS.USERS, user.uid)
+        await safeSetDoc(userRef, { stats: { ...userStats }, statsUpdatedAt: new Date().toISOString() }, { merge: true })
+      } catch (err) {}
+    }
+    persistStats()
+  }, [user?.uid, userStats])
+
+  useEffect(() => {
+    if (!lastUploadError) return
+    const code = lastUploadError.code || ''
+    const message =
+      code === 'storage/unauthorized' ? 'Sem permissão para enviar avatar.' :
+      code === 'storage/canceled' ? 'Upload de avatar cancelado.' :
+      code === 'storage/retry-limit-exceeded' ? 'Limite de tentativas excedido ao enviar avatar.' :
+      lastUploadError.message || 'Falha no upload do avatar.'
+    error(message)
+  }, [lastUploadError])
+
+  // Handlers de upload: pausar, retomar e cancelar
+  const pauseUpload = () => {
+    try {
+      const task = uploadTaskRef.current
+      if (task && typeof task.pause === 'function') {
+        task.pause()
+        setUploadStatus('paused')
+      }
+    } catch (_) {}
+  }
+
+  const resumeUpload = () => {
+    try {
+      const task = uploadTaskRef.current
+      if (task && typeof task.resume === 'function') {
+        task.resume()
+        setUploadStatus('running')
+      }
+    } catch (_) {}
+  }
+
+  const cancelUpload = () => {
+    try {
+      const task = uploadTaskRef.current
+      if (task && typeof task.cancel === 'function') {
+        task.cancel()
+        setUploadStatus('canceled')
+      }
+    } catch (_) {}
+  }
 
   // Função para encontrar espécie favorita
   const getFavoriteSpecies = (catches) => {
@@ -167,22 +236,29 @@ const Profile = () => {
       const dynamicAchievements = calculateAchievements(calculatedStats)
       setAchievements(dynamicAchievements)
       
-      // Carregar dados do perfil (preferir localStorage se existir)
-      const storedProfile = (() => {
-        try {
-          const raw = localStorage.getItem('profileData')
-          return raw ? JSON.parse(raw) : null
-        } catch {
-          return null
-        }
-      })()
-
+      // Modo somente online: derivar dados do perfil apenas do usuário autenticado
       setProfileData({
-        displayName: storedProfile?.displayName || user?.displayName || 'Pescador',
-        bio: storedProfile?.bio || '',
-        experience: storedProfile?.experience || 'Intermediário',
-        avatarUrl: storedProfile?.avatarUrl || user?.photoURL || ''
+        displayName: user?.displayName || 'Pescador',
+        bio: '',
+        experience: 'Intermediário',
+        avatarUrl: user?.photoURL || ''
       })
+
+      // Carregar perfil persistido do Firestore se existir
+      if (user?.uid) {
+        const userRef = doc(db, COLLECTIONS.USERS, user.uid)
+        const snapshot = await safeGetDoc(userRef)
+        const data = snapshot?.exists() ? snapshot.data() : null
+        const persisted = data?.profile || null
+        if (persisted) {
+          setProfileData(prev => ({
+            displayName: persisted.displayName || prev.displayName,
+            bio: persisted.bio || prev.bio,
+            experience: persisted.experience || prev.experience,
+            avatarUrl: persisted.avatarUrl || prev.avatarUrl
+          }))
+        }
+      }
       
     } catch (error) {
     } finally {
@@ -190,16 +266,134 @@ const Profile = () => {
     }
   }
 
+  const sanitizeText = (str, maxLen) => {
+    const cleaned = String(str || '')
+      .replace(/<[^>]*>/g, '') // remove tags
+      .replace(/[\u0000-\u001F\u007F]/g, '') // remove control chars
+      .trim()
+    return cleaned.slice(0, maxLen)
+  }
+
+  // Upload avatar com progresso, pausa/cancelamento e retry com backoff
+  const uploadAvatarWithRetry = async (file, userId, maxAttempts = 3) => {
+    const ext = (file.type?.split('/')?.[1] || 'jpg').toLowerCase()
+    const storagePathBase = `avatars/${userId}/${Date.now()}.${ext}`
+    setLastUploadError(null)
+    setUploadAttempts(0)
+  
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      setUploadAttempts(attempt)
+      try {
+        const storageRef = ref(storage, storagePathBase)
+        const task = uploadBytesResumable(storageRef, file)
+        uploadTaskRef.current = task
+        setUploadStatus('running')
+  
+        const url = await new Promise((resolve, reject) => {
+          task.on('state_changed', (snapshot) => {
+            const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)
+            setUploadProgress(pct)
+            if (snapshot.state === 'paused') setUploadStatus('paused')
+            else if (snapshot.state === 'running') setUploadStatus('running')
+          }, (err) => {
+            setLastUploadError(err)
+            setUploadStatus(err?.code === 'storage/canceled' ? 'canceled' : 'error')
+            reject(err)
+          }, async () => {
+            try {
+              const downloadURL = await getDownloadURL(task.snapshot.ref)
+              setUploadProgress(100)
+              setUploadStatus('completed')
+              resolve(downloadURL)
+            } catch (e) {
+              setLastUploadError(e)
+              setUploadStatus('error')
+              reject(e)
+            }
+          })
+        })
+  
+        return url
+      } catch (err) {
+        // Cancelado: não reintentar
+        if (err?.code === 'storage/canceled') {
+          throw err
+        }
+        // Backoff exponencial antes da próxima tentativa
+        if (attempt < maxAttempts) {
+          const delayMs = Math.min(2000 * (2 ** (attempt - 1)), 8000)
+          await new Promise(r => setTimeout(r, delayMs))
+          continue
+        }
+        throw err
+      }
+    }
+  }
+  
   const handleSaveProfile = async (e) => {
     e.preventDefault()
     try {
-      // Persistir localmente por enquanto
-      try {
-        localStorage.setItem('profileData', JSON.stringify(profileData))
-      } catch (err) {
+      const cleanDisplayName = sanitizeText(profileData.displayName, 40)
+      const cleanBio = sanitizeText(profileData.bio, 150)
+      const cleanExperience = sanitizeText(profileData.experience, 30)
+
+      if (!cleanDisplayName) {
+        error('Informe um nome válido para o perfil.')
+        return
+      }
+
+      setIsSaving(true)
+      setUploadProgress(0)
+
+      let avatarUrlForSave = profileData.avatarUrl || ''
+
+      // Upload com progresso/resumo se houver arquivo preparado
+      if (user?.uid && avatarFile) {
+        try {
+          const url = await uploadAvatarWithRetry(avatarFile, user.uid, MAX_UPLOAD_ATTEMPTS)
+          avatarUrlForSave = url
+        } catch (uploadErr) {
+          if (uploadErr?.code === 'storage/canceled') {
+            error('Upload de avatar cancelado. Perfil será salvo sem atualizar avatar.')
+          } else {
+            error('Falha no upload do avatar. Perfil será salvo sem atualizar avatar.')
+          }
+        }
+      } else if (user?.uid && avatarUrlForSave && avatarUrlForSave.startsWith('data:')) {
+        // Fallback para data_url (sem possibilidade de pause/resume/cancel)
+        try {
+          const storagePath = `avatars/${user.uid}/${Date.now()}.jpg`
+          const storageRef = ref(storage, storagePath)
+          await uploadString(storageRef, avatarUrlForSave, 'data_url')
+          avatarUrlForSave = await getDownloadURL(storageRef)
+          setUploadProgress(100)
+          setUploadStatus('completed')
+        } catch (uploadStringErr) {
+          setLastUploadError(uploadStringErr)
+          setUploadStatus('error')
+          error('Falha no upload do avatar (data URL). Perfil será salvo sem atualizar avatar.')
+        }
+      }
+
+      if (user?.uid) {
+        const userRef = doc(db, COLLECTIONS.USERS, user.uid)
+        await safeSetDoc(userRef, {
+          profile: {
+            displayName: cleanDisplayName,
+            bio: cleanBio,
+            experience: cleanExperience,
+            avatarUrl: avatarUrlForSave
+          }
+        }, { merge: true })
       }
       setEditMode(false)
-    } catch (error) {
+      success('Perfil salvo com sucesso!')
+    } catch (err) {
+      error('Falha ao salvar perfil. Tente novamente.')
+    } finally {
+      setIsSaving(false)
+      uploadTaskRef.current = null
+      setUploadStatus(prev => (prev === 'error' || prev === 'canceled') ? prev : 'idle')
     }
   }
 
@@ -209,13 +403,15 @@ const Profile = () => {
     try {
       // Valida e comprime para melhorar desempenho e tamanho
       validateImageFile(file)
-      const compressed = await compressImage(file, 1.5 * 1024 * 1024)
+      const compressed = await compressImage(file, 1.5 * 1024 * 1024, { maxWidth: 512, maxHeight: 512, outputMimeType: 'image/jpeg' })
+      setAvatarFile(compressed)
       const reader = new FileReader()
       reader.onloadend = () => {
         setProfileData(prev => ({ ...prev, avatarUrl: reader.result }))
       }
       reader.readAsDataURL(compressed)
     } catch (err) {
+      error(err?.message || 'Falha ao preparar a imagem do avatar.')
     }
   }
 
@@ -256,6 +452,7 @@ const Profile = () => {
 
   return (
     <div className="profile-container">
+      <ToastContainer toasts={toasts} removeToast={removeToast} />
       {/* Header do Perfil */}
       <div className="profile-header-card">
         <div className="profile-header-content">
@@ -320,13 +517,51 @@ const Profile = () => {
               />
             )}
             {editMode && (
-              <button 
-                className="profile-btn save-btn"
-                onClick={handleSaveProfile}
-              >
-                <Save size={16} />
-                Salvar
-              </button>
+              <>
+                <button 
+                  className="profile-btn save-btn"
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                >
+                  <Save size={16} />
+                  {isSaving ? 'Salvando...' : 'Salvar'}
+                </button>
+                {isSaving && (
+                  <div className="upload-progress-container">
+                    <div className="upload-progress-bar">
+                      <div className={`upload-progress-fill ${uploadStatus === 'error' ? 'error' : uploadStatus === 'paused' ? 'paused' : ''}`} style={{ width: `${uploadProgress}%` }}></div>
+                    </div>
+                    <span className="upload-progress-info">{uploadProgress}%{uploadStatus === 'paused' ? ' (pausado)' : ''}{uploadAttempts > 0 ? ` • Tentativa ${uploadAttempts}/${MAX_UPLOAD_ATTEMPTS}` : ''}</span>
+                    {avatarFile && (
+                      <div className="upload-actions">
+                        {uploadStatus !== 'paused' && uploadStatus !== 'completed' && (
+                          <button type="button" className="btn-link" onClick={pauseUpload}>Pausar</button>
+                        )}
+                        {uploadStatus === 'paused' && (
+                          <button type="button" className="btn-link" onClick={resumeUpload}>Retomar</button>
+                        )}
+                        {uploadStatus !== 'completed' && (
+                          <button type="button" className="btn-link" onClick={cancelUpload}>Cancelar</button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {editMode && uploadStatus === 'error' && (
+                  <div className="upload-error">
+                    Falha no upload do avatar{lastUploadError?.message ? `: ${lastUploadError.message}` : '.'}
+                    {avatarFile && (
+                      <>
+                        {' '}
+                        <button type="button" className="btn-link" onClick={handleSaveProfile}>Tentar salvar novamente</button>
+                      </>
+                    )}
+                  </div>
+                )}
+                {editMode && uploadStatus === 'canceled' && (
+                  <div className="upload-canceled">Upload cancelado. Clique em "Salvar" para tentar novamente.</div>
+                )}
+              </>
             )}
             <button 
               className="profile-btn edit-btn"

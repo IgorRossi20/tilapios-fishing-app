@@ -145,25 +145,28 @@ export const useCache = (key, fetcher, ttl = 5 * 60 * 1000) => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const cachedData = localStorage.getItem(`cache_${key}`)
-    const cachedTime = localStorage.getItem(`cache_time_${key}`)
-    
-    if (cachedData && cachedTime) {
-      const age = Date.now() - parseInt(cachedTime)
-      if (age < ttl) {
-        setData(JSON.parse(cachedData))
-        setLoading(false)
-        return
+    try {
+      const store = (globalThis.__tilapiosCache ||= new Map())
+      const entry = store.get(key)
+      if (entry) {
+        const age = Date.now() - entry.time
+        if (age < ttl) {
+          setData(entry.value)
+          setLoading(false)
+          return
+        }
       }
-    }
+    } catch {}
 
     const fetchData = async () => {
       try {
         setLoading(true)
         const result = await fetcher()
         setData(result)
-        localStorage.setItem(`cache_${key}`, JSON.stringify(result))
-        localStorage.setItem(`cache_time_${key}`, Date.now().toString())
+        try {
+          const store = (globalThis.__tilapiosCache ||= new Map())
+          store.set(key, { value: result, time: Date.now() })
+        } catch {}
         setError(null)
       } catch (err) {
         setError(err)

@@ -7,13 +7,13 @@ import { formatPostForUI, formatTimeAgo } from '../utils/postFormat'
 
 const Feed = () => {
   const { user } = useAuth()
-  const { createPost, loadPosts, allPosts, likePost, addComment, sharePost, registerCatch, getFromLocalStorage, saveToLocalStorage } = useFishing()
+  const { createPost, allPosts, likePost, addComment, sharePost, registerCatch, isOnline } = useFishing()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [showComments, setShowComments] = useState({})
   const [newComment, setNewComment] = useState({})
-  const [postInteractions, setPostInteractions] = useState({})
+ 
   const [commentSubmitting, setCommentSubmitting] = useState({})
   const [newPost, setNewPost] = useState({
     description: '',
@@ -34,7 +34,6 @@ const Feed = () => {
         image: file
       }))
       
-      // Criar preview da imagem
       const reader = new FileReader()
       reader.onload = (e) => {
         setImagePreview(e.target.result)
@@ -61,32 +60,14 @@ const Feed = () => {
     loadPostsData()
   }, [allPosts])
 
-  // Restaurar interações persistidas
-  useEffect(() => {
-    try {
-      const stored = getFromLocalStorage ? getFromLocalStorage('feed_post_interactions', {}) : JSON.parse(window.localStorage.getItem('feed_post_interactions') || '{}')
-      if (stored && typeof stored === 'object') {
-        setPostInteractions(stored)
-      }
-    } catch {}
-  }, [getFromLocalStorage])
+ 
 
-  // Persistir interações sempre que mudarem
-  useEffect(() => {
-    try {
-      if (saveToLocalStorage) {
-        saveToLocalStorage('feed_post_interactions', postInteractions)
-      } else {
-        window.localStorage.setItem('feed_post_interactions', JSON.stringify(postInteractions))
-      }
-    } catch {}
-  }, [postInteractions, saveToLocalStorage])
+ 
 
   const loadPostsData = async () => {
     try {
       setLoading(true)
-      // Carregar posts globais do contexto; garantir carregamento inicial
-      const postsData = (allPosts && allPosts.length ? allPosts : await loadPosts()) || []
+      const postsData = allPosts || []
       const formatted = postsData.map(p => formatPostForUI(p, user))
       setPosts(formatted)
     } catch (error) {
@@ -97,57 +78,36 @@ const Feed = () => {
 
   const handleCreatePost = async (e) => {
     e.preventDefault()
-    
-    // Validar formulário
     if (!newPost.fishSpecies || !newPost.weight || !newPost.location) {
       alert('Por favor, preencha todos os campos obrigatórios: espécie, peso e local.')
       return
     }
-    
-    // Prevenir dupla submissão
     if (loading) {
       return
     }
-    
     try {
       setLoading(true)
-      
-      // Criar dados da captura no formato esperado pelo registerCatch
       const captureData = {
         species: newPost.fishSpecies,
         weight: parseFloat(newPost.weight),
         location: newPost.location,
         date: newPost.date || new Date().toISOString().split('T')[0],
         description: newPost.description,
-        photo: newPost.image // Usar 'photo' em vez de 'image' para o registerCatch
+        photo: newPost.image
       }
-      
-      // Registrar a captura usando a função do contexto
       const registeredCatch = await registerCatch(captureData)
-      
-      // Debug: verificar o que foi retornado
-      
-      // Obter a URL da imagem do resultado do registerCatch
       const imageUrl = registeredCatch?.photo || null
-      
-      // Criar post para o feed com os mesmos dados
       const postData = {
         description: newPost.description,
         fishSpecies: newPost.fishSpecies,
         weight: parseFloat(newPost.weight),
         location: newPost.location,
         date: newPost.date,
-        image: imageUrl, // Mapear photo -> image para o Feed
-        photo: imageUrl  // Manter ambos para compatibilidade
+        image: imageUrl,
+        photo: imageUrl
       }
-      
-      
       const createdPost = await createPost(postData)
-      
-      // Atualizar lista de posts
-      setPosts([createdPost, ...posts])
-      
-      // Reset form
+      setPosts([formatPostForUI(createdPost, user), ...posts])
       setNewPost({
         description: '',
         fishSpecies: '',
@@ -158,7 +118,6 @@ const Feed = () => {
       })
       setImagePreview(null)
       setShowCreatePost(false)
-      
       alert('Captura registrada com sucesso! 🎣')
     } catch (error) {
       alert('Erro ao registrar captura. Tente novamente.')
@@ -170,7 +129,7 @@ const Feed = () => {
   const handleLike = async (postId) => {
     try {
       const isLiked = await likePost(postId)
-      // Atualizar estado local
+      // Atualização otimista apenas no estado local; watchers sincronizam em seguida
       setPosts(posts.map(post => {
         if (post.id === postId) {
           const nextLiked = (typeof isLiked === 'boolean') ? isLiked : !post.isLiked
@@ -182,18 +141,6 @@ const Feed = () => {
           }
         }
         return post
-      }))
-
-      // Atualizar interações locais
-      setPostInteractions(prev => ({
-        ...prev,
-        [postId]: {
-          ...prev[postId],
-          liked: !prev[postId]?.liked,
-          likes: prev[postId]?.liked
-            ? Math.max(0, (prev[postId]?.likes || 0) - 1)
-            : (prev[postId]?.likes || 0) + 1
-        }
       }))
     } catch (error) {
     }
@@ -207,8 +154,6 @@ const Feed = () => {
     
     try {
       const comment = await addComment(postId, commentText)
-      
-      // Atualizar estado local
       setPosts(posts.map(post => {
         if (post.id === postId) {
           return {
@@ -218,26 +163,9 @@ const Feed = () => {
         }
         return post
       }))
-
-      // Atualizar interações locais
-      setPostInteractions(prev => ({
-        ...prev,
-        [postId]: {
-          ...prev[postId],
-          comments: (prev[postId]?.comments || 0) + 1,
-          commentsList: [...(prev[postId]?.commentsList || []), {
-            id: comment?.id || `local_${Date.now()}`,
-            authorName: comment?.authorName || (user?.displayName || 'Anônimo'),
-            text: commentText.trim(),
-            createdAt: new Date().toISOString()
-          }]
-        }
-      }))
       
-      // Limpar campo de comentário
       setNewComment({ ...newComment, [postId]: '' })
     } catch (error) {
-      // console.error('Erro ao adicionar comentário:', error)
     } finally {
       setCommentSubmitting(prev => ({ ...prev, [postId]: false }))
     }
@@ -246,8 +174,6 @@ const Feed = () => {
   const handleShare = async (postId) => {
     try {
       await sharePost(postId)
-      
-      // Atualizar contador local
       setPosts(posts.map(post => {
         if (post.id === postId) {
           return {
@@ -257,29 +183,18 @@ const Feed = () => {
         }
         return post
       }))
-
-      // Persistir interação local
-      setPostInteractions(prev => ({
-        ...prev,
-        [postId]: {
-          ...prev[postId],
-          shares: (prev[postId]?.shares || 0) + 1
-        }
-      }))
       
-      // Simular compartilhamento nativo
-       const postToShare = posts.find(p => p.id === postId)
-       if (navigator.share) {
-         navigator.share({
-           title: 'Pescaria incrível!',
-           text: `Confira esta captura: ${postToShare?.fishSpecies} de ${postToShare?.weight}kg`,
-           url: window.location.href
-         })
-       } else {
-         // Fallback: copiar para clipboard
-         navigator.clipboard.writeText(window.location.href)
-         alert('Link copiado para a área de transferência!')
-       }
+      const postToShare = posts.find(p => p.id === postId)
+      if (navigator.share) {
+        navigator.share({
+          title: 'Pescaria incrível!',
+          text: `Confira esta captura: ${postToShare?.fishSpecies} de ${postToShare?.weight}kg`,
+          url: window.location.href
+        })
+      } else {
+        navigator.clipboard.writeText(window.location.href)
+        alert('Link copiado para a área de transferência!')
+      }
     } catch (error) {
     }
   }
@@ -290,8 +205,6 @@ const Feed = () => {
       [postId]: !showComments[postId]
     })
   }
-
-  // formatTimeAgo centralizado em utils/postFormat
 
   if (loading) {
     return (
@@ -588,12 +501,13 @@ const Feed = () => {
               <div className="action-buttons">
                 <button 
                   onClick={() => handleLike(post.id)}
-                  className={`action-btn like-btn ${((post.isLiked) || postInteractions[post.id]?.liked) ? 'liked' : ''}`}
+                  className={`action-btn like-btn ${post.isLiked ? 'liked' : ''}`}
+                  disabled={!isOnline}
                 >
                   <Heart 
                     size={24} 
-                    fill={((post.isLiked) || postInteractions[post.id]?.liked) ? '#ed4956' : 'none'}
-                    color={((post.isLiked) || postInteractions[post.id]?.liked) ? '#ed4956' : '#262626'}
+                    fill={post.isLiked ? '#ed4956' : 'none'}
+                    color={post.isLiked ? '#ed4956' : '#262626'}
                   />
                 </button>
                 
@@ -607,6 +521,7 @@ const Feed = () => {
                 <button 
                   onClick={() => handleShare(post.id)}
                   className="action-btn"
+                  disabled={!isOnline}
                 >
                   <Send size={24} color="#262626" />
                 </button>
@@ -617,20 +532,14 @@ const Feed = () => {
                 {/* Contador de curtidas */}
                 <div className="likes-count">
                   {(() => {
-                    const base = (post.likesCount || 0)
-                    const extra = postInteractions[post.id]?.likes || 0
-                    const total = base + extra
+                    const total = (post.likesCount || 0)
                     return total > 0 
                       ? `${total} curtida${total !== 1 ? 's' : ''}`
                       : '0 curtidas'
                   })()}
                 </div>
-                
-                {/* Contador de compartilhamentos */}
                 {(() => {
-                  const baseShares = post.shares || 0
-                  const extraShares = postInteractions[post.id]?.shares || 0
-                  const totalShares = baseShares + extraShares
+                  const totalShares = post.shares || 0
                   return totalShares > 0 ? (
                     <div className="shares-count">
                       {totalShares} compartilhamento{totalShares !== 1 ? 's' : ''}
@@ -645,29 +554,22 @@ const Feed = () => {
                 className="comments-toggle"
               >
                 {(() => {
-                  const base = (post.commentsList || []).length
-                  const extra = (postInteractions[post.id]?.commentsList || []).length
-                  const total = base + extra
+                  const total = (post.commentsList || []).length
                   return total > 0 
                     ? `Ver todos os ${total} comentário${total !== 1 ? 's' : ''}`
                     : '0 comentários'
                 })()}
               </button>
-              
-              {/* Seção de comentários */}
               {showComments[post.id] && (
                 <div className="comments-section">
-                  {/* Lista de comentários */}
                   <div style={{ marginBottom: '12px' }}>
-                    {[...(post.commentsList || []), ...((postInteractions[post.id]?.commentsList || []))].map((comment, index) => (
+                    {(post.commentsList || []).map((comment, index) => (
                       <div key={index} className="comment-item">
                         <span className="comment-author">{comment.authorName || comment.user}</span>
                         {comment.text}
                       </div>
                     ))}
                   </div>
-                  
-                  {/* Campo para novo comentário */}
                   <div className="comment-input-container">
                     <input
                       type="text"

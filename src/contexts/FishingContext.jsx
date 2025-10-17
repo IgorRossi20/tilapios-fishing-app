@@ -117,14 +117,11 @@ const FishingProvider = ({ children }) => {
       const unsubscribe = onSnapshot(tournamentsCol, snapshot => {
         const firestoreTournaments = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
 
-        // Mesclar participações pendentes locais e normalizar contagem
+        // Normaliza contagem e usa apenas participantes do Firestore (modo online)
         const mergedAll = firestoreTournaments.map(t => {
           const baseParticipants = Array.isArray(t.participants) ? t.participants : []
-          const mergedParticipants = mergeParticipantsWithLocal(t.id, baseParticipants)
-          // A contagem deve refletir apenas o que está no Firestore,
-          // para evitar discrepâncias entre clientes por conta de pendências locais.
           const uniqueFirestoreCount = new Set(baseParticipants.map(p => p.userId)).size
-          return { ...t, participants: mergedParticipants, participantCount: uniqueFirestoreCount }
+          return { ...t, participants: baseParticipants, participantCount: uniqueFirestoreCount }
         })
 
         setAllTournaments(mergedAll)
@@ -268,33 +265,7 @@ const FishingProvider = ({ children }) => {
     }
   }
 
-  // Mesclar participantes de um campeonato com o cache local
-  const mergeParticipantsWithLocal = (
-    tournamentId,
-    participantsFromFirestore
-  ) => {
-    const pendingParticipants = getFromLocalStorage(
-      'pending_participations',
-      []
-    )
-    const localParticipants = pendingParticipants
-      .filter(p => p.tournamentId === tournamentId)
-      .map(p => ({
-        userId: p.userId,
-        userName: p.userName,
-        joinedAt: p.joinedAt,
-        isPending: true
-      }))
-
-    const firestoreUserIds = new Set(
-      participantsFromFirestore.map(p => p.userId)
-    )
-    const uniqueLocalParticipants = localParticipants.filter(
-      p => !firestoreUserIds.has(p.userId)
-    )
-
-    return [...participantsFromFirestore, ...uniqueLocalParticipants]
-  }
+ 
 
   // Sincronizar participações pendentes
   const syncPendingParticipations = async () => {
@@ -1366,6 +1337,23 @@ const FishingProvider = ({ children }) => {
             await updateDoc(postRef, {
               likes: arrayUnion(user.uid)
             })
+            // Notificação de curtida (ignorar se autor curtiu o próprio post)
+            try {
+              const recipientId = postData.authorId
+              if (recipientId && recipientId !== user.uid) {
+                await addDoc(collection(db, 'notifications'), {
+                  recipientId,
+                  type: 'like',
+                  postId,
+                  actorId: user.uid,
+                  actorName: user.displayName || user.email,
+                  createdAt: new Date().toISOString(),
+                  read: false
+                })
+              }
+            } catch (notifyErr) {
+              // Não bloquear fluxo por falha de notificação
+            }
           }
 
           return !userLiked
@@ -1391,9 +1379,29 @@ const FishingProvider = ({ children }) => {
     try {
       if (isOnline) {
         const postRef = doc(db, 'posts', postId)
+        const postDoc = await getDoc(postRef)
         await updateDoc(postRef, {
           comments: arrayUnion(comment)
         })
+        // Notificação de comentário (ignorar se autor comentou no próprio post)
+        try {
+          const postData = postDoc.exists() ? postDoc.data() : null
+          const recipientId = postData?.authorId
+          if (recipientId && recipientId !== user.uid) {
+            await addDoc(collection(db, 'notifications'), {
+              recipientId,
+              type: 'comment',
+              postId,
+              actorId: user.uid,
+              actorName: user.displayName || user.email,
+              commentText: commentText,
+              createdAt: new Date().toISOString(),
+              read: false
+            })
+          }
+        } catch (notifyErr) {
+          // Não bloquear fluxo por falha de notificação
+        }
       }
       return comment
     } catch (error) {
@@ -1557,8 +1565,7 @@ const FishingProvider = ({ children }) => {
     syncLocalDataToFirestore,
     saveToLocalStorage,
     getFromLocalStorage,
-    // Expor utilitário de mesclagem para uso na UI de detalhes
-    mergeParticipantsWithLocal,
+    
     // Funções do feed
     createPost,
     likePost,

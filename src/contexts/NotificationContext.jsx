@@ -1,5 +1,9 @@
-import React, { createContext, useContext, useState, useCallback } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react'
 import useToast from '../hooks/useToast'
+import { useAuth } from '../hooks/useAuth'
+import { db } from '../firebase/config'
+import { collection, query, where, orderBy, onSnapshot, updateDoc, doc } from 'firebase/firestore'
+import { toDateSafe } from '../utils/postFormat'
 
 const NotificationContext = createContext()
 
@@ -12,10 +16,55 @@ export const useNotification = () => {
 }
 
 export const NotificationProvider = ({ children }) => {
+  const { user } = useAuth()
   const { success, error, warning, info } = useToast()
-  const [notifications, setNotifications] = useState([])
+  const [localNotifications, setLocalNotifications] = useState([])
+  const [dbNotifications, setDbNotifications] = useState([])
 
-  // Função para adicionar notificação ao histórico
+  // Mapear documento do Firestore para item de UI
+  const mapDbNotification = useCallback((id, data) => {
+    let message = 'Nova interação'
+    if (data?.type === 'like') {
+      message = `${data?.actorName || 'Alguém'} curtiu sua publicação`
+    } else if (data?.type === 'comment') {
+      const preview = (data?.commentText || '').slice(0, 80)
+      message = `${data?.actorName || 'Alguém'} comentou: ${preview}`
+    }
+    return {
+      id,
+      message,
+      type: 'info',
+      category: 'social',
+      timestamp: data?.createdAt || new Date().toISOString(),
+      read: !!data?.read,
+      postId: data?.postId || null
+    }
+  }, [])
+
+  // Assinatura em tempo real das notificações sociais do usuário
+  useEffect(() => {
+    if (!user?.uid) {
+      setDbNotifications([])
+      return
+    }
+    try {
+      const notifCol = collection(db, 'notifications')
+      const q = query(
+        notifCol,
+        where('recipientId', '==', user.uid),
+        orderBy('createdAt', 'desc')
+      )
+      const unsubscribe = onSnapshot(q, snapshot => {
+        const items = snapshot.docs.map(d => mapDbNotification(d.id, d.data()))
+        setDbNotifications(items)
+      })
+      return () => unsubscribe()
+    } catch (e) {
+      return () => {}
+    }
+  }, [user, mapDbNotification])
+
+  // Função para adicionar notificação ao histórico local (toasts)
   const addNotification = useCallback((message, type, category = 'general') => {
     const notification = {
       id: Date.now(),
@@ -25,9 +74,8 @@ export const NotificationProvider = ({ children }) => {
       timestamp: new Date().toISOString(),
       read: false
     }
-    
-    setNotifications(prev => [notification, ...prev.slice(0, 49)]) // Manter apenas 50 notificações
-    
+    setLocalNotifications(prev => [notification, ...prev.slice(0, 49)])
+
     // Mostrar toast
     switch (type) {
       case 'success':
@@ -42,7 +90,7 @@ export const NotificationProvider = ({ children }) => {
       default:
         info(message)
     }
-    
+
     return notification.id
   }, [success, error, warning, info])
 
@@ -212,30 +260,59 @@ export const NotificationProvider = ({ children }) => {
     )
   }, [addNotification])
 
+  // Lista combinada para consumo na UI
+  const notifications = useMemo(() => {
+    const all = [...dbNotifications, ...localNotifications]
+    return all.sort((a, b) => {
+      const ta = (toDateSafe(a.timestamp)?.getTime()) || 0
+      const tb = (toDateSafe(b.timestamp)?.getTime()) || 0
+      return tb - ta
+    })
+  }, [dbNotifications, localNotifications])
+
   // Funções de gerenciamento
-  const markAsRead = useCallback((notificationId) => {
-    setNotifications(prev => 
+  const markAsRead = useCallback(async (notificationId) => {
+    // Tentar marcar no Firestore se for uma notificação remota
+    try {
+      const remote = dbNotifications.find(n => n.id === notificationId)
+      if (remote) {
+        await updateDoc(doc(db, 'notifications', notificationId), { read: true })
+        setDbNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read: true } : n))
+        return
+      }
+    } catch {}
+    // Senão, marcar local
+    setLocalNotifications(prev => 
       prev.map(notification => 
         notification.id === notificationId 
           ? { ...notification, read: true }
           : notification
       )
     )
-  }, [])
+  }, [dbNotifications])
 
-  const markAllAsRead = useCallback(() => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, read: true }))
-    )
-  }, [])
+  const markAllAsRead = useCallback(async () => {
+    try {
+      // Marcar todas remotas
+      await Promise.all(
+        dbNotifications.filter(n => !n.read).map(n => updateDoc(doc(db, 'notifications', n.id), { read: true }))
+      )
+      setDbNotifications(prev => prev.map(n => ({ ...n, read: true })))
+    } catch {}
+    // Marcar todas locais
+    setLocalNotifications(prev => prev.map(notification => ({ ...notification, read: true })))
+  }, [dbNotifications])
 
   const clearNotifications = useCallback(() => {
-    setNotifications([])
+    setLocalNotifications([])
+    // Não apagamos as notificações remotas do Firestore aqui por segurança
   }, [])
 
   const getUnreadCount = useCallback(() => {
-    return notifications.filter(n => !n.read).length
-  }, [notifications])
+    const localUnread = localNotifications.filter(n => !n.read).length
+    const remoteUnread = dbNotifications.filter(n => !n.read).length
+    return localUnread + remoteUnread
+  }, [localNotifications, dbNotifications])
 
   const value = {
     notifications,
