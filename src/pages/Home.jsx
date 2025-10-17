@@ -15,9 +15,13 @@ const Home = () => {
     isOnline, 
     getFromLocalStorage, 
     syncLocalDataToFirestore,
-    loadAllCatches, // Importar a nova função
-    allCatches // Importar o novo estado
+    loadAllCatches,
+    allCatches,
+    // Campeonatos do usuário
+    userTournaments,
+    loadUserTournaments
   } = useFishing()
+  const { saveToLocalStorage } = useFishing()
   const [stats, setStats] = useState({
     totalFish: 0,
     totalWeight: 0,
@@ -31,17 +35,48 @@ const Home = () => {
   const [feedPosts, setFeedPosts] = useState([])
   const [postInteractions, setPostInteractions] = useState({})
   const [showComments, setShowComments] = useState({})
+  
+  // Restaurar interações do localStorage na montagem
+  useEffect(() => {
+    try {
+      const stored = getFromLocalStorage ? getFromLocalStorage('feed_post_interactions', {}) : JSON.parse(window.localStorage.getItem('feed_post_interactions') || '{}')
+      if (stored && typeof stored === 'object') {
+        setPostInteractions(stored)
+      }
+    } catch {}
+  }, [getFromLocalStorage])
+
+  // Persistir interações sempre que mudarem
+  useEffect(() => {
+    try {
+      if (saveToLocalStorage) {
+        saveToLocalStorage('feed_post_interactions', postInteractions)
+      } else {
+        window.localStorage.setItem('feed_post_interactions', JSON.stringify(postInteractions))
+      }
+    } catch {}
+  }, [postInteractions, saveToLocalStorage])
   const [newComment, setNewComment] = useState({})
   const [showCreatePost, setShowCreatePost] = useState(false)
 
+  // Carregar dados do dashboard quando usuário/log de capturas mudar
   useEffect(() => {
     if (user) {
       loadDashboardData()
+      // Carregar campeonatos do usuário apenas quando logar
+      loadUserTournaments()
     }
-    // Carregar feed sempre, independente do usuário
-    loadAllCatches() // Chamar a nova função para carregar todas as capturas
+  }, [user, userCatches])
+
+  // Carregar todas as capturas apenas uma vez ao montar
+  useEffect(() => {
+    loadAllCatches()
+  }, [])
+
+  // Atualizar posts do feed quando allCatches ou usuário mudarem
+  useEffect(() => {
     loadFeedPosts()
-  }, [user, userCatches, loadAllCatches, allCatches]) // Atualizar feed quando allCatches mudar
+  }, [allCatches, user])
 
   // Memoizar stats calculados para evitar recálculos desnecessários
   const memoizedStats = useMemo(() => {
@@ -129,27 +164,39 @@ const Home = () => {
   }, [newComment, user])
 
   const handleShare = useCallback((postId, postContent) => {
-    if (navigator.share) {
-      navigator.share({
-        title: 'Captura de Pesca',
-        text: `Confira esta captura: ${postContent.species} de ${postContent.weight}kg em ${postContent.location}!`,
-        url: window.location.href
-      })
-    } else {
-      // Fallback para navegadores que não suportam Web Share API
-      const shareText = `Confira esta captura: ${postContent.species} de ${postContent.weight}kg em ${postContent.location}! ${window.location.href}`
-      navigator.clipboard.writeText(shareText).then(() => {
-        alert('Link copiado para a área de transferência!')
-      })
-    }
-    
-    setPostInteractions(prev => ({
-      ...prev,
-      [postId]: {
-        ...prev[postId],
-        shares: (prev[postId]?.shares || 0) + 1
+    try {
+      const title = 'Captura de Pesca'
+      const text = postContent?.species && postContent?.weight && postContent?.location
+        ? `Confira esta captura: ${postContent.species} de ${postContent.weight}kg em ${postContent.location}!`
+        : 'Confira esta captura da comunidade!'
+      const url = window.location.href
+
+      if (navigator.share) {
+        navigator.share({ title, text, url }).catch(() => {
+          // Usuário cancelou; ainda assim não quebrar
+        })
+      } else {
+        const shareText = `${text} ${url}`
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(shareText).then(() => {
+            alert('Link copiado para a área de transferência!')
+          }).catch(() => {
+            // Sem clipboard; exibir prompt
+            window.prompt('Copie o link de compartilhamento:', shareText)
+          })
+        } else {
+          window.prompt('Copie o link de compartilhamento:', shareText)
+        }
       }
-    }))
+    } finally {
+      setPostInteractions(prev => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          shares: (prev[postId]?.shares || 0) + 1
+        }
+      }))
+    }
   }, [])
 
   const loadFeedPosts = useCallback(async () => {
@@ -170,7 +217,16 @@ const Home = () => {
         .sort((a, b) => new Date(b.registeredAt || b.date) - new Date(a.registeredAt || a.date))
         .slice(0, 20) // Aumentar o limite para mais posts
         .map((catch_, index) => ({
-          id: catch_.id || `catch_${catch_.userId || 'unknown'}_${catch_.registeredAt || catch_.date || Date.now()}_${index}_${Math.random().toString(36).substring(2, 12)}`,
+          // ID estável: usar id da captura, senão combinar userId + timestamp
+          id: (() => {
+            if (catch_.id) return catch_.id
+            const uid = catch_.userId || 'unknown'
+            const ts = (() => {
+              const d = new Date(catch_.registeredAt || catch_.date)
+              return isNaN(d.getTime()) ? 0 : d.getTime()
+            })()
+            return `catch_${uid}_${ts}`
+          })(),
           type: 'catch',
           user: {
             name: catch_.userName || user?.displayName || user?.email || 'Pescador',
@@ -214,19 +270,29 @@ const Home = () => {
       
       // Calcular estatísticas do usuário
       const userStats = calculateUserStats()
-      
       const totalFish = userStats.totalCatches || captures.length
       const totalWeight = userStats.totalWeight || captures.reduce((sum, capture) => sum + (capture.weight || 0), 0)
-      
+
+      // Contar campeonatos em que o usuário participa (inclui proprietário)
+      const tournamentsCount = Array.isArray(userTournaments)
+        ? userTournaments.filter(t => {
+            const arr = Array.isArray(t.participants) ? t.participants : []
+            const isParticipant = arr.some(p => (p?.userId || p?.id) === user?.uid)
+            const isOwner = t.createdBy === user?.uid
+            return isParticipant || isOwner
+          }).length
+        : 0
+
       // Obter ranking geral
       const generalRanking = await getGeneralRanking()
       const userPosition = generalRanking.findIndex(player => player.userId === user?.uid) + 1
-      
+      const finalPosition = userPosition > 0 ? userPosition : 1
+
       setStats({
         totalFish: totalFish,
         totalWeight: totalWeight,
-        tournaments: 0, // Implementar depois
-        ranking: userPosition || 1
+        tournaments: tournamentsCount,
+        ranking: finalPosition
       })
 
       // Carregar capturas recentes do usuário (últimas 5)
@@ -390,7 +456,7 @@ const Home = () => {
              <div className="feed-container">
                {feedPosts.length > 0 ? (
                  feedPosts.map((post, index) => {
-                   const postKey = post.id || `feed-post-${index}-${post.timestamp || post.content?.species || Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+                   const postKey = post.id || `feed-post-${index}`
                    return (
                    <div key={postKey} className="instagram-post">
                      {/* Header do Post - Estilo Instagram */}
@@ -442,7 +508,7 @@ const Home = () => {
                            <MessageCircle size={24} />
                          </button>
                          <button 
-                           onClick={() => handleShare(post.id)}
+                           onClick={() => handleShare(post.id, post.content)}
                            className="action-btn share-btn"
                          >
                            <Share2 size={24} />

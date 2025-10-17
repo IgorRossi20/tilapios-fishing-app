@@ -6,12 +6,13 @@ import './Feed.css'
 
 const Feed = () => {
   const { user } = useAuth()
-  const { createPost, loadPosts, allPosts, likePost, addComment, sharePost, registerCatch } = useFishing()
+  const { createPost, loadPosts, allPosts, likePost, addComment, sharePost, registerCatch, getFromLocalStorage, saveToLocalStorage } = useFishing()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreatePost, setShowCreatePost] = useState(false)
   const [showComments, setShowComments] = useState({})
   const [newComment, setNewComment] = useState({})
+  const [postInteractions, setPostInteractions] = useState({})
   const [newPost, setNewPost] = useState({
     description: '',
     fishSpecies: '',
@@ -57,6 +58,27 @@ const Feed = () => {
   useEffect(() => {
     loadPostsData()
   }, [allPosts])
+
+  // Restaurar interações persistidas
+  useEffect(() => {
+    try {
+      const stored = getFromLocalStorage ? getFromLocalStorage('feed_post_interactions', {}) : JSON.parse(window.localStorage.getItem('feed_post_interactions') || '{}')
+      if (stored && typeof stored === 'object') {
+        setPostInteractions(stored)
+      }
+    } catch {}
+  }, [getFromLocalStorage])
+
+  // Persistir interações sempre que mudarem
+  useEffect(() => {
+    try {
+      if (saveToLocalStorage) {
+        saveToLocalStorage('feed_post_interactions', postInteractions)
+      } else {
+        window.localStorage.setItem('feed_post_interactions', JSON.stringify(postInteractions))
+      }
+    } catch {}
+  }, [postInteractions, saveToLocalStorage])
 
   const loadPostsData = async () => {
     try {
@@ -162,6 +184,18 @@ const Feed = () => {
         }
         return post
       }))
+
+      // Atualizar interações locais
+      setPostInteractions(prev => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          liked: !prev[postId]?.liked,
+          likes: prev[postId]?.liked
+            ? Math.max(0, (prev[postId]?.likes || 0) - 1)
+            : (prev[postId]?.likes || 0) + 1
+        }
+      }))
     } catch (error) {
     }
   }
@@ -182,6 +216,21 @@ const Feed = () => {
           }
         }
         return post
+      }))
+
+      // Atualizar interações locais
+      setPostInteractions(prev => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          comments: (prev[postId]?.comments || 0) + 1,
+          commentsList: [...(prev[postId]?.commentsList || []), {
+            id: comment?.id || `local_${Date.now()}`,
+            authorName: comment?.authorName || (user?.displayName || 'Anônimo'),
+            text: commentText.trim(),
+            createdAt: new Date().toISOString()
+          }]
+        }
       }))
       
       // Limpar campo de comentário
@@ -204,6 +253,15 @@ const Feed = () => {
           }
         }
         return post
+      }))
+
+      // Persistir interação local
+      setPostInteractions(prev => ({
+        ...prev,
+        [postId]: {
+          ...prev[postId],
+          shares: (prev[postId]?.shares || 0) + 1
+        }
       }))
       
       // Simular compartilhamento nativo
@@ -556,12 +614,12 @@ const Feed = () => {
               <div className="action-buttons">
                 <button 
                   onClick={() => handleLike(post.id)}
-                  className={`action-btn like-btn ${(post.likes || []).includes(user?.uid) ? 'liked' : ''}`}
+                  className={`action-btn like-btn ${((post.likes || []).includes(user?.uid) || postInteractions[post.id]?.liked) ? 'liked' : ''}`}
                 >
                   <Heart 
                     size={24} 
-                    fill={(post.likes || []).includes(user?.uid) ? '#ed4956' : 'none'}
-                    color={(post.likes || []).includes(user?.uid) ? '#ed4956' : '#262626'}
+                    fill={((post.likes || []).includes(user?.uid) || postInteractions[post.id]?.liked) ? '#ed4956' : 'none'}
+                    color={((post.likes || []).includes(user?.uid) || postInteractions[post.id]?.liked) ? '#ed4956' : '#262626'}
                   />
                 </button>
                 
@@ -584,19 +642,27 @@ const Feed = () => {
               <div className="interaction-counts">
                 {/* Contador de curtidas */}
                 <div className="likes-count">
-                  {(post.likes || []).length > 0 ? (
-                    `${(post.likes || []).length} curtida${(post.likes || []).length !== 1 ? 's' : ''}`
-                  ) : (
-                    '0 curtidas'
-                  )}
+                  {(() => {
+                    const base = (post.likes || []).length
+                    const extra = postInteractions[post.id]?.likes || 0
+                    const total = base + extra
+                    return total > 0 
+                      ? `${total} curtida${total !== 1 ? 's' : ''}`
+                      : '0 curtidas'
+                  })()}
                 </div>
                 
                 {/* Contador de compartilhamentos */}
-                {(post.shares || 0) > 0 && (
-                  <div className="shares-count">
-                    {post.shares} compartilhamento{post.shares !== 1 ? 's' : ''}
-                  </div>
-                )}
+                {(() => {
+                  const baseShares = post.shares || 0
+                  const extraShares = postInteractions[post.id]?.shares || 0
+                  const totalShares = baseShares + extraShares
+                  return totalShares > 0 ? (
+                    <div className="shares-count">
+                      {totalShares} compartilhamento{totalShares !== 1 ? 's' : ''}
+                    </div>
+                  ) : null
+                })()}
               </div>
               
               {/* Link para ver comentários */}
@@ -604,11 +670,14 @@ const Feed = () => {
                 onClick={() => toggleComments(post.id)}
                 className="comments-toggle"
               >
-                {(post.comments || []).length > 0 ? (
-                  `Ver todos os ${(post.comments || []).length} comentário${(post.comments || []).length !== 1 ? 's' : ''}`
-                ) : (
-                  '0 comentários'
-                )}
+                {(() => {
+                  const base = (post.comments || []).length
+                  const extra = (postInteractions[post.id]?.commentsList || []).length
+                  const total = base + extra
+                  return total > 0 
+                    ? `Ver todos os ${total} comentário${total !== 1 ? 's' : ''}`
+                    : '0 comentários'
+                })()}
               </button>
               
               {/* Seção de comentários */}
@@ -616,9 +685,9 @@ const Feed = () => {
                 <div className="comments-section">
                   {/* Lista de comentários */}
                   <div style={{ marginBottom: '12px' }}>
-                    {(post.comments || []).map((comment, index) => (
+                    {[...(post.comments || []), ...((postInteractions[post.id]?.commentsList || []))].map((comment, index) => (
                       <div key={index} className="comment-item">
-                        <span className="comment-author">{comment.authorName}</span>
+                        <span className="comment-author">{comment.authorName || comment.user}</span>
                         {comment.text}
                       </div>
                     ))}

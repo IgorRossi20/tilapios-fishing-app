@@ -1138,24 +1138,27 @@ const FishingProvider = ({ children }) => {
 
   const getGeneralRanking = async () => {
     try {
-      const usersRef = collection(db, "users");
-      const usersSnap = await getDocs(usersRef);
-      const users = usersSnap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      // Buscar todas as capturas no Firestore e calcular ranking por peso
+      const q = query(collection(db, 'fishing_catches'))
+      const snap = await getDocs(q)
+      const catches = []
+      snap.forEach(doc => {
+        catches.push({ id: doc.id, ...doc.data() })
+      })
 
-      const ranking = await Promise.all(
-        users.map(async (user) => {
-          const stats = await getUserStats(user.id);
-          return { userName: user.name, totalWeight: stats.totalWeight };
-        })
-      );
-
-      ranking.sort((a, b) => b.totalWeight - a.totalWeight);
-
-      return ranking;
+      return computeRankingFromCatches(catches, 'weight')
     } catch (error) {
-      return [];
+      // Fallback: usar estado/localStorage para calcular ranking quando offline
+      try {
+        const local = Array.isArray(allCatches)
+          ? allCatches
+          : getFromLocalStorage('all_catches', [])
+        return computeRankingFromCatches(local, 'weight')
+      } catch (localError) {
+        return []
+      }
     }
-  };
+  }
 
   const getAdvancedRanking = async () => {
     try {
