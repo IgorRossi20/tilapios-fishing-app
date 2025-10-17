@@ -50,6 +50,7 @@ const FishingProvider = ({ children }) => {
   const [allTournaments, setAllTournaments] = useState([])
   const [userCatches, setUserCatches] = useState([])
   const [allCatches, setAllCatches] = useState([])
+  const [allPosts, setAllPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [syncStatus, setSyncStatus] = useState('idle') // idle, syncing, success, error
@@ -146,6 +147,28 @@ const FishingProvider = ({ children }) => {
     }
   }, [isOnline, user])
 
+  // Assinatura em tempo real dos posts do feed
+  useEffect(() => {
+    if (!isOnline) return
+    try {
+      const postsCol = collection(db, 'posts')
+      const unsubscribe = onSnapshot(postsCol, snapshot => {
+        const firestorePosts = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+        // Ordem decrescente por createdAt (ISO string) para manter feed atual
+        const ordered = [...firestorePosts].sort((a, b) => {
+          const ta = new Date(a.createdAt).getTime() || 0
+          const tb = new Date(b.createdAt).getTime() || 0
+          return tb - ta
+        })
+        setAllPosts(ordered)
+        saveToLocalStorage('all_posts', ordered)
+      })
+      return () => unsubscribe()
+    } catch (err) {
+      return () => {}
+    }
+  }, [isOnline])
+
   // Sincronizar dados locais com o Firestore
   const syncLocalDataToFirestore = async () => {
     if (syncStatus === 'syncing' || !isOnline) return
@@ -221,15 +244,27 @@ const FishingProvider = ({ children }) => {
         }))
         saveToLocalStorage('all_catches', catches)
         setAllCatches(catches)
+
+        // Carregar posts do feed
+        const postsQuery = query(
+          collection(db, 'posts'),
+          orderBy('createdAt', 'desc')
+        )
+        const postsSnapshot = await getDocs(postsQuery)
+        const posts = postsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+        saveToLocalStorage('all_posts', posts)
+        setAllPosts(posts)
       } else {
         // Carregar do cache local se offline
         setAllTournaments(getFromLocalStorage('all_tournaments', []))
         setAllCatches(getFromLocalStorage('all_catches', []))
+        setAllPosts(getFromLocalStorage('all_posts', []))
       }
     } catch (error) {
       // Fallback para cache local em caso de erro
       setAllTournaments(getFromLocalStorage('all_tournaments', []))
       setAllCatches(getFromLocalStorage('all_catches', []))
+      setAllPosts(getFromLocalStorage('all_posts', []))
     }
   }
 
@@ -1283,13 +1318,25 @@ const FishingProvider = ({ children }) => {
 
         // Combinar com posts locais não sincronizados
         const tempPosts = localPosts.filter(post => post.isTemp)
-        const allPosts = [...tempPosts, ...posts]
-        return allPosts
+        const merged = [...tempPosts, ...posts]
+        // Atualizar estado e cache para ser consumido pela UI
+        const ordered = [...merged].sort((a, b) => {
+          const ta = new Date(a.createdAt).getTime() || 0
+          const tb = new Date(b.createdAt).getTime() || 0
+          return tb - ta
+        })
+        setAllPosts(ordered)
+        saveToLocalStorage('all_posts', ordered)
+        return ordered
       } else {
+        setAllPosts(localPosts)
+        saveToLocalStorage('all_posts', localPosts)
         return localPosts
       }
     } catch (error) {
-      return getFromLocalStorage('local_posts', [])
+      const cached = getFromLocalStorage('all_posts', [])
+      setAllPosts(cached)
+      return cached
     }
   }
 
@@ -1485,6 +1532,7 @@ const FishingProvider = ({ children }) => {
     allTournaments,
     userCatches,
     allCatches,
+    allPosts,
     loading,
     isOnline,
     syncStatus,
@@ -1499,6 +1547,7 @@ const FishingProvider = ({ children }) => {
     loadUserTournaments,
     loadUserCatches,
     loadAllCatches,
+    loadPosts,
     calculateUserStats,
     getTournamentRanking,
     getGeneralRanking,
@@ -1509,7 +1558,6 @@ const FishingProvider = ({ children }) => {
     mergeParticipantsWithLocal,
     // Funções do feed
     createPost,
-    loadPosts,
     likePost,
     addComment,
     sharePost,

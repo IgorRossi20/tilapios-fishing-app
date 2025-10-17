@@ -6,7 +6,7 @@ import './Feed.css'
 
 const Feed = () => {
   const { user } = useAuth()
-  const { createPost, loadAllCatches, allCatches, likePost, addComment, sharePost, registerCatch } = useFishing()
+  const { createPost, loadPosts, allPosts, likePost, addComment, sharePost, registerCatch } = useFishing()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreatePost, setShowCreatePost] = useState(false)
@@ -56,18 +56,14 @@ const Feed = () => {
 
   useEffect(() => {
     loadPostsData()
-  }, [allCatches])
+  }, [allPosts])
 
   const loadPostsData = async () => {
     try {
       setLoading(true)
-      // A função loadAllCatches já foi chamada no Home.jsx e atualiza o allCatches no contexto
-      // Apenas usamos o allCatches aqui
-      const postsData = allCatches || []
+      // Carregar posts globais do contexto; garantir carregamento inicial
+      const postsData = (allPosts && allPosts.length ? allPosts : await loadPosts()) || []
       
-      // Debug: verificar se as imagens estão presentes
-      postsData.forEach((post, index) => {
-      })
       setPosts(postsData)
     } catch (error) {
     } finally {
