@@ -406,10 +406,10 @@
 
 .tournaments .tab-btn span {
   transition: all 0.3s ease;
-  background-color: #f0f0f0;
-  color: #0077b6;
-  padding: 4px 8px;
-  border-radius: 4px;
+  color: inherit;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
 }
 
 .tournaments .tab-count {

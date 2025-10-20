@@ -16,15 +16,15 @@ const isValidDomain = isValidFirebaseDomain()
 const forceOffline = String(import.meta.env.VITE_FIRESTORE_FORCE_OFFLINE || '').toLowerCase() === 'true'
 const forceOnlineDev = String(import.meta.env.VITE_FIREBASE_FORCE_ONLINE_DEV || '').toLowerCase() === 'true'
 
-// Decidir modo offline: forçado por env ou domínio não autorizado (sem força online)
-const shouldGoOffline = forceOffline || (!isValidDomain && !forceOnlineDev)
+// Ajuste: nunca forçar offline por domínio em produção; apenas respeitar flag explícita
+const shouldGoOffline = forceOffline
 window.FIRESTORE_OFFLINE_MODE = shouldGoOffline
 
 if (shouldGoOffline) {
   ;(async () => {
     try {
       await disableNetwork(db)
-      console.info('Firestore em modo offline (forçado ou domínio não autorizado).')
+      console.info('Firestore em modo offline (forçado por flag).')
     } catch (e) {
       console.warn('Falha ao desativar rede do Firestore:', e?.message || e)
     }

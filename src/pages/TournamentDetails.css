@@ -202,6 +202,14 @@
   padding: 0.5rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  /* Adicionar rolagem horizontal em mobile quando houver muitas abas */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+}
+
+.tournament-details .tabs::-webkit-scrollbar { /* WebKit */
+  display: none;
 }
 
 .tournament-details .tab-btn {

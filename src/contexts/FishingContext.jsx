@@ -1518,12 +1518,12 @@ const FishingProvider = ({ children }) => {
           const userLiked = likes.includes(user.uid)
 
           if (userLiked) {
-            // Remover curtida
+            // Remover curtida de forma atômica
             await updateDoc(postRef, {
-              likes: likes.filter(uid => uid !== user.uid)
+              likes: arrayRemove(user.uid)
             })
           } else {
-            // Adicionar curtida
+            // Adicionar curtida de forma atômica
             await updateDoc(postRef, {
               likes: arrayUnion(user.uid)
             })
