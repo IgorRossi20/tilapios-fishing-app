@@ -57,6 +57,8 @@ const FishingProvider = ({ children }) => {
   const [globalRanking, setGlobalRanking] = useState([])
   const [isSyncing, setIsSyncing] = useState(false)
   const [pendingData, setPendingData] = useState({ catches: 0, participations: 0 })
+  const [userInvites, setUserInvites] = useState([])
+  const [isInvitesPollingFallbackActive, setIsInvitesPollingFallbackActive] = useState(false)
 
   // Adicionar captura otimista
   const addOptimisticCatch = (catchData) => {
@@ -109,57 +111,205 @@ const FishingProvider = ({ children }) => {
     loadInitialData()
   }, [user])
 
+  // Ranking global reativo derivado de todas as capturas
+  useEffect(() => {
+    try {
+      const ranking = computeRankingFromCatches(Array.isArray(allCatches) ? allCatches : [], 'score')
+      setGlobalRanking(ranking)
+      saveToLocalStorage('global_ranking_score', ranking)
+    } catch (err) {
+      // silencioso
+    }
+  }, [allCatches])
+
   // Assinatura em tempo real dos campeonatos para manter todos os clientes sincronizados
   useEffect(() => {
+    // Realtime público conforme regras (read público)
     if (!isOnline) return
     try {
       const tournamentsCol = collection(db, 'fishing_tournaments')
-      const unsubscribe = onSnapshot(tournamentsCol, snapshot => {
-        const firestoreTournaments = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+      const unsubscribe = onSnapshot(
+        tournamentsCol,
+        snapshot => {
+          const firestoreTournaments = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
 
-        // Normaliza contagem e usa apenas participantes do Firestore (modo online)
-        const mergedAll = firestoreTournaments.map(t => {
-          const baseParticipants = Array.isArray(t.participants) ? t.participants : []
-          const uniqueFirestoreCount = new Set(baseParticipants.map(p => p.userId)).size
-          return { ...t, participants: baseParticipants, participantCount: uniqueFirestoreCount }
-        })
-
-        setAllTournaments(mergedAll)
-        saveToLocalStorage('all_tournaments', mergedAll)
-
-        if (user) {
-          const myTournaments = mergedAll.filter(t => {
-            const isCreator = t.createdBy === user.uid
-            const isParticipant = Array.isArray(t.participants) && t.participants.some(p => p.userId === user.uid)
-            return isCreator || isParticipant
+          // Normaliza contagem e usa apenas participantes do Firestore (modo online)
+          const mergedAll = firestoreTournaments.map(t => {
+            const baseParticipants = Array.isArray(t.participants) ? t.participants : []
+            const uniqueFirestoreCount = new Set(baseParticipants.map(p => p.userId)).size
+            return { ...t, participants: baseParticipants, participantCount: uniqueFirestoreCount }
           })
-          setUserTournaments(myTournaments)
-          saveToLocalStorage(`user_tournaments_${user.uid}`, myTournaments)
+
+          setAllTournaments(mergedAll)
+          saveToLocalStorage('all_tournaments', mergedAll)
+
+          if (user) {
+            const myTournaments = mergedAll.filter(t => {
+              const isCreator = t.createdBy === user.uid
+              const isParticipant = Array.isArray(t.participants) && t.participants.some(p => p.userId === user.uid)
+              return isCreator || isParticipant
+            })
+            setUserTournaments(myTournaments)
+            saveToLocalStorage(`user_tournaments_${user.uid}`, myTournaments)
+          }
+        },
+        (err) => {
+          // Silenciar erros; manter dados locais
+          const msg = String(err?.message || err).toLowerCase()
+          if (err?.code === 'permission-denied' || msg.includes('permission') || msg.includes('insufficient')) {
+            return
+          }
         }
-      })
+      )
       return () => unsubscribe()
     } catch (err) {
       // Silencioso: se falhar, ficamos com carregamento manual
       return () => {}
     }
-  }, [isOnline, user])
+  }, [isOnline])
+
+  // Assinatura em tempo real das capturas para manter todos os clientes sincronizados
+  useEffect(() => {
+    // Realtime público conforme regras (read público)
+    if (!isOnline) return
+    try {
+      const catchesCol = collection(db, 'fishing_catches')
+      const unsubscribe = onSnapshot(
+        catchesCol,
+        snapshot => {
+          const catches = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+          const ordered = [...catches].sort((a, b) => {
+            const ta = new Date(a.registeredAt).getTime() || 0
+            const tb = new Date(b.registeredAt).getTime() || 0
+            return tb - ta
+          })
+          setAllCatches(ordered)
+          saveToLocalStorage('all_catches', ordered)
+        },
+        (err) => {
+          const msg = String(err?.message || err).toLowerCase()
+          const isPermissionError = err?.code === 'permission-denied' || msg.includes('permission') || msg.includes('insufficient')
+          const isFailedPrecondition = err?.code === 'failed-precondition'
+          const isUnavailable = err?.code === 'unavailable' || err?.code === 'deadline-exceeded'
+          if (isPermissionError || isFailedPrecondition || isUnavailable) {
+            return
+          }
+        }
+      )
+      return () => unsubscribe()
+    } catch (err) {
+      return () => {}
+    }
+  }, [isOnline])
+
+  // Assinatura em tempo real dos convites de torneio
+  useEffect(() => {
+    if (!isOnline || !user) return
+    let unsubscribe
+    let fallbackTimer
+    const invitesPollIntervalMs = Number(import.meta.env.VITE_INVITES_POLL_INTERVAL_MS) || 30000
+    try {
+      const invitesQuery = query(
+        collection(db, COLLECTIONS.TOURNAMENT_INVITES),
+        where('inviteeEmail', '==', user.email),
+        where('status', '==', 'pending')
+      )
+      unsubscribe = onSnapshot(
+        invitesQuery,
+        snapshot => {
+          const invites = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+          const validInvites = invites.filter(inv => {
+            const exp = new Date(inv.expiresAt)
+            return exp > new Date()
+          })
+          setUserInvites(validInvites)
+          saveToLocalStorage(`user_invites_${user.uid}`, validInvites)
+          // Se recebemos dados pelo realtime, desativar fallback
+          setIsInvitesPollingFallbackActive(false)
+          if (fallbackTimer) {
+            clearInterval(fallbackTimer)
+            fallbackTimer = null
+          }
+        },
+        async (err) => {
+          const msg = String(err?.message || err).toLowerCase()
+          const isPermissionError = err?.code === 'permission-denied' || msg.includes('permission') || msg.includes('insufficient')
+          const isFailedPrecondition = err?.code === 'failed-precondition'
+          const isUnavailable = err?.code === 'unavailable' || err?.code === 'deadline-exceeded'
+          if (isPermissionError || isFailedPrecondition || isUnavailable) {
+            // Fallback: polling leve para manter UI atualizada
+            setIsInvitesPollingFallbackActive(true)
+            fallbackTimer = setInterval(async () => {
+              try {
+                const snapshot = await getDocs(invitesQuery)
+                const invites = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+                const validInvites = invites.filter(inv => {
+                  const exp = new Date(inv.expiresAt)
+                  return exp > new Date()
+                })
+                setUserInvites(validInvites)
+                saveToLocalStorage(`user_invites_${user.uid}`, validInvites)
+              } catch (pollErr) {}
+            }, invitesPollIntervalMs)
+          }
+        }
+      )
+    } catch (err) {
+      // Fallback imediato se onSnapshot falhar antes de iniciar
+      setIsInvitesPollingFallbackActive(true)
+      fallbackTimer = setInterval(async () => {
+        try {
+          const snapshot = await getDocs(
+            query(
+              collection(db, COLLECTIONS.TOURNAMENT_INVITES),
+              where('inviteeEmail', '==', user.email),
+              where('status', '==', 'pending')
+            )
+          )
+          const invites = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+          const validInvites = invites.filter(inv => {
+            const exp = new Date(inv.expiresAt)
+            return exp > new Date()
+          })
+          setUserInvites(validInvites)
+          saveToLocalStorage(`user_invites_${user.uid}`, validInvites)
+        } catch (_) {}
+      }, invitesPollIntervalMs)
+    }
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe()
+      if (fallbackTimer) clearInterval(fallbackTimer)
+      setIsInvitesPollingFallbackActive(false)
+    }
+  }, [user, isOnline])
 
   // Assinatura em tempo real dos posts do feed
   useEffect(() => {
+    // Realtime público conforme regras (read público)
     if (!isOnline) return
     try {
       const postsCol = collection(db, 'posts')
-      const unsubscribe = onSnapshot(postsCol, snapshot => {
-        const firestorePosts = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
-        // Ordem decrescente por createdAt (ISO string) para manter feed atual
-        const ordered = [...firestorePosts].sort((a, b) => {
-          const ta = new Date(a.createdAt).getTime() || 0
-          const tb = new Date(b.createdAt).getTime() || 0
-          return tb - ta
-        })
-        setAllPosts(ordered)
-        saveToLocalStorage('all_posts', ordered)
-      })
+      const unsubscribe = onSnapshot(
+        postsCol,
+        snapshot => {
+          const firestorePosts = snapshot.docs.map(docSnap => ({ id: docSnap.id, ...docSnap.data() }))
+          // Ordem decrescente por createdAt (ISO string) para manter feed atual
+          const ordered = [...firestorePosts].sort((a, b) => {
+            const ta = new Date(a.createdAt).getTime() || 0
+            const tb = new Date(b.createdAt).getTime() || 0
+            return tb - ta
+          })
+          setAllPosts(ordered)
+          saveToLocalStorage('all_posts', ordered)
+        },
+        (err) => {
+          // Silenciar erros; manter dados locais
+          const msg = String(err?.message || err).toLowerCase()
+          if (err?.code === 'permission-denied' || msg.includes('permission') || msg.includes('insufficient')) {
+            return
+          }
+        }
+      )
       return () => unsubscribe()
     } catch (err) {
       return () => {}
@@ -198,6 +348,8 @@ const FishingProvider = ({ children }) => {
 
       // Sincronizar participações pendentes
       await syncPendingParticipations()
+      // Sincronizar updates de convites pendentes (aceite/recusa)
+      await syncPendingInviteStatusUpdates()
 
       // Recarregar dados após sincronização
       if (user) {
@@ -324,6 +476,52 @@ const FishingProvider = ({ children }) => {
       )
       saveToLocalStorage('pending_participations', remainingParticipations)
     }
+  }
+
+  // Sincronizar updates de convites pendentes (aceite/recusa)
+  async function syncPendingInviteStatusUpdates() {
+    const pending = getFromLocalStorage('pending_invite_status_updates', [])
+    if (!isOnline || pending.length === 0) return
+
+    const successful = []
+    for (const u of pending) {
+      try {
+        const inviteRef = doc(db, COLLECTIONS.TOURNAMENT_INVITES, u.inviteId)
+        const payload = { status: u.status }
+        if (u.status === 'accepted') {
+          payload.acceptedAt = new Date().toISOString()
+        } else if (u.status === 'declined') {
+          payload.declinedAt = new Date().toISOString()
+        }
+        await updateDoc(inviteRef, payload)
+        successful.push(u)
+      } catch (err) {
+        const msg = String(err?.message || err).toLowerCase()
+        const isPermissionError = err?.code === 'permission-denied' || msg.includes('permission') || msg.includes('insufficient')
+        const isFailedPrecondition = err?.code === 'failed-precondition'
+        const isUnavailable = err?.code === 'unavailable' || err?.code === 'deadline-exceeded'
+        if (isUnavailable || isFailedPrecondition) {
+          // manter para próxima sincronização
+        } else if (isPermissionError) {
+          // manter para próxima sincronização
+        } else {
+          // manter para próxima sincronização
+        }
+      }
+    }
+
+    if (successful.length > 0) {
+      const remaining = pending.filter(u => !successful.includes(u))
+      saveToLocalStorage('pending_invite_status_updates', remaining)
+    }
+  }
+
+  // Enfileirar update de status de convite no armazenamento local
+  function queueInviteStatusUpdate(inviteId, status) {
+    const key = 'pending_invite_status_updates'
+    const pending = getFromLocalStorage(key, [])
+    pending.push({ inviteId, status, timestamp: new Date().toISOString() })
+    saveToLocalStorage(key, pending)
   }
 
   // Carregar campeonatos do usuário
@@ -1107,24 +1305,16 @@ const FishingProvider = ({ children }) => {
     }
   }
 
-  const getGeneralRanking = async () => {
+  const getGeneralRanking = async (rankingType = 'score') => {
     try {
-      // Buscar todas as capturas no Firestore e calcular ranking por peso
-      const q = query(collection(db, 'fishing_catches'))
-      const snap = await getDocs(q)
-      const catches = []
-      snap.forEach(doc => {
-        catches.push({ id: doc.id, ...doc.data() })
-      })
-
-      return computeRankingFromCatches(catches, 'weight')
+      const local = Array.isArray(allCatches)
+        ? allCatches
+        : getFromLocalStorage('all_catches', [])
+      return computeRankingFromCatches(local, rankingType)
     } catch (error) {
-      // Fallback: usar estado/localStorage para calcular ranking quando offline
       try {
-        const local = Array.isArray(allCatches)
-          ? allCatches
-          : getFromLocalStorage('all_catches', [])
-        return computeRankingFromCatches(local, 'weight')
+        const local = getFromLocalStorage('all_catches', [])
+        return computeRankingFromCatches(local, rankingType)
       } catch (localError) {
         return []
       }
@@ -1490,11 +1680,36 @@ const FishingProvider = ({ children }) => {
       await joinTournament(tournamentId)
 
       // Se há um convite específico, marcar como aceito
-      if (inviteId && isOnline) {
-        const inviteRef = doc(db, COLLECTIONS.TOURNAMENT_INVITES, inviteId)
-        await updateDoc(inviteRef, {
-          status: 'accepted',
-          acceptedAt: new Date().toISOString()
+      if (inviteId) {
+        if (isOnline) {
+          try {
+            const inviteRef = doc(db, COLLECTIONS.TOURNAMENT_INVITES, inviteId)
+            await updateDoc(inviteRef, {
+              status: 'accepted',
+              acceptedAt: new Date().toISOString()
+            })
+          } catch (err) {
+            const msg = String(err?.message || err).toLowerCase()
+            const isPermissionError = err?.code === 'permission-denied' || msg.includes('permission') || msg.includes('insufficient')
+            const isFailedPrecondition = err?.code === 'failed-precondition'
+            const isUnavailable = err?.code === 'unavailable' || err?.code === 'deadline-exceeded'
+            if (isPermissionError || isFailedPrecondition || isUnavailable) {
+              queueInviteStatusUpdate(inviteId, 'accepted')
+            } else {
+              throw err
+            }
+          }
+        } else {
+          queueInviteStatusUpdate(inviteId, 'accepted')
+        }
+      }
+
+      // Remoção otimista do convite aceito para refletir imediatamente na UI
+      if (inviteId) {
+        setUserInvites(prev => {
+          const updated = prev.filter(inv => inv.id !== inviteId)
+          saveToLocalStorage(`user_invites_${user.uid}`, updated)
+          return updated
         })
       }
 
@@ -1512,8 +1727,7 @@ const FishingProvider = ({ children }) => {
         const invitesQuery = query(
           collection(db, COLLECTIONS.TOURNAMENT_INVITES),
           where('inviteeEmail', '==', user.email),
-          where('status', '==', 'pending'),
-          orderBy('createdAt', 'desc')
+          where('status', '==', 'pending')
         )
 
         const invitesSnapshot = await getDocs(invitesQuery)
@@ -1535,6 +1749,49 @@ const FishingProvider = ({ children }) => {
       }
     } catch (error) {
       return []
+    }
+  }
+
+  const declineTournamentInvite = async (invite) => {
+    if (!user) throw new Error('Usuário não autenticado')
+    try {
+      const inviteId = invite?.id
+      if (!inviteId) throw new Error('Convite inválido')
+
+      if (isOnline) {
+        try {
+          const inviteRef = doc(db, COLLECTIONS.TOURNAMENT_INVITES, inviteId)
+          await updateDoc(inviteRef, {
+            status: 'declined',
+            declinedAt: new Date().toISOString()
+          })
+        } catch (err) {
+          const msg = String(err?.message || err).toLowerCase()
+          const isPermissionError = err?.code === 'permission-denied' || msg.includes('permission') || msg.includes('insufficient')
+          const isFailedPrecondition = err?.code === 'failed-precondition'
+          const isUnavailable = err?.code === 'unavailable' || err?.code === 'deadline-exceeded'
+          if (isPermissionError || isFailedPrecondition || isUnavailable) {
+            queueInviteStatusUpdate(inviteId, 'declined')
+          } else {
+            throw err
+          }
+        }
+      } else {
+        queueInviteStatusUpdate(inviteId, 'declined')
+      }
+
+      // Remoção otimista do convite recusado
+      setUserInvites(prev => {
+        const updated = prev.filter(inv => inv.id !== inviteId)
+        saveToLocalStorage(`user_invites_${user.uid}`, updated)
+        return updated
+      })
+
+      if (typeof notifyInviteDeclined === 'function' && invite?.tournamentName) {
+        notifyInviteDeclined(invite.tournamentName)
+      }
+    } catch (error) {
+      throw error
     }
   }
 
@@ -1573,9 +1830,14 @@ const FishingProvider = ({ children }) => {
     sharePost,
     // Funções de convites
     sendTournamentInvite,
-    generateTournamentInviteLink,
     joinTournamentByInvite,
-    loadUserInvites
+    declineTournamentInvite,
+    generateTournamentInviteLink,
+    loadUserInvites,
+    // Estado reativo
+    globalRanking,
+    userInvites,
+    isInvitesPollingFallbackActive
   }
 
   // Helper para computar ranking a partir de uma lista de capturas

@@ -6,7 +6,9 @@ const SyncStatus = () => {
   const { isOnline, syncStatus, getFromLocalStorage } = useFishing()
   
   const pendingCatches = getFromLocalStorage('pending_catches', [])
-  const hasPendingData = pendingCatches.length > 0
+  const pendingInviteUpdates = getFromLocalStorage('pending_invite_status_updates', [])
+  const pendingCountTotal = (pendingCatches?.length || 0) + (pendingInviteUpdates?.length || 0)
+  const hasPendingData = pendingCountTotal > 0
   
   const getStatusInfo = () => {
     if (!isOnline) {
@@ -14,7 +16,7 @@ const SyncStatus = () => {
         icon: '📴',
         text: 'Offline',
         className: 'sync-status offline',
-        description: hasPendingData ? `${pendingCatches.length} capturas pendentes` : 'Dados salvos localmente'
+        description: hasPendingData ? `${pendingCountTotal} itens pendentes` : 'Dados salvos localmente'
       }
     }
     
@@ -41,7 +43,7 @@ const SyncStatus = () => {
         icon: '⏳',
         text: 'Dados pendentes',
         className: 'sync-status pending',
-        description: `${pendingCatches.length} capturas aguardando sincronização`
+        description: `${pendingCountTotal} itens aguardando sincronização`
       }
     }
     
@@ -60,7 +62,7 @@ const SyncStatus = () => {
       <span className="sync-icon">{statusInfo.icon}</span>
       <span className="sync-text">{statusInfo.text}</span>
       {hasPendingData && (
-        <span className="pending-count">{pendingCatches.length}</span>
+        <span className="pending-count">{pendingCountTotal}</span>
       )}
     </div>
   )

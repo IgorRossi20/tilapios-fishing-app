@@ -8,7 +8,7 @@ service cloud.firestore {
     
     // Posts são públicos para leitura, mas apenas o autor pode editar
     match /posts/{postId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
     }
@@ -22,7 +22,7 @@ service cloud.firestore {
     
     // Campeonatos de pesca (nova coleção)
     match /fishing_tournaments/{tournamentId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow create: if request.auth != null;
 
       // Permitir: 
@@ -40,14 +40,14 @@ service cloud.firestore {
     
     // Capturas são públicas para leitura, apenas o autor pode editar
     match /fishing_catches/{catchId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
     
     // Capturas antigas (compatibilidade)
     match /catches/{catchId} {
-      allow read: if request.auth != null;
+      allow read: if true;
       allow create: if request.auth != null && request.auth.uid == resource.data.userId;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
@@ -75,12 +75,18 @@ service cloud.firestore {
     // Convites de campeonatos
     match /tournament_invites/{inviteId} {
       allow read: if request.auth != null && 
-        (request.auth.uid == resource.data.inviterId || 
-         request.auth.uid == resource.data.inviteeId);
+        (
+          request.auth.uid == resource.data.inviterId ||
+          request.auth.uid == resource.data.inviteeId ||
+          request.auth.token.email == resource.data.inviteeEmail
+        );
       allow create: if request.auth != null && request.auth.uid == request.resource.data.inviterId;
       allow update: if request.auth != null && 
-        (request.auth.uid == resource.data.inviterId || 
-         request.auth.uid == resource.data.inviteeId);
+        (
+          request.auth.uid == resource.data.inviterId || 
+          request.auth.uid == resource.data.inviteeId ||
+          request.auth.token.email == resource.data.inviteeEmail
+        );
       allow delete: if request.auth != null && request.auth.uid == resource.data.inviterId;
     }
     

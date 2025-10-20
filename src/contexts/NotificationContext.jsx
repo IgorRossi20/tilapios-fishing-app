@@ -54,10 +54,20 @@ export const NotificationProvider = ({ children }) => {
         where('recipientId', '==', user.uid),
         orderBy('createdAt', 'desc')
       )
-      const unsubscribe = onSnapshot(q, snapshot => {
-        const items = snapshot.docs.map(d => mapDbNotification(d.id, d.data()))
-        setDbNotifications(items)
-      })
+      const unsubscribe = onSnapshot(
+        q,
+        snapshot => {
+          const items = snapshot.docs.map(d => mapDbNotification(d.id, d.data()))
+          setDbNotifications(items)
+        },
+        (err) => {
+          // Silenciar erros comuns em tempo real (permission/index), mantendo fallback
+          const msg = String(err?.message || err).toLowerCase()
+          if (err?.code === 'permission-denied' || err?.code === 'failed-precondition' || msg.includes('index')) {
+            return
+          }
+        }
+      )
       return () => unsubscribe()
     } catch (e) {
       return () => {}

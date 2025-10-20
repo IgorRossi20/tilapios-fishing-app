@@ -4,29 +4,17 @@ import { useNotification } from '../contexts/NotificationContext'
 import { useAuth } from '../contexts/AuthContext'
 
 const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
-  const { sendTournamentInvite, generateTournamentInviteLink, loadUserInvites, joinTournamentByInvite } = useFishing()
+  const { sendTournamentInvite, generateTournamentInviteLink, joinTournamentByInvite, userInvites, declineTournamentInvite, loadUserInvites, isInvitesPollingFallbackActive } = useFishing()
   const { notifyInviteSent, notifyInviteAccepted, notifyInviteDeclined } = useNotification()
   const { user } = useAuth()
   const [inviteEmail, setInviteEmail] = useState('')
   const [showInviteForm, setShowInviteForm] = useState(false)
-  const [userInvites, setUserInvites] = useState([])
+
   const [loading, setLoading] = useState(false)
   const [inviteLink, setInviteLink] = useState('')
   const [showInviteLink, setShowInviteLink] = useState(false)
 
-  useEffect(() => {
-    if (user) {
-      loadInvites()
-    }
-  }, [user])
 
-  const loadInvites = async () => {
-    try {
-      const invites = await loadUserInvites()
-      setUserInvites(invites)
-    } catch (error) {
-    }
-  }
 
   const handleSendInvite = async (e) => {
     e.preventDefault()
@@ -61,19 +49,13 @@ const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
     try {
       await joinTournamentByInvite(invite.tournamentId, invite.id)
       notifyInviteAccepted()
-      // Recarregar convites para atualizar a lista
-      await loadInvites()
     } catch (error) {
     }
   }
 
   const handleDeclineInvite = async (invite) => {
     try {
-      // Aqui você pode implementar a lógica para recusar o convite
-      // Por enquanto, apenas notificamos
-      notifyInviteDeclined(invite.tournamentName)
-      // Recarregar convites para atualizar a lista
-      await loadInvites()
+      await declineTournamentInvite(invite)
     } catch (error) {
     }
   }
@@ -166,11 +148,21 @@ const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
       )}
 
       {/* Seção de convites recebidos */}
-      {userInvites.length > 0 && (
-        <div className="received-invites">
-          <h4>📬 Convites Recebidos</h4>
-          <div className="invites-list">
-            {userInvites.map(invite => (
+      <div className="received-invites">
+        <h4>
+          📬 Convites Recebidos
+          {isInvitesPollingFallbackActive && (
+            <span className="fallback-badge" aria-label="Fallback ativo">
+              🔄 Fallback ativo
+              <span className="tooltip">
+                Realtime indisponível; usando polling a cada {Math.round(Number(import.meta.env.VITE_INVITES_POLL_INTERVAL_MS || 30000) / 1000)}s
+              </span>
+            </span>
+          )}
+        </h4>
+        <div className="invites-list">
+          {userInvites.length > 0 ? (
+            userInvites.map(invite => (
               <div key={invite.id} className="invite-card">
                 <div className="invite-info">
                   <h5>{invite.tournamentName}</h5>
@@ -197,10 +189,20 @@ const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
                   </button>
                 </div>
               </div>
-            ))}
-          </div>
+            ))
+          ) : (
+            <div style={{
+              padding: '10px 12px',
+              color: '#6c757d',
+              fontSize: '0.95em',
+              border: '1px dashed #dee2e6',
+              borderRadius: 8
+            }}>
+              Nenhum convite por enquanto.
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       <style jsx>{`
         .tournament-invites {
@@ -355,3 +357,57 @@ const TournamentInvites = ({ tournamentId, tournamentName, isCreator }) => {
 }
 
 export default TournamentInvites
+
+
+<style jsx>{`
+        .fallback-badge {
+          margin-left: var(--spacing-2);
+          font-size: 0.78em;
+          color: var(--gray-100);
+          background: var(--gray-800);
+          border: 1px solid var(--gray-700);
+          padding: var(--spacing-1) var(--spacing-2);
+          border-radius: var(--radius-full);
+          display: inline-flex;
+          align-items: center;
+          gap: var(--spacing-2);
+          position: relative;
+          cursor: help;
+          box-shadow: var(--shadow-sm);
+          transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s ease-out;
+        }
+
+        .fallback-badge:hover,
+        .fallback-badge:focus {
+          background: var(--gray-700);
+          border-color: var(--gray-600);
+          box-shadow: var(--shadow-md);
+          transform: translateY(-1px);
+        }
+
+        .fallback-badge .tooltip {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%) translateY(4px);
+          background: var(--gray-900);
+          color: var(--gray-100);
+          border: 1px solid var(--gray-800);
+          box-shadow: var(--shadow-lg);
+          padding: var(--spacing-2) var(--spacing-3);
+          border-radius: var(--radius-lg);
+          font-size: 0.78em;
+          line-height: 1.4;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.18s ease, transform 0.18s ease;
+          z-index: 5;
+        }
+
+        .fallback-badge:hover .tooltip,
+        .fallback-badge:focus .tooltip {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0px);
+        }
+      `}</style>

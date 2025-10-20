@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Fish, Trophy, Users, MessageCircle, User, LogOut, Award, Menu, X, Home, Bell } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useNotification } from '../contexts/NotificationContext'
@@ -9,8 +9,10 @@ const Header = () => {
   const { user, logout } = useAuth()
   const { notifications, getUnreadCount, markAsRead, markAllAsRead } = useNotification()
   const location = useLocation()
+  const navigate = useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isNotifOpen, setIsNotifOpen] = useState(false)
+  const [hoverNotifId, setHoverNotifId] = useState(null)
 
   const handleLogout = async () => {
     try {
@@ -194,13 +196,24 @@ const Header = () => {
                       notifications.slice(0, 12).map(n => (
                         <div
                           key={n.id}
-                          onClick={async () => { await markAsRead(n.id); setIsNotifOpen(false) }}
+                          onClick={async () => {
+                            await markAsRead(n.id)
+                            setIsNotifOpen(false)
+                            if (n.postId) {
+                              navigate(`/?postId=${encodeURIComponent(n.postId)}`)
+                            }
+                          }}
+                          onMouseEnter={() => setHoverNotifId(n.id)}
+                          onMouseLeave={() => setHoverNotifId(null)}
                           style={{
                             padding: '12px 14px',
                             display: 'flex',
                             gap: 12,
                             cursor: 'pointer',
-                            background: n.read ? 'white' : 'var(--primary-50)'
+                            background: hoverNotifId === n.id
+                              ? 'rgba(59,130,246,0.08)'
+                              : (n.read ? 'white' : 'var(--primary-50)'),
+                            borderTop: '1px solid var(--gray-100)'
                           }}
                         >
                           <div style={{ width: 8, marginTop: 6 }}>
@@ -215,7 +228,10 @@ const Header = () => {
                         </div>
                       ))
                     ) : (
-                      <div style={{ padding: 16, color: 'var(--gray-600)', fontSize: 14 }}>Sem notificações por enquanto.</div>
+                      <div style={{ padding: 20, color: 'var(--gray-600)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Bell size={16} />
+                        <span>Sem notificações por enquanto.</span>
+                      </div>
                     )}
                   </div>
                 </div>

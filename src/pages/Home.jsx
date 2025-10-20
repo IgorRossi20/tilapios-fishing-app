@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Fish, Trophy, Users, TrendingUp, Calendar, Award, Heart, MessageCircle, Share2, Camera, MapPin, Clock, Plus } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useFishing } from '../contexts/FishingContext'
 import './Home.css'
 import { formatPostForUI, toDateSafe, formatTimeAgo } from '../utils/postFormat'
@@ -86,7 +86,53 @@ const Home = () => {
   // Memoizar posts do feed para evitar re-renderizações
   const memoizedFeedPosts = useMemo(() => feedPosts, [feedPosts])
 
+  // Rolar e destacar post ao acessar com ?postId=...
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const targetId = params.get('postId')
+    if (!targetId) return
 
+    let observer
+
+    const onFound = (el) => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.classList.add('post-highlight')
+      setTimeout(() => el.classList.remove('post-highlight'), 2000)
+      // Remove o postId da URL para evitar re-aplicação ao voltar para a Home
+      try {
+        navigate({ pathname: location.pathname }, { replace: true })
+      } catch {}
+    }
+
+    const tryScroll = () => {
+      const el = document.getElementById(`post-${targetId}`)
+      if (el) {
+        onFound(el)
+        return true
+      }
+      return false
+    }
+
+    // Tenta imediatamente; se ainda não existir, observa mutações no feed
+    if (!tryScroll()) {
+      const container = document.querySelector('.feed-container')
+      if (container && 'MutationObserver' in window) {
+        observer = new MutationObserver(() => {
+          if (tryScroll() && observer) {
+            observer.disconnect()
+          }
+        })
+        observer.observe(container, { childList: true, subtree: true })
+      } else {
+        const id = setTimeout(() => { tryScroll() }, 400)
+        return () => clearTimeout(id)
+      }
+    }
+
+    return () => {
+      if (observer) observer.disconnect()
+    }
+  }, [location.search, memoizedFeedPosts])
 
   // Carregar posts do feed social
   // Funções de interação com posts
@@ -376,7 +422,7 @@ const Home = () => {
                  feedPosts.map((post, index) => {
                    const postKey = post.id || `feed-post-${index}`
                    return (
-                   <div key={postKey} className="instagram-post">
+                   <div key={postKey} id={post.id ? `post-${post.id}` : undefined} className="instagram-post">
                      {/* Header do Post - Estilo Instagram */}
                      <div className="post-header">
                        <div className="user-info">

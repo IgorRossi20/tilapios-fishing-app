@@ -45,7 +45,7 @@ const ColorTrophyIcon = ({ size = 32, className = '' }) => (
 )
 
 const Ranking = () => {
-  const { userTournaments, allTournaments, getTournamentRanking, getGeneralRanking } = useFishing()
+  const { userTournaments, allTournaments, allCatches, getTournamentRanking, getGeneralRanking } = useFishing()
   const { user } = useAuth()
   const location = useLocation()
   const [selectedTournament, setSelectedTournament] = useState('general')
@@ -84,7 +84,7 @@ const Ranking = () => {
     if (selectedTournament) {
       loadRanking()
     }
-  }, [selectedTournament, rankingType])
+  }, [selectedTournament, rankingType, allCatches])
 
   const loadRanking = async () => {
     if (!selectedTournament) return
@@ -158,42 +158,41 @@ const Ranking = () => {
   }
 
   return (
-    <div className="page">
+    <div className="ranking">
       <div className="container">
-        <div className="page-header">
-          <h1 className="page-title ranking-title">
+        <div className="header">
+          <h1 className="ranking-title">
             <ColorTrophyIcon size={32} className="title-icon" />
             <span className="title-text">Ranking</span>
           </h1>
-          <p className="page-subtitle">Veja quem está dominando as águas!</p>
+          <p>Veja quem está dominando as águas!</p>
         </div>
 
-        <div className="card">
-          <div className="d-flex flex-column gap-4">
-            <div className="form-group">
-              <label htmlFor="tournament-select" className="form-label">
-                📅 Campeonato
-              </label>
-              <select 
-                id="tournament-select"
-                value={selectedTournament} 
-                onChange={(e) => setSelectedTournament(e.target.value)}
-                className="form-select"
-              >
-                <option value="general">🏆 Ranking Geral (Todas as Pescas)</option>
-                {myTournaments.map(tournament => (
-                  <option key={tournament.id} value={tournament.id}>
-                    {tournament.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="controls">
+          <div className="control-group">
+            <label htmlFor="tournament-select" className="control-label">
+              📅 Campeonato
+            </label>
+            <select
+              id="tournament-select"
+              value={selectedTournament}
+              onChange={(e) => setSelectedTournament(e.target.value)}
+              className="control-select"
+            >
+              <option value="general">🏆 Ranking Geral (Todas as Pescas)</option>
+              {myTournaments.map(tournament => (
+                <option key={tournament.id} value={tournament.id}>
+                  {tournament.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <div className="form-group">
-              <label className="form-label">📊 Ranking por</label>
-              <div className="ranking-type-panel">
-                <div className="ranking-type-group d-flex gap-2 flex-wrap">
-                  <button 
+          <div className="control-group">
+            <label className="control-label">📊 Ranking por</label>
+            <div className="ranking-type-panel">
+              <div className="ranking-type-group d-flex gap-2 flex-wrap">
+                <button 
                   className={`btn ranking-type-btn score ${rankingType === 'score' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setRankingType('score')}
                 >
@@ -228,16 +227,21 @@ const Ranking = () => {
                   <TrendingUp size={18} className="icon-species" />
                   Diversidade
                 </button>
-                </div>
               </div>
             </div>
           </div>
         </div>
 
         {selectedTournament === 'general' ? null : tournamentInfo && (
-          <div className="card">
-            <div className="d-flex flex-column gap-3">
-              <h2 className="text-2xl font-bold text-gray-900">{tournamentInfo.name}</h2>
+          <div className="tournament-info">
+            <div className="tournament-header">
+              <h2>{tournamentInfo.name}</h2>
+              {getStatusBadge(tournamentInfo)}
+            </div>
+            <div className="tournament-details">
+              <div className="detail-item"><Calendar size={16} /> Início: {formatDate(tournamentInfo.startDate)}</div>
+              <div className="detail-item"><Calendar size={16} /> Fim: {formatDate(tournamentInfo.endDate)}</div>
+              <div className="detail-item"><Users size={16} /> Participantes: {tournamentInfo?.participants?.length || 0}</div>
             </div>
           </div>
         )}
