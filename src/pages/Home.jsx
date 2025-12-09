@@ -9,11 +9,11 @@ import { formatPostForUI, toDateSafe, formatTimeAgo } from '../utils/postFormat'
 const Home = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { 
-    userCatches, 
-    calculateUserStats, 
-    getGeneralRanking, 
-    isOnline, 
+  const {
+    userCatches,
+    calculateUserStats,
+    getGeneralRanking,
+    isOnline,
     loadAllCatches,
     allCatches,
     // Campeonatos do usuário
@@ -38,7 +38,7 @@ const Home = () => {
   const [feedPosts, setFeedPosts] = useState([])
 
   const [showComments, setShowComments] = useState({})
-  
+
 
 
 
@@ -101,7 +101,7 @@ const Home = () => {
       // Remove o postId da URL para evitar re-aplicação ao voltar para a Home
       try {
         navigate({ pathname: location.pathname }, { replace: true })
-      } catch {}
+      } catch { }
     }
 
     const tryScroll = () => {
@@ -149,7 +149,7 @@ const Home = () => {
           likesCount: Math.max(0, (post.likesCount || 0) + delta)
         }
       }))
-    } catch {}
+    } catch { }
   }, [likePost])
 
   const toggleComments = useCallback((postId) => {
@@ -184,7 +184,7 @@ const Home = () => {
 
   const handleShare = useCallback(async (postId, postContent) => {
     try {
-      try { await sharePost?.(postId) } catch {}
+      try { await sharePost?.(postId) } catch { }
       const title = 'Captura de Pesca'
       const text = postContent?.species && postContent?.weight && postContent?.location
         ? `Confira esta captura: ${postContent.species} de ${postContent.weight}kg em ${postContent.location}!`
@@ -227,7 +227,7 @@ const Home = () => {
       // Fallback: se não houver posts ainda, manter comportamento anterior com capturas
       if (mapped.length === 0) {
         let catchesToDisplay = allCatches || []
-        const authenticatedCatches = catchesToDisplay.filter(catch_ => 
+        const authenticatedCatches = catchesToDisplay.filter(catch_ =>
           catch_.userId && catch_.userId !== 'demo' && !catch_.id?.startsWith('demo_')
         )
         const postsFromCatches = authenticatedCatches
@@ -277,11 +277,11 @@ const Home = () => {
       // Contar campeonatos em que o usuário participa (inclui proprietário)
       const tournamentsCount = Array.isArray(userTournaments)
         ? userTournaments.filter(t => {
-            const arr = Array.isArray(t.participants) ? t.participants : []
-            const isParticipant = arr.some(p => (p?.userId || p?.id) === user?.uid)
-            const isOwner = t.createdBy === user?.uid
-            return isParticipant || isOwner
-          }).length
+          const arr = Array.isArray(t.participants) ? t.participants : []
+          const isParticipant = arr.some(p => (p?.userId || p?.id) === user?.uid)
+          const isOwner = t.createdBy === user?.uid
+          return isParticipant || isOwner
+        }).length
         : 0
 
       // Obter ranking geral
@@ -341,18 +341,18 @@ const Home = () => {
           </p>
         </div>
 
-        {/* Layout de duas colunas */}
-        <div className="grid grid-3 gap-4">
+        {/* Layout Responsivo: 1 col mobile, 2 cols tablet, 3 cols desktop */}
+        <div className="home-layout-grid">
           {/* Coluna da esquerda - Estatísticas e informações */}
-          <div className="d-flex flex-column gap-4">
+          <div className="home-stats-column">
 
             {/* Estatísticas Principais */}
             <div className="card">
               <h3 className="text-lg font-semibold mb-4 text-gray-800">📊 Suas Estatísticas</h3>
-              <div className="stats-container" style={{ 
-                border: '1px solid var(--gray-200)', 
-                borderRadius: 'var(--radius-xl)', 
-                padding: 'var(--spacing-3)', 
+              <div className="stats-container" style={{
+                border: '1px solid var(--gray-200)',
+                borderRadius: 'var(--radius-xl)',
+                padding: 'var(--spacing-3)',
                 backgroundColor: 'white',
                 boxShadow: 'var(--shadow-sm)'
               }}>
@@ -362,19 +362,19 @@ const Home = () => {
                     <div className="text-xl font-bold text-primary">{stats.totalFish}</div>
                     <div className="text-xs text-gray-600">Peixes</div>
                   </div>
-                  
+
                   <div className="text-center p-3 bg-green-50 rounded-lg">
                     <TrendingUp size={24} className="text-secondary mx-auto mb-2" />
                     <div className="text-xl font-bold text-secondary">{stats.totalWeight}kg</div>
                     <div className="text-xs text-gray-600">Peso Total</div>
                   </div>
-                  
+
                   <div className="text-center p-3 bg-primary-50 rounded-lg">
                     <Users size={24} className="text-primary-600 mx-auto mb-2" />
                     <div className="text-xl font-bold text-primary-600">{stats.tournaments}</div>
                     <div className="text-xs text-gray-600">Campeonatos</div>
                   </div>
-                  
+
                   <div className="text-center p-3 bg-yellow-50 rounded-lg">
                     <Trophy size={24} className="text-warning mx-auto mb-2" />
                     <div className="text-xl font-bold text-warning">#{stats.ranking}</div>
@@ -384,327 +384,326 @@ const Home = () => {
               </div>
             </div>
 
-           </div>
+          </div>
 
-           {/* Coluna da direita - Feed Social */}
-           <div className="d-flex flex-column gap-4" style={{ gridColumn: 'span 2' }}>
-             {/* Header do Feed */}
-             <div className="card">
-               <div className="d-flex justify-between align-center mb-4">
-                 <h3 className="text-xl font-bold text-gray-800 d-flex align-center gap-2">
-                   📱 Feed da Comunidade
-                 </h3>
-                 <button 
-                   onClick={() => navigate('/catch')}
-                   className="btn btn-sm d-flex align-center gap-2"
-                   style={{
-                     background: 'linear-gradient(135deg, #1E88E5, #0D47A1)',
-                     color: 'white',
-                     boxShadow: '0 2px 4px rgba(13, 71, 161, 0.3)',
-                     border: 'none',
-                     borderRadius: '8px',
-                     padding: '8px 16px'
-                   }}
-                 >
-                   <Plus size={16} />
-                   Nova Captura
-                 </button>
-               </div>
-               
-               <div className="text-sm text-gray-600">
-                 Acompanhe as últimas capturas e conquistas da comunidade de pescadores
-               </div>
-             </div>
-
-             {/* Posts do Feed - Estilo Instagram */}
-             <div className="feed-container">
-               {feedPosts.length > 0 ? (
-                 feedPosts.map((post, index) => {
-                   const postKey = post.id || `feed-post-${index}`
-                   return (
-                   <div key={postKey} id={post.id ? `post-${post.id}` : undefined} className="instagram-post">
-                     {/* Header do Post - Estilo Instagram */}
-                     <div className="post-header">
-                       <div className="user-info">
-                         <div className="user-avatar">
-                           {post.user.avatar}
-                         </div>
-                         <div className="user-details">
-                           <div className="username">{post.user.name}</div>
-                           <div className="location">{post.content.location}</div>
-                         </div>
-                       </div>
-                       <div className="post-options">
-                         <div className="three-dots">•••</div>
-                       </div>
-                     </div>
-
-                     {/* Imagem do Post */}
-                     <div className="post-image">
-                       {post.content.image ? (
-                         <img src={post.content.image} alt="Captura" />
-                       ) : (
-                         <div className="placeholder-image">
-                           <Fish size={48} />
-                           <div className="catch-info">
-                             <div className="species">{post.content.species}</div>
-                             <div className="weight">{post.content.weight}kg</div>
-                           </div>
-                         </div>
-                       )}
-                     </div>
-
-                     {/* Ações do Post */}
-                     <div className="post-actions">
-                       <div className="action-buttons">
-                         <button 
-                           onClick={() => handleLike(post.id)}
-                           className={`action-btn like-btn ${
-                             post.isLiked ? 'liked' : ''
-                           }`}
-                           disabled={!isOnline}
-                         >
-                           <Heart size={24} fill={post.isLiked ? 'currentColor' : 'none'} />
-                         </button>
-                         <button 
-                           onClick={() => toggleComments(post.id)}
-                           className="action-btn comment-btn"
-                         >
-                           <MessageCircle size={24} />
-                           <span
-                             style={{
-                               marginLeft: 6,
-                               fontSize: 12,
-                               color: '#666'
-                             }}
-                           >
-                             {Array.isArray(post.commentsList) ? post.commentsList.length : 0}
-                           </span>
-                         </button>
-                         <button 
-                           onClick={() => handleShare(post.id, post.content)}
-                           disabled={!isOnline}
-                           className="action-btn share-btn"
-                         >
-                           <Share2 size={24} />
-                         </button>
-                       </div>
-                     </div>
-
-                     {/* Likes */}
-                     <div className="likes-section">
-                      <span className="likes-count">
-                        {(() => {
-                          const base = (post.likesCount || post.likes || 0)
-                          return `${base} curtidas`
-                        })()}
-                      </span>
-                     </div>
-
-                     {/* Caption */}
-                     <div className="caption-section">
-                       <span className="username">{post.user.name}</span>
-                       <span className="caption-text">{post.content.description}</span>
-                     </div>
-
-                     {/* Timestamp */}
-                     <div className="timestamp">
-                       {formatTimeAgo(post.createdAt || post.timestamp)}
-                     </div>
-
-                    {/* Comentários */}
-                    {showComments[post.id] && (
-                      <div className="comments-section">
-                        {/* Comentários do backend */}
-                        {Array.isArray(post.commentsList) && post.commentsList.map((comment) => (
-                          <div key={comment.id || `${post.id}-srv-${(comment.createdAt?.seconds || comment.timestamp?.seconds || comment.date || '')}-${(comment.authorName || comment.user || 'anon')}-${(comment.text || '').slice(0,16)}`}
-                            className="comment-item">
-                            <span className="comment-author">{comment.authorName || comment.user || 'Pescador'}</span>
-                            <span className="comment-text">{comment.text}</span>
-                          </div>
-                        ))}
-
-                         
-                         {/* Campo para novo comentário */}
-                         <div className="comment-input-container">
-                           <input
-                             type="text"
-                             placeholder="Adicione um comentário..."
-                             value={newComment[post.id] || ''}
-                             onChange={(e) => setNewComment(prev => ({
-                               ...prev,
-                               [post.id]: e.target.value
-                             }))}
-                             className="comment-input"
-                             disabled={!!commentSubmitting[post.id]}
-                             onKeyDown={(e) => {
-                               if (e.key === 'Enter' && !commentSubmitting[post.id]) {
-                                 handleComment(post.id)
-                               }
-                             }}
-                           />
-                           <button
-                             onClick={() => handleComment(post.id)}
-                             disabled={!!commentSubmitting[post.id] || !newComment[post.id]?.trim()}
-                             className="comment-submit"
-                           >
-                             {commentSubmitting[post.id] ? 'Publicando...' : 'Publicar'}
-                           </button>
-                         </div>
-                       </div>
-                     )}
-
-
-
-
-                   </div>
-                 )
-                 })
-               ) : (
-                 <div className="card text-center p-8">
-                   <div className="text-gray-400 mb-4">
-                     <Fish size={48} className="mx-auto" />
-                   </div>
-                   <h4 className="text-lg font-semibold text-gray-700 mb-2">Nenhuma captura ainda</h4>
-                   <p className="text-gray-600 mb-4">Seja o primeiro a compartilhar uma captura com a comunidade!</p>
-                   <button 
-                     onClick={() => navigate('/catch')}
-                     className="btn btn-primary"
-                   >
-                     Registrar Primeira Captura
-                   </button>
-                 </div>
-               )}
-             </div>
-           </div>
-         </div>
-
-         {/* Seção inferior - Capturas recentes (opcional) */}
-         <div className="mt-8">
-           <div className="grid grid-2">
-        {/* Rei do Lago */}
-        <div className="card">
-          <h2 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
-            <Award size={24} className="text-warning" style={{ marginRight: '10px', color: '#FF9800' }} />
-            👑 Rei do Lago
-          </h2>
-          
-          <div style={{ 
-            border: '1px solid var(--gray-200)', 
-            borderRadius: 'var(--radius-xl)', 
-            padding: 'var(--spacing-3)', 
-            backgroundColor: 'white',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            {monthlyKing ? (
-              <div style={{ textAlign: 'center', padding: '20px' }}>
-                <div style={{ 
-                  width: '80px', 
-                  height: '80px', 
-                  background: 'linear-gradient(135deg, #FFD700, #FFA500)',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 15px auto'
-                }}>
-                  <Trophy size={40} style={{ color: 'white' }} />
-                </div>
-                <h3 style={{ color: '#FF9800', marginBottom: '10px' }}>{monthlyKing.name}</h3>
-                <p style={{ color: '#666', margin: '5px 0' }}>
-                  <strong>{monthlyKing.totalFish}</strong> peixes capturados
-                </p>
-                <p style={{ color: '#666', margin: '5px 0' }}>
-                  <strong>{monthlyKing.totalWeight.toFixed(1)}kg</strong> peso total
-                </p>
-                {monthlyKing.biggestFish && monthlyKing.biggestFish.weight > 0 && (
-                  <p style={{ color: '#666', margin: '5px 0' }}>
-                    🐟 Maior peixe: <strong>{monthlyKing.biggestFish.weight.toFixed(1)}kg</strong>
-                  </p>
-                )}
-                <div style={{ 
-                  marginTop: '15px', 
-                  padding: '8px 12px', 
-                  background: '#FFF3E0', 
-                  borderRadius: '20px', 
-                  fontSize: '12px', 
-                  color: '#FF9800',
-                  fontWeight: 'bold'
-                }}>
-                  🏆 TOP 1 DO RANKING GERAL
-                </div>
+          {/* Coluna da direita - Feed Social */}
+          <div className="d-flex flex-column gap-4" style={{ gridColumn: 'span 2' }}>
+            {/* Header do Feed */}
+            <div className="card">
+              <div className="d-flex justify-between align-center mb-4">
+                <h3 className="text-xl font-bold text-gray-800 d-flex align-center gap-2">
+                  📱 Feed da Comunidade
+                </h3>
+                <button
+                  onClick={() => navigate('/catch')}
+                  className="btn btn-sm d-flex align-center gap-2"
+                  style={{
+                    background: 'linear-gradient(135deg, #1E88E5, #0D47A1)',
+                    color: 'white',
+                    boxShadow: '0 2px 4px rgba(13, 71, 161, 0.3)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 16px'
+                  }}
+                >
+                  <Plus size={16} />
+                  Nova Captura
+                </button>
               </div>
-            ) : (
-              <p style={{ textAlign: 'center', color: '#666' }}>Nenhum rei coroado ainda!</p>
-            )}
+
+              <div className="text-sm text-gray-600">
+                Acompanhe as últimas capturas e conquistas da comunidade de pescadores
+              </div>
+            </div>
+
+            {/* Posts do Feed - Estilo Instagram */}
+            <div className="feed-container">
+              {feedPosts.length > 0 ? (
+                feedPosts.map((post, index) => {
+                  const postKey = post.id || `feed-post-${index}`
+                  return (
+                    <div key={postKey} id={post.id ? `post-${post.id}` : undefined} className="instagram-post">
+                      {/* Header do Post - Estilo Instagram */}
+                      <div className="post-header">
+                        <div className="user-info">
+                          <div className="user-avatar">
+                            {post.user.avatar}
+                          </div>
+                          <div className="user-details">
+                            <div className="username">{post.user.name}</div>
+                            <div className="location">{post.content.location}</div>
+                          </div>
+                        </div>
+                        <div className="post-options">
+                          <div className="three-dots">•••</div>
+                        </div>
+                      </div>
+
+                      {/* Imagem do Post */}
+                      <div className="post-image">
+                        {post.content.image ? (
+                          <img src={post.content.image} alt="Captura" />
+                        ) : (
+                          <div className="placeholder-image">
+                            <Fish size={48} />
+                            <div className="catch-info">
+                              <div className="species">{post.content.species}</div>
+                              <div className="weight">{post.content.weight}kg</div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Ações do Post */}
+                      <div className="post-actions">
+                        <div className="action-buttons">
+                          <button
+                            onClick={() => handleLike(post.id)}
+                            className={`action-btn like-btn ${post.isLiked ? 'liked' : ''
+                              }`}
+                            disabled={!isOnline}
+                          >
+                            <Heart size={24} fill={post.isLiked ? 'currentColor' : 'none'} />
+                          </button>
+                          <button
+                            onClick={() => toggleComments(post.id)}
+                            className="action-btn comment-btn"
+                          >
+                            <MessageCircle size={24} />
+                            <span
+                              style={{
+                                marginLeft: 6,
+                                fontSize: 12,
+                                color: '#666'
+                              }}
+                            >
+                              {Array.isArray(post.commentsList) ? post.commentsList.length : 0}
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => handleShare(post.id, post.content)}
+                            disabled={!isOnline}
+                            className="action-btn share-btn"
+                          >
+                            <Share2 size={24} />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Likes */}
+                      <div className="likes-section">
+                        <span className="likes-count">
+                          {(() => {
+                            const base = (post.likesCount || post.likes || 0)
+                            return `${base} curtidas`
+                          })()}
+                        </span>
+                      </div>
+
+                      {/* Caption */}
+                      <div className="caption-section">
+                        <span className="username">{post.user.name}</span>
+                        <span className="caption-text">{post.content.description}</span>
+                      </div>
+
+                      {/* Timestamp */}
+                      <div className="timestamp">
+                        {formatTimeAgo(post.createdAt || post.timestamp)}
+                      </div>
+
+                      {/* Comentários */}
+                      {showComments[post.id] && (
+                        <div className="comments-section">
+                          {/* Comentários do backend */}
+                          {Array.isArray(post.commentsList) && post.commentsList.map((comment) => (
+                            <div key={comment.id || `${post.id}-srv-${(comment.createdAt?.seconds || comment.timestamp?.seconds || comment.date || '')}-${(comment.authorName || comment.user || 'anon')}-${(comment.text || '').slice(0, 16)}`}
+                              className="comment-item">
+                              <span className="comment-author">{comment.authorName || comment.user || 'Pescador'}</span>
+                              <span className="comment-text">{comment.text}</span>
+                            </div>
+                          ))}
+
+
+                          {/* Campo para novo comentário */}
+                          <div className="comment-input-container">
+                            <input
+                              type="text"
+                              placeholder="Adicione um comentário..."
+                              value={newComment[post.id] || ''}
+                              onChange={(e) => setNewComment(prev => ({
+                                ...prev,
+                                [post.id]: e.target.value
+                              }))}
+                              className="comment-input"
+                              disabled={!!commentSubmitting[post.id]}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !commentSubmitting[post.id]) {
+                                  handleComment(post.id)
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={() => handleComment(post.id)}
+                              disabled={!!commentSubmitting[post.id] || !newComment[post.id]?.trim()}
+                              className="comment-submit"
+                            >
+                              {commentSubmitting[post.id] ? 'Publicando...' : 'Publicar'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+
+
+
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="card text-center p-8">
+                  <div className="text-gray-400 mb-4">
+                    <Fish size={48} className="mx-auto" />
+                  </div>
+                  <h4 className="text-lg font-semibold text-gray-700 mb-2">Nenhuma captura ainda</h4>
+                  <p className="text-gray-600 mb-4">Seja o primeiro a compartilhar uma captura com a comunidade!</p>
+                  <button
+                    onClick={() => navigate('/catch')}
+                    className="btn btn-primary"
+                  >
+                    Registrar Primeira Captura
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Capturas Recentes */}
-        <div className="card">
-          <h2 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
-            <Calendar size={24} className="text-primary" style={{ marginRight: '10px' }} />
-            Capturas Recentes
-          </h2>
-          
-          <div style={{ 
-            border: '1px solid var(--gray-200)', 
-            borderRadius: 'var(--radius-xl)', 
-            padding: 'var(--spacing-3)', 
-            backgroundColor: 'white',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-          {recentCatches.length > 0 ? (
-            <div>
-              {recentCatches.map((catch_, index) => {
-                const uniqueKey = catch_.id || `recent-catch-${index}-${catch_.species || 'unknown'}-${catch_.weight || 0}-${catch_.registeredAt || catch_.timestamp || Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-                return (
-                <div key={uniqueKey} style={{ 
-                  padding: '15px', 
-                  border: '1px solid #eee', 
-                  borderRadius: '8px', 
-                  marginBottom: '10px',
-                  background: '#f9f9f9'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 5px 0', color: '#333' }}>{catch_.species}</h4>
-                      <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>
-                        {catch_.location} • {(() => {
-                          const dateValue = catch_.registeredAt || catch_.date || catch_.timestamp || new Date().toISOString()
-                          try {
-                            const date = new Date(dateValue)
-                            return isNaN(date.getTime()) ? 'Data não disponível' : date.toLocaleDateString('pt-BR')
-                          } catch (error) {
-                            return 'Data não disponível'
-                          }
-                        })()}
-                      </p>
+        {/* Seção inferior - Capturas recentes (opcional) */}
+        <div className="mt-8">
+          <div className="grid grid-2">
+            {/* Rei do Lago */}
+            <div className="card">
+              <h2 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                <Award size={24} className="text-warning" style={{ marginRight: '10px', color: '#FF9800' }} />
+                👑 Rei do Lago
+              </h2>
+
+              <div style={{
+                border: '1px solid var(--gray-200)',
+                borderRadius: 'var(--radius-xl)',
+                padding: 'var(--spacing-3)',
+                backgroundColor: 'white',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                {monthlyKing ? (
+                  <div style={{ textAlign: 'center', padding: '20px' }}>
+                    <div style={{
+                      width: '80px',
+                      height: '80px',
+                      background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      margin: '0 auto 15px auto'
+                    }}>
+                      <Trophy size={40} style={{ color: 'white' }} />
                     </div>
-                    <div className="badge badge-success">
-                      {catch_.weight}kg
+                    <h3 style={{ color: '#FF9800', marginBottom: '10px' }}>{monthlyKing.name}</h3>
+                    <p style={{ color: '#666', margin: '5px 0' }}>
+                      <strong>{monthlyKing.totalFish}</strong> peixes capturados
+                    </p>
+                    <p style={{ color: '#666', margin: '5px 0' }}>
+                      <strong>{monthlyKing.totalWeight.toFixed(1)}kg</strong> peso total
+                    </p>
+                    {monthlyKing.biggestFish && monthlyKing.biggestFish.weight > 0 && (
+                      <p style={{ color: '#666', margin: '5px 0' }}>
+                        🐟 Maior peixe: <strong>{monthlyKing.biggestFish.weight.toFixed(1)}kg</strong>
+                      </p>
+                    )}
+                    <div style={{
+                      marginTop: '15px',
+                      padding: '8px 12px',
+                      background: '#FFF3E0',
+                      borderRadius: '20px',
+                      fontSize: '12px',
+                      color: '#FF9800',
+                      fontWeight: 'bold'
+                    }}>
+                      🏆 TOP 1 DO RANKING GERAL
                     </div>
                   </div>
-                </div>
-                )
-              })}
-              
-              <button className="btn btn-secondary" style={{ width: '100%', marginTop: '10px' }} onClick={() => navigate('/profile')}>
-                Ver Todas as Capturas
-              </button>
+                ) : (
+                  <p style={{ textAlign: 'center', color: '#666' }}>Nenhum rei coroado ainda!</p>
+                )}
+              </div>
             </div>
-          ) : (
-            <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-              <Fish size={48} style={{ color: '#ddd', marginBottom: '15px' }} />
-              <p style={{ color: '#666', marginBottom: '20px' }}>Nenhuma captura registrada ainda.</p>
-              <button className="btn" onClick={() => navigate('/catch')}>
-                Registrar Primeira Captura
-              </button>
+
+            {/* Capturas Recentes */}
+            <div className="card">
+              <h2 style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                <Calendar size={24} className="text-primary" style={{ marginRight: '10px' }} />
+                Capturas Recentes
+              </h2>
+
+              <div style={{
+                border: '1px solid var(--gray-200)',
+                borderRadius: 'var(--radius-xl)',
+                padding: 'var(--spacing-3)',
+                backgroundColor: 'white',
+                boxShadow: 'var(--shadow-sm)'
+              }}>
+                {recentCatches.length > 0 ? (
+                  <div>
+                    {recentCatches.map((catch_, index) => {
+                      const uniqueKey = catch_.id || `recent-catch-${index}-${catch_.species || 'unknown'}-${catch_.weight || 0}-${catch_.registeredAt || catch_.timestamp || Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                      return (
+                        <div key={uniqueKey} style={{
+                          padding: '15px',
+                          border: '1px solid #eee',
+                          borderRadius: '8px',
+                          marginBottom: '10px',
+                          background: '#f9f9f9'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div>
+                              <h4 style={{ margin: '0 0 5px 0', color: '#333' }}>{catch_.species}</h4>
+                              <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>
+                                {catch_.location} • {(() => {
+                                  const dateValue = catch_.registeredAt || catch_.date || catch_.timestamp || new Date().toISOString()
+                                  try {
+                                    const date = new Date(dateValue)
+                                    return isNaN(date.getTime()) ? 'Data não disponível' : date.toLocaleDateString('pt-BR')
+                                  } catch (error) {
+                                    return 'Data não disponível'
+                                  }
+                                })()}
+                              </p>
+                            </div>
+                            <div className="badge badge-success">
+                              {catch_.weight}kg
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+
+                    <button className="btn btn-secondary" style={{ width: '100%', marginTop: '10px' }} onClick={() => navigate('/profile')}>
+                      Ver Todas as Capturas
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                    <Fish size={48} style={{ color: '#ddd', marginBottom: '15px' }} />
+                    <p style={{ color: '#666', marginBottom: '20px' }}>Nenhuma captura registrada ainda.</p>
+                    <button className="btn" onClick={() => navigate('/catch')}>
+                      Registrar Primeira Captura
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
           </div>
-        </div>
-      </div>
 
 
         </div>
