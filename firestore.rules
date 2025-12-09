@@ -16,7 +16,7 @@ service cloud.firestore {
       // 2. Outros usuários podem atualizar apenas likes, comments e shares (interações sociais)
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.authorId ||
-        request.resource.data.diff(resource.data).changedKeys().hasOnly(['likes', 'comments', 'shares'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'comments', 'shares'])
       );
       
       allow delete: if request.auth != null && request.auth.uid == resource.data.authorId;
@@ -114,3 +114,4 @@ service cloud.firestore {
     }
   }
 }
+
