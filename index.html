@@ -60,8 +60,10 @@
           return;
         }
         
-        // Redirecionar para a página de login se estiver na raiz do site
-        if (window.location.pathname === '/' || window.location.pathname === '') {
+        // Redirecionar para a página de login se estiver na raiz do site (produção, sem modo debug)
+        const isDevHost = ['localhost','127.0.0.1'].includes(window.location.hostname);
+        const isDebug = window.location.hash === '#debug' || localStorage.getItem('tilapios_debug') === 'true';
+        if (!isDevHost && !isDebug && (window.location.pathname === '/' || window.location.pathname === '')) {
           window.location.href = '/login';
           return;
         }

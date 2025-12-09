@@ -3,10 +3,12 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  appType: 'spa',
   plugins: [react()],
   server: {
+    host: true,
     port: 3000,
-    open: true
+    open: false
   },
   build: {
     target: 'es2022',

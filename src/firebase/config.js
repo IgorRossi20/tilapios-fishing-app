@@ -7,18 +7,33 @@ import { initializeFirestore, enableIndexedDbPersistence, connectFirestoreEmulat
 import { getStorage, connectStorageEmulator } from 'firebase/storage'
 
 // Configuração do Firebase usando variáveis de ambiente
+const env = import.meta.env
+const defaultConfig = {
+  apiKey: 'demo-key',
+  authDomain: 'tilapios-demo.firebaseapp.com',
+  projectId: 'tilapios-app-demo',
+  storageBucket: 'tilapios-app-demo.appspot.com',
+  messagingSenderId: '0',
+  appId: 'demo-app'
+}
+
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID
+  apiKey: env?.VITE_FIREBASE_API_KEY || defaultConfig.apiKey,
+  authDomain: env?.VITE_FIREBASE_AUTH_DOMAIN || defaultConfig.authDomain,
+  projectId: env?.VITE_FIREBASE_PROJECT_ID || defaultConfig.projectId,
+  storageBucket: env?.VITE_FIREBASE_STORAGE_BUCKET || defaultConfig.storageBucket,
+  messagingSenderId: env?.VITE_FIREBASE_MESSAGING_SENDER_ID || defaultConfig.messagingSenderId,
+  appId: env?.VITE_FIREBASE_APP_ID || defaultConfig.appId
 }
 
 // Inicializar Firebase
-
-const app = initializeApp(firebaseConfig)
+let app
+try {
+  app = initializeApp(firebaseConfig)
+} catch (err) {
+  console.warn('Firebase init falhou; usando fallback:', err?.message || err)
+  app = initializeApp(defaultConfig)
+}
 
 // Inicializar serviços
 export const auth = getAuth(app)

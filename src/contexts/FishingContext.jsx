@@ -1795,7 +1795,37 @@ const FishingProvider = ({ children }) => {
     }
   }
 
+  // Função para mesclar participantes remotos com pendentes locais
+  const mergeParticipantsWithLocal = (tournamentId, remoteParticipants = []) => {
+    try {
+      const pendingParticipations = getFromLocalStorage('pending_participations', [])
+      const localForTournament = pendingParticipations.filter(p => p.tournamentId === tournamentId)
+      
+      // Criar um Map para garantir unicidade por userId
+      const participantsMap = new Map()
+      
+      // Adicionar remotos primeiro
+      if (Array.isArray(remoteParticipants)) {
+        remoteParticipants.forEach(p => {
+          if (p.userId || p.id) participantsMap.set(p.userId || p.id, p)
+        })
+      }
+      
+      // Adicionar/Sobrescrever com locais (pendentes)
+      localForTournament.forEach(p => {
+        if (p.userId) {
+          participantsMap.set(p.userId, { ...p, isPending: true })
+        }
+      })
+      
+      return Array.from(participantsMap.values())
+    } catch (error) {
+      return remoteParticipants || []
+    }
+  }
+
   const value = {
+    mergeParticipantsWithLocal,
     userTournaments,
     allTournaments,
     userCatches,

@@ -40,7 +40,7 @@ const Tournaments = () => {
     isPrivate: false,
     entryFee: 0,
     prizePool: 0,
-    rules: 'Regras padrão de pesca: Registre suas pescas com peso e espécie, ranking por peso total e quantidade de peixes.'
+    rules: ''
   })
 
   // Estados para datas no formato brasileiro (para exibição)
@@ -102,7 +102,7 @@ const Tournaments = () => {
         isPrivate: false,
         entryFee: 0,
         prizePool: 0,
-        rules: 'Regras padrão de pesca: Registre suas pescas com peso e espécie, ranking por peso total e quantidade de peixes.'
+        rules: ''
       })
       // Limpar também as datas brasileiras
       setStartDateBR('')
@@ -692,7 +692,10 @@ const Tournaments = () => {
               return (
                 <div key={tournament.id} className="tournament-card">
                   <div className="tournament-header">
-                    <h3>{tournament.name}</h3>
+                    <h3 className="tournament-title">
+                      <Trophy size={20} />
+                      {tournament.name}
+                    </h3>
                     <div className="tournament-badges">
                       {getStatusBadge(currentStatus)}
                       {isFull && <span className="badge badge-full">Lotado</span>}
@@ -804,6 +807,7 @@ const Tournaments = () => {
             <p>Nenhum convite pendente para campeonatos de pesca.</p>
           </div>
         )}
+        
         {message && (
           <div className={`alert ${message.includes('Erro') ? 'alert-error' : 'alert-success'}`}>
             {message}

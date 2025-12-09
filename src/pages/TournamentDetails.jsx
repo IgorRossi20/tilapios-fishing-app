@@ -94,14 +94,26 @@ const TournamentDetails = () => {
   const getTournamentStatus = (tournament) => {
     if (!tournament) return 'unknown'
     
-    const now = new Date()
-    const startDate = new Date(tournament.startDate)
-    const endDate = new Date(tournament.endDate)
-    
     if (tournament.status === 'finished') return 'finished'
     if (tournament.status === 'cancelled') return 'cancelled'
-    if (now < startDate) return 'upcoming'
-    if (now >= startDate && now <= endDate) return 'active'
+
+    const now = new Date()
+    
+    // Tratamento robusto de datas
+    let start = new Date(tournament.startDate)
+    let end = new Date(tournament.endDate)
+    
+    // Se data inválida, retornar unknown
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 'unknown'
+
+    // Ajustar start para início do dia (00:00:00)
+    start.setHours(0, 0, 0, 0)
+    
+    // Ajustar end para final do dia (23:59:59)
+    end.setHours(23, 59, 59, 999)
+    
+    if (now < start) return 'upcoming'
+    if (now >= start && now <= end) return 'active'
     return 'finished'
   }
 

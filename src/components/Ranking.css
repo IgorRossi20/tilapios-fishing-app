@@ -15,10 +15,19 @@
   box-sizing: border-box;
 }
 
+.ranking .card {
+  border-radius: 32px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
 .ranking .header {
+  background: white;
+  border-radius: 32px;
+  padding: 2rem 1rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   text-align: center;
-  margin-bottom: 1.5rem;
-  padding: 0 1rem;
   color: var(--gray-900);
 }
 
@@ -158,7 +167,7 @@
 
 .ranking .tournament-info {
   background: white;
-  border-radius: 12px;
+  border-radius: 24px;
   padding: 1rem;
   margin: 0 1rem 1.5rem 1rem;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
@@ -230,7 +239,7 @@
 /* Pódio dos Campeões */
 .ranking .podium-container {
   background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #ffd700 100%);
-  border-radius: 20px;
+  border-radius: 32px;
   padding: 2rem;
   margin-bottom: 2rem;
   box-shadow: 0 15px 35px rgba(255, 215, 0, 0.3);
@@ -451,7 +460,7 @@
 /* Lista completa do ranking */
 .ranking .ranking-list {
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 16px;
+  border-radius: 32px;
   padding: 1.5rem;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -465,7 +474,7 @@
   padding: 1rem;
  background: linear-gradient(135deg, #0077b6 0%, #00b4d8 100%);
   color: white;
-  border-radius: 12px;
+  border-radius: 24px;
   margin-bottom: 1.5rem;
 }
 
@@ -740,7 +749,7 @@
 .ranking-card {
   position: relative;
   padding: 1.5rem;
-  border-radius: 16px;
+  border-radius: 24px;
   margin-bottom: 1rem;
   transition: all 0.3s ease;
   border: 2px solid;

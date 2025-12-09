@@ -1,3 +1,18 @@
+# Atualização de Regras de Segurança do Firestore
+
+Identificamos que o erro `FirebaseError: Missing or insufficient permissions` ocorre porque as regras de segurança atuais impedem que usuários curtam, comentem ou compartilhem posts de outras pessoas.
+
+Para corrigir isso, você precisa atualizar as regras no Console do Firebase.
+
+## Passo a Passo
+
+1. Acesse o [Console do Firebase](https://console.firebase.google.com/).
+2. Selecione o seu projeto.
+3. No menu lateral esquerdo, clique em **Criação** > **Firestore Database**.
+4. Clique na aba **Regras**.
+5. Substitua **TODO** o conteúdo do editor pelo código abaixo:
+
+```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -11,9 +26,8 @@ service cloud.firestore {
       allow read: if true;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
       
-      // Regras de atualização de post:
-      // 1. Autor pode atualizar qualquer campo
-      // 2. Outros usuários podem atualizar apenas likes, comments e shares (interações sociais)
+      // CORREÇÃO AQUI:
+      // Permitir que outros usuários atualizem APENAS likes, comments e shares
       allow update: if request.auth != null && (
         request.auth.uid == resource.data.authorId ||
         request.resource.data.diff(resource.data).changedKeys().hasOnly(['likes', 'comments', 'shares'])
@@ -29,25 +43,18 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.creatorId;
     }
     
-    // Campeonatos de pesca (nova coleção)
+    // Campeonatos de pesca
     match /fishing_tournaments/{tournamentId} {
       allow read: if true;
       allow create: if request.auth != null;
-
-      // Permitir: 
-      // - criador editar/deletar
-      // - participantes atualizarem apenas 'participants' e 'participantCount'
       allow update: if request.auth != null && (
-        // Criador pode editar qualquer campo
         request.auth.uid == resource.data.createdBy ||
-        // Participação: permitir mudanças somente nesses dois campos
         request.resource.data.diff(resource.data).changedKeys().hasOnly(['participants', 'participantCount'])
       );
-
       allow delete: if request.auth != null && request.auth.uid == resource.data.createdBy;
     }
     
-    // Capturas são públicas para leitura, apenas o autor pode editar
+    // Capturas
     match /fishing_catches/{catchId} {
       allow read: if true;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
@@ -61,20 +68,20 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
     
-    // Rankings são apenas para leitura (atualizados por Cloud Functions)
+    // Rankings (apenas leitura)
     match /rankings/{rankingId} {
       allow read: if request.auth != null;
-      allow write: if false; // Apenas Cloud Functions podem escrever
+      allow write: if false; 
     }
     
-    // Comentários são públicos para leitura, apenas autor pode editar
+    // Comentários (coleção separada, mantida por compatibilidade)
     match /comments/{commentId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.authorId;
       allow update, delete: if request.auth != null && request.auth.uid == resource.data.authorId;
     }
     
-    // Likes são públicos para leitura, apenas autor pode editar
+    // Likes (coleção separada, mantida por compatibilidade)
     match /likes/{likeId} {
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
@@ -99,18 +106,19 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == resource.data.inviterId;
     }
     
-    // Notificações do usuário (sociais)
+    // Notificações
     match /notifications/{notificationId} {
-      // Qualquer usuário autenticado pode criar uma notificação quando executa uma ação (ator)
       allow create: if request.auth != null && request.auth.uid == request.resource.data.actorId;
-      // Somente o destinatário pode ler suas notificações
       allow read: if request.auth != null && request.auth.uid == resource.data.recipientId;
-      // Somente o destinatário pode marcar como lida; restringe mudanças ao campo 'read'
       allow update: if request.auth != null
                     && request.auth.uid == resource.data.recipientId
                     && request.resource.data.diff(resource.data).changedKeys().hasOnly(['read']);
-      // Não permitir delete direto pelo cliente
       allow delete: if false;
     }
   }
 }
+```
+
+6. Clique em **Publicar**.
+
+Após publicar, aguarde alguns segundos e tente interagir novamente no aplicativo.
