@@ -1,21 +1,22 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'
 import { db, storage } from '../firebase/config' // Corrigir o caminho
-  import {
-    collection,
-    doc,
-    addDoc,
-    updateDoc,
-    deleteDoc,
-    getDocs,
-    getDoc,
-    query,
-    where,
-    orderBy,
-    writeBatch,
-    arrayUnion,
-    arrayRemove,
-    onSnapshot
-  } from 'firebase/firestore'
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDocs,
+  getDoc,
+  query,
+  where,
+  orderBy,
+  writeBatch,
+  arrayUnion,
+  arrayRemove,
+  onSnapshot,
+  runTransaction
+} from 'firebase/firestore'
 import { useAuth } from './AuthContext'
 import {
   uploadImageToSupabase,
@@ -59,6 +60,11 @@ const FishingProvider = ({ children }) => {
   const [pendingData, setPendingData] = useState({ catches: 0, participations: 0 })
   const [userInvites, setUserInvites] = useState([])
   const [isInvitesPollingFallbackActive, setIsInvitesPollingFallbackActive] = useState(false)
+
+  // Refs para prevenir múltiplas operações simultâneas - USAR USEREF!
+  const likingPostsRef = React.useRef(new Set())
+  const commentingPostsRef = React.useRef(new Set())
+
 
   // Adicionar captura otimista
   const addOptimisticCatch = (catchData) => {
@@ -164,7 +170,7 @@ const FishingProvider = ({ children }) => {
       return () => unsubscribe()
     } catch (err) {
       // Silencioso: se falhar, ficamos com carregamento manual
-      return () => {}
+      return () => { }
     }
   }, [isOnline])
 
@@ -198,7 +204,7 @@ const FishingProvider = ({ children }) => {
       )
       return () => unsubscribe()
     } catch (err) {
-      return () => {}
+      return () => { }
     }
   }, [isOnline])
 
@@ -249,7 +255,7 @@ const FishingProvider = ({ children }) => {
                 })
                 setUserInvites(validInvites)
                 saveToLocalStorage(`user_invites_${user.uid}`, validInvites)
-              } catch (pollErr) {}
+              } catch (pollErr) { }
             }, invitesPollIntervalMs)
           }
         }
@@ -273,7 +279,7 @@ const FishingProvider = ({ children }) => {
           })
           setUserInvites(validInvites)
           saveToLocalStorage(`user_invites_${user.uid}`, validInvites)
-        } catch (_) {}
+        } catch (_) { }
       }, invitesPollIntervalMs)
     }
     return () => {
@@ -312,7 +318,7 @@ const FishingProvider = ({ children }) => {
       )
       return () => unsubscribe()
     } catch (err) {
-      return () => {}
+      return () => { }
     }
   }, [isOnline])
 
@@ -417,7 +423,7 @@ const FishingProvider = ({ children }) => {
     }
   }
 
- 
+
 
   // Sincronizar participações pendentes
   const syncPendingParticipations = async () => {
@@ -741,10 +747,10 @@ const FishingProvider = ({ children }) => {
             const updated = prev.map(t =>
               t.id === tournamentId
                 ? {
-                    ...t,
-                    participants: [...(t.participants || []), participant],
-                    participantCount: (t.participantCount || 0) + 1
-                  }
+                  ...t,
+                  participants: [...(t.participants || []), participant],
+                  participantCount: (t.participantCount || 0) + 1
+                }
                 : t
             )
             saveToLocalStorage('all_tournaments', updated)
@@ -776,11 +782,11 @@ const FishingProvider = ({ children }) => {
               const updated = prev.map(t =>
                 t.id === tournamentId
                   ? {
-                      ...t,
-                      participants: [...(t.participants || []), { ...participant, isPending: true }],
-                      // Não alterar a contagem com pendência local; manter a do Firestore
-                      participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
-                    }
+                    ...t,
+                    participants: [...(t.participants || []), { ...participant, isPending: true }],
+                    // Não alterar a contagem com pendência local; manter a do Firestore
+                    participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
+                  }
                   : t
               )
               saveToLocalStorage('all_tournaments', updated)
@@ -792,22 +798,22 @@ const FishingProvider = ({ children }) => {
               const exists = prev.some(t => t.id === tournamentId)
               const updatedList = exists
                 ? prev.map(t =>
-                    t.id === tournamentId
-                      ? {
-                          ...t,
-                          participants: [...(t.participants || []), { ...participant, isPending: true }],
-                          participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
-                        }
-                      : t
-                  )
+                  t.id === tournamentId
+                    ? {
+                      ...t,
+                      participants: [...(t.participants || []), { ...participant, isPending: true }],
+                      participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
+                    }
+                    : t
+                )
                 : [
-                    {
-                      ...tournament,
-                      participants: [...(tournament.participants || []), { ...participant, isPending: true }],
-                      participantCount: tournament.participantCount ?? new Set((tournament.participants || []).map(p => p.userId)).size
-                    },
-                    ...prev
-                  ]
+                  {
+                    ...tournament,
+                    participants: [...(tournament.participants || []), { ...participant, isPending: true }],
+                    participantCount: tournament.participantCount ?? new Set((tournament.participants || []).map(p => p.userId)).size
+                  },
+                  ...prev
+                ]
               saveToLocalStorage(`user_tournaments_${user.uid}`, updatedList)
               return updatedList
             })
@@ -832,11 +838,11 @@ const FishingProvider = ({ children }) => {
         const updatedTournaments = allLocalTournaments.map(t =>
           t.id === tournamentId
             ? {
-                ...t,
-                participants: [...(t.participants || []), participant],
-                // Não alterar a contagem local; manter a contagem conhecida do Firestore
-                participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
-              }
+              ...t,
+              participants: [...(t.participants || []), participant],
+              // Não alterar a contagem local; manter a contagem conhecida do Firestore
+              participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
+            }
             : t
         )
         saveToLocalStorage('all_tournaments', updatedTournaments)
@@ -847,22 +853,22 @@ const FishingProvider = ({ children }) => {
           const exists = prev.some(t => t.id === tournamentId)
           const updatedList = exists
             ? prev.map(t =>
-                t.id === tournamentId
-                  ? {
-                      ...t,
-                      participants: [...(t.participants || []), participant],
-                      participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
-                    }
-                  : t
-              )
+              t.id === tournamentId
+                ? {
+                  ...t,
+                  participants: [...(t.participants || []), participant],
+                  participantCount: t.participantCount ?? new Set((t.participants || []).map(p => p.userId)).size
+                }
+                : t
+            )
             : [
-                {
-                  ...tournament,
-                  participants: [...(tournament.participants || []), participant],
-                  participantCount: tournament.participantCount ?? new Set((tournament.participants || []).map(p => p.userId)).size
-                },
-                ...prev
-              ]
+              {
+                ...tournament,
+                participants: [...(tournament.participants || []), participant],
+                participantCount: tournament.participantCount ?? new Set((tournament.participants || []).map(p => p.userId)).size
+              },
+              ...prev
+            ]
           saveToLocalStorage(`user_tournaments_${user.uid}`, updatedList)
           return updatedList
         })
@@ -1049,12 +1055,12 @@ const FishingProvider = ({ children }) => {
         : null
       const winner = winnerEntry
         ? {
-            userId: winnerEntry.userId,
-            userName: winnerEntry.userName,
-            totalWeight: winnerEntry.totalWeight,
-            totalCatches: winnerEntry.totalCatches,
-            score: winnerEntry.score
-          }
+          userId: winnerEntry.userId,
+          userName: winnerEntry.userName,
+          totalWeight: winnerEntry.totalWeight,
+          totalCatches: winnerEntry.totalCatches,
+          score: winnerEntry.score
+        }
         : null
 
       if (isOnline) {
@@ -1078,12 +1084,12 @@ const FishingProvider = ({ children }) => {
         const updatedTournaments = currentTournaments.map(t =>
           t.id === tournamentId
             ? {
-                ...t,
-                status: 'finished',
-                finishedAt: new Date().toISOString(),
-                finalRanking: finalRanking,
-                winner
-              }
+              ...t,
+              status: 'finished',
+              finishedAt: new Date().toISOString(),
+              finalRanking: finalRanking,
+              winner
+            }
             : t
         )
         saveToLocalStorage(userCacheKey, updatedTournaments)
@@ -1164,7 +1170,20 @@ const FishingProvider = ({ children }) => {
       try {
         photoURL = await uploadImage(catchData.photo, `catches/${user.uid}`)
       } catch (error) {
-        photoURL = null // Garante que a foto não será salva se o upload falhar
+        console.warn('⚠️ Upload para Supabase falhou, usando Data URL como fallback')
+        // Fallback: converter para Data URL (base64)
+        try {
+          photoURL = await new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = (e) => resolve(e.target.result)
+            reader.onerror = reject
+            reader.readAsDataURL(catchData.photo)
+          })
+          console.log('✅ Foto convertida para Data URL')
+        } catch (dataUrlError) {
+          console.error('❌ Erro ao converter foto:', dataUrlError)
+          photoURL = null // Garante que a foto não será salva se tudo falhar
+        }
       }
     }
 
@@ -1192,6 +1211,26 @@ const FishingProvider = ({ children }) => {
 
         // Atualizar ID com o ID real do Firestore
         newCatch.id = docRef.id
+
+        // CRIAR POST AUTOMATICAMENTE NO FEED
+        try {
+          console.log('📸 URL da foto após upload:', photoURL)
+          const postData = {
+            content: catchData.notes || `Peguei um ${catchData.species} de ${catchData.weight}kg! 🎣`,
+            catchId: docRef.id,
+            fishSpecies: catchData.species,
+            weight: catchData.weight,
+            location: catchData.location || 'Não informado',
+            imageUrl: photoURL,
+            photo: photoURL
+          }
+          console.log('📦 Dados do post:', postData)
+          await createPost(postData)
+          console.log('✅ Post criado automaticamente para a captura')
+        } catch (postError) {
+          console.error('❌ Erro ao criar post:', postError)
+          console.warn('⚠️ Captura salva mas erro ao criar post:', postError)
+        }
 
         // Notificar sucesso
         notifyCatchRegistered(
@@ -1375,12 +1414,12 @@ const FishingProvider = ({ children }) => {
           const finalRanking = await getTournamentRanking(t.id, 'weight')
           const winner = Array.isArray(finalRanking) && finalRanking.length > 0
             ? {
-                userId: finalRanking[0].userId,
-                userName: finalRanking[0].userName,
-                totalWeight: finalRanking[0].totalWeight,
-                totalCatches: finalRanking[0].totalCatches,
-                score: finalRanking[0].score
-              }
+              userId: finalRanking[0].userId,
+              userName: finalRanking[0].userName,
+              totalWeight: finalRanking[0].totalWeight,
+              totalCatches: finalRanking[0].totalCatches,
+              score: finalRanking[0].score
+            }
             : null
           if (isOnline) {
             const tournamentRef = doc(db, 'fishing_tournaments', t.id)
@@ -1396,12 +1435,12 @@ const FishingProvider = ({ children }) => {
             prev.map(x =>
               x.id === t.id
                 ? {
-                    ...x,
-                    status: 'finished',
-                    finishedAt: new Date().toISOString(),
-                    finalRanking,
-                    winner
-                  }
+                  ...x,
+                  status: 'finished',
+                  finishedAt: new Date().toISOString(),
+                  finalRanking,
+                  winner
+                }
                 : x
             )
           )
@@ -1409,12 +1448,12 @@ const FishingProvider = ({ children }) => {
             prev.map(x =>
               x.id === t.id
                 ? {
-                    ...x,
-                    status: 'finished',
-                    finishedAt: new Date().toISOString(),
-                    finalRanking,
-                    winner
-                  }
+                  ...x,
+                  status: 'finished',
+                  finishedAt: new Date().toISOString(),
+                  finalRanking,
+                  winner
+                }
                 : x
             )
           )
@@ -1505,52 +1544,91 @@ const FishingProvider = ({ children }) => {
   }
 
   const likePost = async postId => {
-    if (!user) throw new Error('Usuário não autenticado')
+    if (!user) {
+      console.warn('Usuário não autenticado para curtir post')
+      return false
+    }
 
     try {
-      if (isOnline) {
-        const postRef = doc(db, 'posts', postId)
-        const postDoc = await getDoc(postRef)
+      if (!isOnline) {
+        console.warn('Offline: curtida não será salva')
+        return false
+      }
 
-        if (postDoc.exists()) {
-          const postData = postDoc.data()
-          const likes = postData.likes || []
-          const userLiked = likes.includes(user.uid)
+      // Prevenir múltiplas execuções simultâneas no mesmo post
+      if (likingPostsRef.current.has(postId)) {
+        console.warn('Operação de curtida já em andamento para este post')
+        return false
+      }
+      likingPostsRef.current.add(postId)
 
-          if (userLiked) {
-            // Remover curtida de forma atômica
-            await updateDoc(postRef, {
-              likes: arrayRemove(user.uid)
-            })
-          } else {
-            // Adicionar curtida de forma atômica
-            await updateDoc(postRef, {
-              likes: arrayUnion(user.uid)
-            })
-            // Notificação de curtida (ignorar se autor curtiu o próprio post)
-            try {
-              const recipientId = postData.authorId
-              if (recipientId && recipientId !== user.uid) {
-                await addDoc(collection(db, 'notifications'), {
-                  recipientId,
-                  type: 'like',
-                  postId,
-                  actorId: user.uid,
-                  actorName: user.displayName || user.email,
-                  createdAt: new Date().toISOString(),
-                  read: false
-                })
-              }
-            } catch (notifyErr) {
-              // Não bloquear fluxo por falha de notificação
+      const postRef = doc(db, 'posts', postId)
+
+
+      // Usar transação para prevenir duplicação de curtidas
+      let wasLiked = false
+      await runTransaction(db, async (transaction) => {
+        const postDoc = await transaction.get(postRef)
+
+        if (!postDoc.exists()) {
+          throw new Error('Post não encontrado')
+        }
+
+        const postData = postDoc.data()
+        const likes = Array.isArray(postData.likes) ? postData.likes : []
+
+        // Usar Set para garantir unicidade
+        const likesSet = new Set(likes)
+        const userLiked = likesSet.has(user.uid)
+        wasLiked = userLiked
+
+        if (userLiked) {
+          // Remover curtida
+          likesSet.delete(user.uid)
+        } else {
+          // Adicionar curtida (Set garante unicidade)
+          likesSet.add(user.uid)
+        }
+
+        // Converter Set de volta para Array
+        const updatedLikes = Array.from(likesSet)
+
+        transaction.update(postRef, {
+          likes: updatedLikes
+        })
+      })
+
+      // Notificação de curtida (fora da transação, apenas se curtiu)
+      if (!wasLiked) {
+        try {
+          const postDoc = await getDoc(postRef)
+          if (postDoc.exists()) {
+            const postData = postDoc.data()
+            const recipientId = postData.authorId
+            if (recipientId && recipientId !== user.uid) {
+              await addDoc(collection(db, 'notifications'), {
+                recipientId,
+                type: 'like',
+                postId,
+                actorId: user.uid,
+                actorName: user.displayName || user.email,
+                createdAt: new Date().toISOString(),
+                read: false
+              })
             }
           }
-
-          return !userLiked
+        } catch (notifyErr) {
+          console.warn('Erro ao criar notificação de curtida:', notifyErr)
         }
       }
+
+      likingPostsRef.current.delete(postId)
+      return !wasLiked // Retorna true se curtiu, false se descurtiu
     } catch (error) {
-      throw error
+      likingPostsRef.current.delete(postId)
+      console.error('Erro ao curtir post:', error)
+      // Retornar false ao invés de lançar erro para não quebrar a UI
+      return false
     }
   }
 
@@ -1558,7 +1636,7 @@ const FishingProvider = ({ children }) => {
     if (!user) throw new Error('Usuário não autenticado')
 
     const comment = {
-      id: `comment_${Date.now()}`,
+      id: `comment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       authorId: user.uid,
       authorName: user.displayName || user.email,
       authorAvatar: user.photoURL || '👤',
@@ -1568,10 +1646,36 @@ const FishingProvider = ({ children }) => {
 
     try {
       if (isOnline) {
+        // Prevenir múltiplas execuções simultâneas no mesmo post
+        const key = `${postId}_${user.uid}`
+        if (commentingPostsRef.current.has(key)) {
+          console.warn('Operação de comentário já em andamento')
+          return null
+        }
+        commentingPostsRef.current.add(key)
+
         const postRef = doc(db, 'posts', postId)
         const postDoc = await getDoc(postRef)
-        await updateDoc(postRef, {
-          comments: arrayUnion(comment)
+
+        if (!postDoc.exists()) {
+          console.warn('Post não encontrado:', postId)
+          return null
+        }
+
+        const postData = postDoc.data()
+        const currentComments = Array.isArray(postData.comments) ? postData.comments : []
+
+        // Usar transação para prevenir race conditions
+        await runTransaction(db, async (transaction) => {
+          const freshDoc = await transaction.get(postRef)
+          if (!freshDoc.exists()) {
+            throw new Error('Post não encontrado')
+          }
+          const freshData = freshDoc.data()
+          const freshComments = Array.isArray(freshData.comments) ? freshData.comments : []
+          transaction.update(postRef, {
+            comments: [...freshComments, comment]
+          })
         })
         // Notificação de comentário (ignorar se autor comentou no próprio post)
         try {
@@ -1600,24 +1704,37 @@ const FishingProvider = ({ children }) => {
   }
 
   const sharePost = async postId => {
-    if (!user) throw new Error('Usuário não autenticado')
+    if (!user) {
+      console.warn('Usuário não autenticado para compartilhar post')
+      return false
+    }
 
     try {
-      if (isOnline) {
-        const postRef = doc(db, 'posts', postId)
-        const postDoc = await getDoc(postRef)
-
-        if (postDoc.exists()) {
-          const postData = postDoc.data()
-          await updateDoc(postRef, {
-            shares: (postData.shares || 0) + 1
-          })
-        }
+      if (!isOnline) {
+        console.warn('Offline: compartilhamento não será salvo')
+        return false
       }
+
+      const postRef = doc(db, 'posts', postId)
+      const postDoc = await getDoc(postRef)
+
+      if (!postDoc.exists()) {
+        console.warn('Post não encontrado:', postId)
+        return false
+      }
+
+      const postData = postDoc.data()
+      await updateDoc(postRef, {
+        shares: (postData.shares || 0) + 1
+      })
+
+      return true
     } catch (error) {
-      throw error
+      console.error('Erro ao compartilhar post:', error)
+      return false
     }
   }
+
 
   // Funções de convites para campeonatos
   const sendTournamentInvite = async (tournamentId, inviteeEmail) => {
@@ -1800,27 +1917,168 @@ const FishingProvider = ({ children }) => {
     try {
       const pendingParticipations = getFromLocalStorage('pending_participations', [])
       const localForTournament = pendingParticipations.filter(p => p.tournamentId === tournamentId)
-      
+
       // Criar um Map para garantir unicidade por userId
       const participantsMap = new Map()
-      
+
       // Adicionar remotos primeiro
       if (Array.isArray(remoteParticipants)) {
         remoteParticipants.forEach(p => {
           if (p.userId || p.id) participantsMap.set(p.userId || p.id, p)
         })
       }
-      
+
       // Adicionar/Sobrescrever com locais (pendentes)
       localForTournament.forEach(p => {
         if (p.userId) {
           participantsMap.set(p.userId, { ...p, isPending: true })
         }
       })
-      
+
       return Array.from(participantsMap.values())
     } catch (error) {
       return remoteParticipants || []
+    }
+  }
+
+  // Função para limpar comentários duplicados
+  const cleanDuplicateComments = async () => {
+    if (!user || !isOnline) {
+      console.warn('Precisa estar online e autenticado para limpar duplicatas')
+      return false
+    }
+
+    try {
+      console.log('Iniciando limpeza de comentários duplicados...')
+
+      const postsQuery = query(collection(db, 'posts'))
+      const postsSnapshot = await getDocs(postsQuery)
+
+      let fixed = 0
+
+      for (const postDoc of postsSnapshot.docs) {
+        const data = postDoc.data()
+        const comments = data.comments || []
+
+        if (comments.length > 0) {
+          // Remover duplicatas baseado em ID único
+          const uniqueComments = []
+          const seenIds = new Set()
+
+          for (const comment of comments) {
+            if (comment.id && !seenIds.has(comment.id)) {
+              seenIds.add(comment.id)
+              uniqueComments.push(comment)
+            } else if (!comment.id) {
+              // Se não tem ID, mant�m (comentário antigo)
+              uniqueComments.push(comment)
+            }
+          }
+
+          if (uniqueComments.length < comments.length) {
+            console.log(`Post ${postDoc.id}: ${comments.length} comentários -> ${uniqueComments.length} únicos`)
+            await updateDoc(doc(db, 'posts', postDoc.id), {
+              comments: uniqueComments
+            })
+            fixed++
+          }
+        }
+      }
+
+      console.log(`✅ ${fixed} posts corrigidos!`)
+      return true
+    } catch (error) {
+      console.error('Erro ao limpar duplicatas:', error)
+      return false
+    }
+  }
+
+  // Função para limpar curtidas duplicadas
+  const cleanDuplicateLikes = async () => {
+    if (!user || !isOnline) {
+      console.warn('Precisa estar online e autenticado para limpar duplicatas de curtidas')
+      return false
+    }
+
+    try {
+      console.log('Iniciando limpeza de curtidas duplicadas...')
+
+      const postsQuery = query(collection(db, 'posts'))
+      const postsSnapshot = await getDocs(postsQuery)
+
+      let fixed = 0
+
+      for (const postDoc of postsSnapshot.docs) {
+        const data = postDoc.data()
+        const likes = data.likes || []
+
+        if (likes.length > 0) {
+          // Remover duplicatas usando Set
+          const uniqueLikes = [...new Set(likes)]
+
+          if (uniqueLikes.length < likes.length) {
+            console.log(`Post ${postDoc.id}: ${likes.length} curtidas -> ${uniqueLikes.length} únicas`)
+            await updateDoc(doc(db, 'posts', postDoc.id), {
+              likes: uniqueLikes
+            })
+            fixed++
+          }
+        }
+      }
+
+      console.log(`✅ ${fixed} posts com curtidas duplicadas corrigidos!`)
+      return true
+    } catch (error) {
+      console.error('Erro ao limpar curtidas duplicadas:', error)
+      return false
+    }
+  }
+
+  // Função para limpar posts temporários e criar posts de teste reais
+  const clearTempPostsAndCreateSamples = async () => {
+    if (!user) {
+      console.warn('Usuário não autenticado')
+      return false
+    }
+
+    try {
+      // Limpar posts temporários do localStorage
+      const tempPosts = allPosts.filter(post => post.id && post.id.startsWith('temp_'))
+      console.log(`Encontrados ${tempPosts.length} posts temporários para limpar`)
+
+      // Limpar do estado e localStorage
+      const realPosts = allPosts.filter(post => !post.id || !post.id.startsWith('temp_'))
+      setAllPosts(realPosts)
+      saveToLocalStorage('all_posts', realPosts)
+
+      // Criar alguns posts de teste reais se não houver nenhum
+      if (realPosts.length === 0 && isOnline) {
+        console.log('Criando posts de exemplo...')
+
+        const samplePosts = [
+          {
+            content: 'Primeira captura do dia! 🎣',
+            imageUrl: null
+          },
+          {
+            content: 'Pescaria excelente hoje, peguei uma tilápia de 2kg! 🐟',
+            imageUrl: null
+          }
+        ]
+
+        for (const sampleData of samplePosts) {
+          await createPost(sampleData)
+          // Pequeno delay entre posts
+          await new Promise(resolve => setTimeout(resolve, 500))
+        }
+
+        console.log('Posts de exemplo criados!')
+      }
+
+      return true
+    } catch (error) {
+      console.error('Erro ao limpar posts temporários:', error)
+      return false
     }
   }
 
@@ -1852,12 +2110,15 @@ const FishingProvider = ({ children }) => {
     syncLocalDataToFirestore,
     saveToLocalStorage,
     getFromLocalStorage,
-    
+
     // Funções do feed
     createPost,
     likePost,
     addComment,
     sharePost,
+    clearTempPostsAndCreateSamples,
+    cleanDuplicateComments,
+    cleanDuplicateLikes,
     // Funções de convites
     sendTournamentInvite,
     joinTournamentByInvite,

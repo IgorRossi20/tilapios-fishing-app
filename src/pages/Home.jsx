@@ -23,7 +23,10 @@ const Home = () => {
     allPosts,
     likePost,
     addComment,
-    sharePost
+    sharePost,
+    clearTempPostsAndCreateSamples,
+    cleanDuplicateComments,
+    cleanDuplicateLikes
   } = useFishing()
   const [stats, setStats] = useState({
     totalFish: 0,

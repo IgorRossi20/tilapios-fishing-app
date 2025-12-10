@@ -45,9 +45,9 @@ const Header = () => {
             </div>
             <span className="logo-text hide-on-small">Tilapios</span>
           </Link>
-          
+
           {/* Mobile menu button */}
-          <button 
+          <button
             className="mobile-menu-btn touch-target"
             onClick={toggleMenu}
             aria-label={isMenuOpen ? 'Fechar menu' : 'Abrir menu'}
@@ -57,13 +57,13 @@ const Header = () => {
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </span>
           </button>
-          
+
           {/* Navigation links */}
           <ul className={`nav-links ${isMenuOpen ? 'nav-links-open' : ''}`}>
             <li>
-              <Link 
-                to="/" 
-                className={`nav-link ${isActive('/')}`} 
+              <Link
+                to="/"
+                className={`nav-link ${isActive('/')}`}
                 onClick={closeMenu}
                 aria-current={location.pathname === '/' ? 'page' : undefined}
               >
@@ -72,9 +72,9 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link 
-                to="/ranking" 
-                className={`nav-link ${isActive('/ranking')}`} 
+              <Link
+                to="/ranking"
+                className={`nav-link ${isActive('/ranking')}`}
                 onClick={closeMenu}
                 aria-current={location.pathname === '/ranking' ? 'page' : undefined}
               >
@@ -83,9 +83,9 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <Link 
-                to="/tournaments" 
-                className={`nav-link ${isActive('/tournaments')}`} 
+              <Link
+                to="/tournaments"
+                className={`nav-link ${isActive('/tournaments')}`}
                 onClick={closeMenu}
                 aria-current={location.pathname === '/tournaments' ? 'page' : undefined}
               >
@@ -95,9 +95,9 @@ const Header = () => {
             </li>
 
             <li>
-              <Link 
-                to="/profile" 
-                className={`nav-link ${isActive('/profile')}`} 
+              <Link
+                to="/profile"
+                className={`nav-link ${isActive('/profile')}`}
                 onClick={closeMenu}
                 aria-current={location.pathname === '/profile' ? 'page' : undefined}
               >
@@ -106,7 +106,7 @@ const Header = () => {
               </Link>
             </li>
             <li>
-              <button 
+              <button
                 onClick={() => { handleLogout(); closeMenu(); }}
                 className="btn btn-outline-danger logout-btn touch-target"
                 aria-label="Fazer logout"
@@ -116,9 +116,9 @@ const Header = () => {
               </button>
             </li>
           </ul>
-          
-          {/* User info and notifications - hidden on mobile */}
-          <div className="user-info" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
+
+          {/* User info and notifications - Now visible on all devices */}
+          <div className="user-info-section" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '8px' }}>
             {/* Notifications bell */}
             <div style={{ position: 'relative' }}>
               <button
@@ -166,17 +166,15 @@ const Header = () => {
               {/* Dropdown */}
               {isNotifOpen && (
                 <div
-                  role="menu"
                   style={{
                     position: 'absolute',
-                    top: 'calc(100% + 8px)',
+                    top: 52,
                     right: 0,
-                    width: 340,
-                    maxHeight: 420,
-                    background: 'white',
+                    width: 'min(380px, calc(100vw - 32px))', // Responsivo: max 380px ou 100vw-32px
+                    background: '#fff',
+                    border: '1px solid var(--gray-200)',
                     borderRadius: 12,
-                    boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
-                    border: '1px solid var(--gray-100)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                     overflow: 'hidden',
                     zIndex: 1000
                   }}
