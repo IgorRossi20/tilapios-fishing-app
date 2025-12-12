@@ -170,65 +170,195 @@ const Header = () => {
                     position: 'absolute',
                     top: 52,
                     right: 0,
-                    width: 'min(380px, calc(100vw - 32px))', // Responsivo: max 380px ou 100vw-32px
+                    width: 'min(400px, calc(100vw - 32px))',
                     background: '#fff',
-                    border: '1px solid var(--gray-200)',
-                    borderRadius: 12,
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: 16,
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.08)',
                     overflow: 'hidden',
-                    zIndex: 1000
+                    zIndex: 1000,
+                    animation: 'slideDown 0.2s ease-out'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: 'var(--gray-50)', borderBottom: '1px solid var(--gray-100)' }}>
-                    <strong style={{ fontSize: 14, color: 'var(--gray-800)' }}>Notificações</strong>
-                    <button
-                      onClick={async () => { await markAllAsRead(); }}
-                      className="touch-target"
-                      style={{ border: 'none', background: 'transparent', color: 'var(--primary-600)', fontSize: 12, cursor: 'pointer' }}
-                    >
-                      Marcar todas como lidas
-                    </button>
+                  {/* Header do dropdown */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '16px 18px',
+                    background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                    borderBottom: '1px solid #e5e7eb'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Bell size={18} style={{ color: '#3b82f6' }} />
+                      <strong style={{ fontSize: 16, color: '#1e293b', fontWeight: 600 }}>Notificações</strong>
+                      {unread > 0 && (
+                        <span style={{
+                          background: '#ef4444',
+                          color: 'white',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: 10,
+                          minWidth: 18,
+                          textAlign: 'center'
+                        }}>
+                          {unread}
+                        </span>
+                      )}
+                    </div>
+                    {notifications && notifications.length > 0 && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          await markAllAsRead();
+                        }}
+                        className="touch-target"
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#3b82f6',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          padding: '4px 8px',
+                          borderRadius: 6,
+                          transition: 'background 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.target.style.background = 'rgba(59,130,246,0.1)'}
+                        onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                      >
+                        Marcar todas
+                      </button>
+                    )}
                   </div>
-                  <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+
+                  {/* Lista de notificações */}
+                  <div style={{ maxHeight: 400, overflowY: 'auto' }}>
                     {notifications && notifications.length > 0 ? (
-                      notifications.slice(0, 12).map(n => (
-                        <div
-                          key={n.id}
-                          onClick={async () => {
-                            await markAsRead(n.id)
-                            setIsNotifOpen(false)
-                            if (n.postId) {
-                              navigate(`/?postId=${encodeURIComponent(n.postId)}`)
-                            }
-                          }}
-                          onMouseEnter={() => setHoverNotifId(n.id)}
-                          onMouseLeave={() => setHoverNotifId(null)}
-                          style={{
-                            padding: '12px 14px',
-                            display: 'flex',
-                            gap: 12,
-                            cursor: 'pointer',
-                            background: hoverNotifId === n.id
-                              ? 'rgba(59,130,246,0.08)'
-                              : (n.read ? 'white' : 'var(--primary-50)'),
-                            borderTop: '1px solid var(--gray-100)'
-                          }}
-                        >
-                          <div style={{ width: 8, marginTop: 6 }}>
+                      notifications.slice(0, 12).map(n => {
+                        const isLike = n.message?.toLowerCase().includes('curtiu')
+                        const isComment = n.message?.toLowerCase().includes('comentou')
+
+                        return (
+                          <div
+                            key={n.id}
+                            onClick={async () => {
+                              await markAsRead(n.id)
+                              setIsNotifOpen(false)
+                              if (n.postId) {
+                                navigate(`/?postId=${encodeURIComponent(n.postId)}`)
+                              }
+                            }}
+                            onMouseEnter={() => setHoverNotifId(n.id)}
+                            onMouseLeave={() => setHoverNotifId(null)}
+                            style={{
+                              padding: '14px 18px',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: 12,
+                              cursor: 'pointer',
+                              background: hoverNotifId === n.id
+                                ? 'linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(99,102,241,0.08) 100%)'
+                                : (n.read ? 'white' : 'rgba(219,234,254,0.4)'),
+                              borderBottom: '1px solid #f1f5f9',
+                              transition: 'all 0.2s ease',
+                              transform: hoverNotifId === n.id ? 'translateX(2px)' : 'translateX(0)'
+                            }}
+                          >
+                            {/* Ícone da notificação */}
+                            <div style={{
+                              width: 36,
+                              height: 36,
+                              borderRadius: '50%',
+                              background: isLike
+                                ? 'linear-gradient(135deg, #fecaca 0%, #fca5a5 100%)'
+                                : isComment
+                                  ? 'linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%)'
+                                  : 'linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                            }}>
+                              {isLike ? (
+                                <Heart size={16} fill="#ef4444" color="#ef4444" />
+                              ) : isComment ? (
+                                <MessageCircle size={16} color="#3b82f6" />
+                              ) : (
+                                <Bell size={16} color="#6366f1" />
+                              )}
+                            </div>
+
+                            {/* Conteúdo da notificação */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{
+                                color: '#1e293b',
+                                fontSize: 14,
+                                lineHeight: 1.4,
+                                fontWeight: n.read ? 400 : 600,
+                                marginBottom: 4
+                              }}>
+                                {n.message}
+                              </div>
+                              <div style={{
+                                color: '#64748b',
+                                fontSize: 12,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4
+                              }}>
+                                <span>{formatTimeAgo(n.timestamp)}</span>
+                              </div>
+                            </div>
+
+                            {/* Indicador não lido */}
                             {!n.read && (
-                              <span style={{ display: 'block', width: 8, height: 8, background: 'var(--primary-500)', borderRadius: 999 }} />
+                              <div style={{
+                                width: 8,
+                                height: 8,
+                                borderRadius: '50%',
+                                background: '#3b82f6',
+                                flexShrink: 0,
+                                marginTop: 6,
+                                boxShadow: '0 0 0 3px rgba(59,130,246,0.2)'
+                              }} />
                             )}
                           </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ color: 'var(--gray-800)', fontSize: 14, lineHeight: 1.3 }}>{n.message}</div>
-                            <div style={{ color: 'var(--gray-500)', fontSize: 12, marginTop: 4 }}>{formatTimeAgo(n.timestamp)}</div>
-                          </div>
-                        </div>
-                      ))
+                        )
+                      })
                     ) : (
-                      <div style={{ padding: 20, color: 'var(--gray-600)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <Bell size={16} />
-                        <span>Sem notificações por enquanto.</span>
+                      <div style={{
+                        padding: 48,
+                        textAlign: 'center'
+                      }}>
+                        <div style={{
+                          width: 64,
+                          height: 64,
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          margin: '0 auto 16px'
+                        }}>
+                          <Bell size={28} color="#94a3b8" />
+                        </div>
+                        <div style={{
+                          color: '#64748b',
+                          fontSize: 14,
+                          fontWeight: 500,
+                          marginBottom: 4
+                        }}>
+                          Nenhuma notificação
+                        </div>
+                        <div style={{
+                          color: '#94a3b8',
+                          fontSize: 13
+                        }}>
+                          Você está em dia por aqui!
+                        </div>
                       </div>
                     )}
                   </div>
